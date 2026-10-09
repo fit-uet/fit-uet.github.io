@@ -1518,17 +1518,19 @@ async function initDb() {
     console.log(`[db] Using Cloudflare D1 database: ${d1DatabaseId} (Account: ${d1AccountId})`);
     db = new CloudflareD1Client(d1AccountId, d1DatabaseId, d1Token);
   } else {
-    const databaseUrl = process.env.TURSO_DATABASE_URL || (process.env.NODE_ENV === 'production' ? '' : 'file:./internship-db.db');
+    const rawUrl = process.env.TURSO_DATABASE_URL || (process.env.NODE_ENV === 'production' ? '' : 'file:./internship-db.db');
+    const databaseUrl = rawUrl.trim().replace(/^["']|["']$/g, '');
+    const authToken = process.env.TURSO_AUTH_TOKEN?.trim().replace(/^["']|["']$/g, '');
     if (!databaseUrl) {
       throw new Error('TURSO_DATABASE_URL or CLOUDFLARE_API_TOKEN is required in production.');
     }
-    if (databaseUrl.startsWith('libsql://') && !process.env.TURSO_AUTH_TOKEN) {
+    if (databaseUrl.startsWith('libsql://') && !authToken) {
       throw new Error('TURSO_AUTH_TOKEN is required for Turso libsql databases.');
     }
     console.log(`[db] Using Turso database: ${databaseUrl}`);
     db = createClient({
       url: databaseUrl,
-      authToken: process.env.TURSO_AUTH_TOKEN
+      authToken
     }) as any;
   }
   const rawExecute = db.execute.bind(db);
