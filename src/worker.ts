@@ -1222,7 +1222,12 @@ async function requireUser(request: Request, env: Env) {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) throw new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   const claims: any = await verifyJwt(token, env.JWT_SECRET);
-  const user = (await db(env).execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [claims.id] })).rows[0] as any;
+  let user = claims.email
+    ? ((await db(env).execute({ sql: 'SELECT * FROM users WHERE LOWER(email) = ?', args: [String(claims.email).toLowerCase().trim()] })).rows[0] as any)
+    : null;
+  if (!user && claims.id) {
+    user = (await db(env).execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [claims.id] })).rows[0] as any;
+  }
   if (!user) throw new Response(JSON.stringify({ error: 'User not found' }), { status: 401 });
   if (env.ADMIN_EMAIL && user.email === env.ADMIN_EMAIL && user.role !== 'admin') {
     user.role = 'admin';
@@ -1361,7 +1366,7 @@ async function handleAuthGoogle(request: Request, env: Env) {
       });
       user = (await database.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [user.id] })).rows[0];
     }
-    const token = await signJwt({ id: user.id, role: user.role }, env.JWT_SECRET);
+    const token = await signJwt({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET);
     return json({ token, user });
   } catch (error: any) {
     const message = String(error?.message || '');

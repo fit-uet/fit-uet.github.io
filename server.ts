@@ -2126,7 +2126,12 @@ async function startServer() {
 
     try {
       const decoded: any = jwt.verify(token, JWT_SECRET);
-      req.user = (await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [decoded.id] })).rows[0];
+      if (decoded.email) {
+        req.user = (await db.execute({ sql: 'SELECT * FROM users WHERE LOWER(email) = ?', args: [String(decoded.email).toLowerCase().trim()] })).rows[0];
+      }
+      if (!req.user && decoded.id) {
+        req.user = (await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [decoded.id] })).rows[0];
+      }
       if (!req.user) return res.status(401).json({ error: 'User not found' });
       next();
     } catch (e) {
@@ -2487,7 +2492,7 @@ async function startServer() {
         user.picture = picture;
       }
 
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
       res.json({ token, user: { id: user.id, email: user.email, name: user.name, picture: user.picture, role: user.role, student_id: user.student_id, dob: user.dob, class_name: user.class_name, course_code: user.course_code, is_lecturer: user.is_lecturer } });
     } catch (err: any) {
       const message = String(err?.message || '');
