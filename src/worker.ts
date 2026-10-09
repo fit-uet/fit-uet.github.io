@@ -1222,12 +1222,10 @@ async function requireUser(request: Request, env: Env) {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) throw new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   const claims: any = await verifyJwt(token, env.JWT_SECRET);
-  let user = claims.email
-    ? ((await db(env).execute({ sql: 'SELECT * FROM users WHERE LOWER(email) = ?', args: [String(claims.email).toLowerCase().trim()] })).rows[0] as any)
-    : null;
-  if (!user && claims.id) {
-    user = (await db(env).execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [claims.id] })).rows[0] as any;
+  if (!claims.email) {
+    throw new Response(JSON.stringify({ error: 'Unauthorized: Phiên đăng nhập cũ đã hết hạn, vui lòng đăng nhập lại.' }), { status: 401 });
   }
+  const user = (await db(env).execute({ sql: 'SELECT * FROM users WHERE LOWER(email) = ?', args: [String(claims.email).toLowerCase().trim()] })).rows[0] as any;
   if (!user) throw new Response(JSON.stringify({ error: 'User not found' }), { status: 401 });
   if (env.ADMIN_EMAIL && user.email === env.ADMIN_EMAIL && user.role !== 'admin') {
     user.role = 'admin';

@@ -2126,12 +2126,10 @@ async function startServer() {
 
     try {
       const decoded: any = jwt.verify(token, JWT_SECRET);
-      if (decoded.email) {
-        req.user = (await db.execute({ sql: 'SELECT * FROM users WHERE LOWER(email) = ?', args: [String(decoded.email).toLowerCase().trim()] })).rows[0];
+      if (!decoded.email) {
+        return res.status(401).json({ error: 'Unauthorized: Phiên đăng nhập cũ đã hết hạn, vui lòng đăng nhập lại.' });
       }
-      if (!req.user && decoded.id) {
-        req.user = (await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [decoded.id] })).rows[0];
-      }
+      req.user = (await db.execute({ sql: 'SELECT * FROM users WHERE LOWER(email) = ?', args: [String(decoded.email).toLowerCase().trim()] })).rows[0];
       if (!req.user) return res.status(401).json({ error: 'User not found' });
       next();
     } catch (e) {
