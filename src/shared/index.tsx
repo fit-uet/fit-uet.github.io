@@ -572,7 +572,7 @@ export const paginationBounds = (total: number, currentPage: number, pageSize: n
 };
 
 export const isAuthExpiredResponse = (res: Response, data?: any) =>
-  res.status === 401 && /invalid token|unauthorized|user not found/i.test(String(data?.error || ''));
+  res.status === 401 || (res.status === 403 && /token|hết hạn|unauthorized/i.test(String(data?.error || '')));
 
 export const jwtExpiresAtMs = (token: string | null | undefined) => {
   try {

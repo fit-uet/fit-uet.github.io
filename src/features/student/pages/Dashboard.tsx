@@ -433,6 +433,14 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
 
       setCompanies(Array.isArray(compData) ? compData : []);
 
+      const authResponses = [regRes, finalRes, advisorRes, advisorReqRes, reportRes, gradeRes];
+      for (const r of authResponses) {
+        if (r && r.status === 401) {
+          onAuthExpired();
+          return;
+        }
+      }
+
       const regData = regRes ? await regRes.json().catch(() => null) : [];
       if (regRes && !regRes.ok) {
         if (isAuthExpiredResponse(regRes, regData)) return onAuthExpired();
@@ -473,8 +481,12 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
 
       setItCompanyList(Array.isArray(itListData) ? itListData : []);
       setLecturers(Array.isArray(lecData) ? lecData : []);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      if (/401|unauthorized|hết hạn|invalid token/i.test(String(e?.message || ''))) {
+        onAuthExpired();
+        return;
+      }
       if (user?.role === 'student') {
         setMyRegsError('Không kết nối được tới máy chủ để kiểm tra danh sách đăng ký.');
       }
@@ -1071,9 +1083,17 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
           {/* Active Stage Workspace */}
           <main className="space-y-4">
         {myRegsError && (
-          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 text-xs text-amber-900 leading-relaxed shadow-xs">
-            <strong>Hệ thống chưa kiểm tra được danh sách đăng ký của bạn.</strong>
-            <p className="mt-0.5 text-amber-800">Vui lòng tải lại trang hoặc liên hệ Khoa nếu lỗi vẫn tiếp diễn: {myRegsError}</p>
+          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 text-xs text-amber-900 leading-relaxed shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <strong>Hệ thống chưa kiểm tra được danh sách đăng ký của bạn.</strong>
+              <p className="mt-0.5 text-amber-800">Vui lòng tải lại trang hoặc đăng nhập lại: {myRegsError}</p>
+            </div>
+            <button
+              onClick={onAuthExpired}
+              className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs whitespace-nowrap cursor-pointer transition-colors shadow-xs"
+            >
+              Đăng nhập lại ngay
+            </button>
           </div>
         )}
 

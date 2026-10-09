@@ -320,9 +320,9 @@ function App() {
           {loginError && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
               <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200">
-                <div className="flex items-center gap-3 text-red-600 mb-4">
+                <div className="flex items-center gap-3 text-amber-600 mb-4">
                   <AlertTriangle size={24} />
-                  <h3 className="text-lg font-bold">Lỗi Đăng Nhập</h3>
+                  <h3 className="text-lg font-bold">Thông Báo Phiên Làm Việc</h3>
                 </div>
                 <p className="text-slate-600 mb-6 text-sm leading-relaxed">
                   {loginError}
@@ -332,7 +332,7 @@ function App() {
                     onClick={() => setLoginError(null)}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
                   >
-                    Đã hiểu
+                    Đăng nhập lại
                   </button>
                 </div>
               </div>
