@@ -410,7 +410,7 @@ chatRouter.post('/api/chat/threads/:studentUserId/:lecturerId/messages', require
     if (body.length > 2000) return res.status(400).json({ error: 'Tin nhắn tối đa 2000 ký tự.' });
     const result = await db.execute({
       sql: `INSERT INTO chat_messages (student_user_id, lecturer_id, sender_user_id, body, created_at)
-            VALUES (?, ?, ?, datetime('now', '+7 hours'))`,
+            VALUES (?, ?, ?, ?, datetime('now', '+7 hours'))`,
       args: [studentUserId, lecturerId, req.user.id, body],
     });
     const message = (await db.execute({
