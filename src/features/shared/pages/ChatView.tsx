@@ -281,12 +281,12 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
         </button>
       </div>
 
-      {error && <div className="rounded-xl border border-red-200/80 bg-[#fff2f1] p-4 text-xs font-medium text-[#d70015]">{error}</div>}
+      {error && <div className="rounded-xl border border-red-200/80 bg-[#fee2e2] p-4 text-xs font-medium text-[#d70015]">{error}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4 min-h-[620px]">
         {/* Left Thread List */}
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col">
-          <div className="px-5 py-3.5 border-b border-slate-100 bg-[#fbfbfd]">
+          <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f8fafc]">
             <div className="font-bold text-slate-900 text-sm">Cuộc trò chuyện</div>
             <div className="text-[11px] text-slate-400 mt-0.5">{threads.length} hội thoại</div>
           </div>
@@ -332,7 +332,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col min-h-[620px]">
           {selectedThread ? (
             <>
-              <div className="px-5 py-3.5 border-b border-slate-100 bg-[#fbfbfd]">
+              <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f8fafc]">
                 <div className="font-bold text-slate-900 text-sm">{threadTitle(selectedThread)}</div>
                 <div className="text-[11px] text-slate-400 mt-0.5">{threadSubtitle(selectedThread) || '-'}</div>
               </div>

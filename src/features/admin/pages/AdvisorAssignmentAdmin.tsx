@@ -421,7 +421,7 @@ export function AdvisorAssignmentAdmin({ token, view = 'assignments' }: { token:
                 <button
                   onClick={deleteSelectedAssignments}
                   disabled={deletingSelected || selectedRows.size === 0}
-                  className="bg-[#fff2f1] text-[#d70015] border border-[#ffd8d6] hover:bg-[#ffd8d6] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap active:scale-[0.98]"
+                  className="bg-[#fee2e2] text-[#d70015] border border-[#fecaca] hover:bg-[#fecaca] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap active:scale-[0.98]"
                 >
                   {deletingSelected ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
                   Xóa chọn{selectedRows.size > 0 ? ` (${selectedRows.size})` : ''}

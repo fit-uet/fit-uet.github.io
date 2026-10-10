@@ -253,7 +253,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
       <div className="max-w-7xl mx-auto space-y-6 pb-12">
         {/* Banner cảnh báo thời hạn chấm điểm */}
         {gradingWindowStatus.status === 'closed' && (
-          <div className="bg-[#fff2f1] border border-[#ffd8d6] text-[#d70015] rounded-2xl p-4 text-xs flex items-center gap-2.5 font-medium shadow-xs">
+          <div className="bg-[#fee2e2] border border-[#fecaca] text-[#d70015] rounded-2xl p-4 text-xs flex items-center gap-2.5 font-medium shadow-xs">
             <AlertCircle size={18} className="shrink-0 text-[#d70015]" />
             <div>
               <strong>Đã đóng cổng nhập điểm học phần:</strong> {gradingWindowStatus.message}
@@ -262,7 +262,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
         )}
 
         {gradingWindowStatus.status === 'not_open_yet' && (
-          <div className="bg-[#fff8eb] border border-[#ffe1a6] text-[#b25e00] rounded-2xl p-4 text-xs flex items-center gap-2.5 font-medium shadow-xs">
+          <div className="bg-[#ffedd5] border border-[#ffe1a6] text-[#b25e00] rounded-2xl p-4 text-xs flex items-center gap-2.5 font-medium shadow-xs">
             <Clock size={18} className="shrink-0 text-[#b25e00]" />
             <div>
               <strong>Chưa mở cổng nhập điểm:</strong> {gradingWindowStatus.message}
@@ -283,7 +283,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
           <div>
             <button
               onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/')}
-              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
+              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
             >
               <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
               {user?.role === 'admin' ? 'Quản trị hệ thống' : 'Trang chủ'}
@@ -304,7 +304,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                     }
                   />
                 </h1>
-                <p className="text-xs text-[#86868b] mt-0.5 font-medium">
+                <p className="text-xs text-[#64748b] mt-0.5 font-medium">
                   Bấm «Xem & Chấm» để mở khung xem PDF và nhập điểm đồng thời trên màn hình
                 </p>
               </div>
@@ -316,7 +316,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
             disabled={loadingGrades}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer self-start sm:self-auto"
           >
-            <RefreshCw size={13} className={loadingGrades ? 'animate-spin text-[#034ea1]' : 'text-[#86868b]'} />
+            <RefreshCw size={13} className={loadingGrades ? 'animate-spin text-[#034ea1]' : 'text-[#64748b]'} />
             Tải lại
           </button>
         </div>
@@ -324,36 +324,36 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
         {/* Apple KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#86868b] uppercase tracking-wider">Tổng sinh viên</span>
+            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Tổng sinh viên</span>
             <div className="mt-2 text-3xl font-black text-[#0f172a] tracking-tight">{stats.total}</div>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#86868b] uppercase tracking-wider">Chưa có điểm</span>
-            <div className="mt-2 text-3xl font-black text-[#86868b] tracking-tight">{stats.missing}</div>
+            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Chưa có điểm</span>
+            <div className="mt-2 text-3xl font-black text-[#64748b] tracking-tight">{stats.missing}</div>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#86868b] uppercase tracking-wider">Bản nháp</span>
-            <div className="mt-2 text-3xl font-black text-[#ff9500] tracking-tight">{stats.draft}</div>
+            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Bản nháp</span>
+            <div className="mt-2 text-3xl font-black text-[#c2410c] tracking-tight">{stats.draft}</div>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#86868b] uppercase tracking-wider">Đã nộp điểm</span>
-            <div className="mt-2 text-3xl font-black text-[#34c759] tracking-tight">{stats.submitted}</div>
+            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Đã nộp điểm</span>
+            <div className="mt-2 text-3xl font-black text-[#15803d] tracking-tight">{stats.submitted}</div>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#86868b] uppercase tracking-wider">Khoa đã khóa</span>
-            <div className="mt-2 text-3xl font-black text-[#ff3b30] tracking-tight">{stats.locked}</div>
+            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Khoa đã khóa</span>
+            <div className="mt-2 text-3xl font-black text-[#b91c1c] tracking-tight">{stats.locked}</div>
           </div>
         </div>
 
         {/* Apple Inset Grouped Table */}
         <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#6e6e73]">
-              <thead className="bg-[#fbfbfd] text-[11px] uppercase font-bold text-[#86868b] tracking-wider border-b border-black/[0.05] select-none">
+            <table className="w-full text-left text-xs text-[#334155]">
+              <thead className="bg-[#f8fafc] text-[11px] uppercase font-bold text-[#64748b] tracking-wider border-b border-black/[0.05] select-none">
                 <tr>
                   <th className="px-5 py-3.5">Sinh viên</th>
                   <th className="px-5 py-3.5">Nơi thực tập</th>
@@ -368,13 +368,13 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
               <tbody className="divide-y divide-black/[0.04]">
                 {loadingGrades ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center text-[#86868b]">
+                    <td colSpan={8} className="px-5 py-16 text-center text-[#64748b]">
                       Đang tải bảng điểm học phần...
                     </td>
                   </tr>
                 ) : grades.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center text-[#86868b]">
+                    <td colSpan={8} className="px-5 py-16 text-center text-[#64748b]">
                       Chưa có sinh viên trong danh sách phụ trách.
                     </td>
                   </tr>
@@ -388,8 +388,8 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                       <tr key={row.user_id} className="hover:bg-[#f8fafc]/60 transition-colors align-top">
                         <td className="px-5 py-4">
                           <div className="font-bold text-[#0f172a] text-xs">{row.student_name}</div>
-                          <div className="text-xs text-[#86868b] font-mono mt-0.5">{row.student_id || '-'}</div>
-                          <div className="text-[11px] text-[#86868b] mt-0.5">{row.class_name || '-'}</div>
+                          <div className="text-xs text-[#64748b] font-mono mt-0.5">{row.student_id || '-'}</div>
+                          <div className="text-[11px] text-[#64748b] mt-0.5">{row.class_name || '-'}</div>
                           {row.advisor_role === 'co' ? (
                             <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                               Đồng hướng dẫn
@@ -408,12 +408,12 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                                 row.report_status === 'accepted'
-                                  ? 'bg-[#ebf9ee] text-[#1d833f] border-emerald-200/60'
+                                  ? 'bg-[#dcfce7] text-[#1d833f] border-emerald-200/60'
                                   : row.report_status === 'needs_revision'
-                                  ? 'bg-[#fff8eb] text-[#b25e00] border-amber-200/60'
+                                  ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
                                   : row.report_status
                                   ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
-                                  : 'bg-[#f8fafc] text-[#86868b] border-black/[0.04]'
+                                  : 'bg-[#f8fafc] text-[#64748b] border-black/[0.04]'
                               }`}
                             >
                               {statusLabel(row.report_status)}
@@ -426,13 +426,13 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                     ? 'text-[#1d833f]'
                                     : row.grade_status === 'draft'
                                     ? 'text-[#b25e00]'
-                                    : 'text-[#86868b]'
+                                    : 'text-[#64748b]'
                                 }`}
                               >
                                 {gradeStatusLabel(row.grade_status)}
                               </span>
                               {row.locked_at && (
-                                <span className="text-[9px] font-bold text-[#ff3b30] bg-[#fff2f1] border border-[#ffd8d6] px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                <span className="text-[9px] font-bold text-[#b91c1c] bg-[#fee2e2] border border-[#fecaca] px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
                                   <Lock size={8} /> Đã khóa
                                 </span>
                               )}
@@ -449,7 +449,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                 <button
                                   onClick={() => downloadReport(row)}
                                   title="Tải file PDF"
-                                  className="p-1 rounded-full text-[#86868b] hover:text-[#0f172a] hover:bg-black/[0.05] transition-colors cursor-pointer border border-black/[0.08]"
+                                  className="p-1 rounded-full text-[#64748b] hover:text-[#0f172a] hover:bg-black/[0.05] transition-colors cursor-pointer border border-black/[0.08]"
                                 >
                                   <Download size={11} />
                                 </button>
@@ -472,13 +472,13 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                 disabled={disabled}
                                 value={edit[field] ?? ''}
                                 onChange={(e) => updateScoreEdit(row.user_id, field, e.target.value)}
-                                className={`w-18 rounded-xl px-2 py-1.5 text-xs font-bold text-center outline-none transition-all disabled:bg-[#f8fafc] disabled:text-[#86868b] bg-[#fbfbfd] focus:bg-white ${
+                                className={`w-18 rounded-xl px-2 py-1.5 text-xs font-bold text-center outline-none transition-all disabled:bg-[#f8fafc] disabled:text-[#64748b] bg-[#f8fafc] focus:bg-white ${
                                   error
-                                    ? 'border border-[#ff3b30] focus:ring-2 focus:ring-[#ff3b30]/20'
+                                    ? 'border border-[#b91c1c] focus:ring-2 focus:ring-[#b91c1c]/20'
                                     : 'border border-black/[0.08] focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20'
                                 }`}
                               />
-                              {error && <div className="mt-1 text-[9px] text-[#ff3b30] font-semibold">{error}</div>}
+                              {error && <div className="mt-1 text-[9px] text-[#b91c1c] font-semibold">{error}</div>}
                             </td>
                           );
                         })}
@@ -496,7 +496,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                               value={edit.comment ?? ''}
                               onChange={(e) => updateGradeEdit(row.user_id, 'comment', e.target.value)}
                               placeholder="Nhận xét của giảng viên..."
-                              className="w-full border border-black/[0.08] rounded-xl px-3 py-1.5 text-xs bg-[#fbfbfd] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all disabled:bg-[#f8fafc] disabled:text-[#86868b]"
+                              className="w-full border border-black/[0.08] rounded-xl px-3 py-1.5 text-xs bg-[#f8fafc] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all disabled:bg-[#f8fafc] disabled:text-[#64748b]"
                             />
                             <div className="flex items-center gap-1.5">
                               <button

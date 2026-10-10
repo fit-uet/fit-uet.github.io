@@ -171,7 +171,7 @@ export function AdminRegistry({ token }: { token: string }) {
                   <td className="p-3.5 text-center">
                     <button
                       onClick={() => toggleLecturer(admin)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${admin.is_lecturer ? 'bg-[#34c759]' : 'bg-[#e2e8f0]'
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${admin.is_lecturer ? 'bg-[#15803d]' : 'bg-[#e2e8f0]'
                         }`}
                       title={admin.is_lecturer ? 'Click để bỏ khỏi danh sách GV' : 'Click để thêm vào danh sách GV'}
                     >
@@ -179,13 +179,13 @@ export function AdminRegistry({ token }: { token: string }) {
                         }`} />
                     </button>
                     {admin.is_lecturer ? (
-                      <span className="ml-2 text-[10px] font-semibold text-[#1b7f37] bg-[#ebf9ee] px-2 py-0.5 rounded-full">GV</span>
+                      <span className="ml-2 text-[10px] font-semibold text-[#1b7f37] bg-[#dcfce7] px-2 py-0.5 rounded-full">GV</span>
                     ) : null}
                   </td>
                   <td className="p-3.5 text-center">
                     <button
                       onClick={() => handleRemoveAdmin(admin.id)}
-                      className="text-[#ff3b30] hover:bg-[#fff2f1] p-1.5 rounded-lg transition-colors cursor-pointer"
+                      className="text-[#b91c1c] hover:bg-[#fee2e2] p-1.5 rounded-lg transition-colors cursor-pointer"
                       title="Xóa quyền admin"
                     >
                       <Trash2 size={15} />

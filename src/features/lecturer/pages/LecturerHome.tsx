@@ -339,7 +339,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
               </h3>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${uncontactedCount > 0 ? 'bg-[#fff2f1] border-[#ffd8d6] text-[#d70015]' : 'bg-[#ebf9ee] border-[#d1f2d9] text-[#1b7f37]'}`}>
+              <div className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${uncontactedCount > 0 ? 'bg-[#fee2e2] border-[#fecaca] text-[#d70015]' : 'bg-[#dcfce7] border-[#d1f2d9] text-[#1b7f37]'}`}>
                 {uncontactedCount > 0 ? `Chưa liên hệ: ${uncontactedCount}` : 'Tất cả đã liên hệ'}
               </div>
               <button

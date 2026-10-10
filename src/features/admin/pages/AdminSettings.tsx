@@ -223,7 +223,7 @@ export function AdminSettings({ token }: { token: string }) {
               ))}
             </div>
           </div>
-          <div className="md:col-span-2 rounded-xl p-4 bg-[#fff8eb] border border-amber-200/70 text-xs text-amber-900 leading-relaxed">
+          <div className="md:col-span-2 rounded-xl p-4 bg-[#ffedd5] border border-amber-200/70 text-xs text-amber-900 leading-relaxed">
             <div className="font-bold text-amber-800 mb-1">Ngoại lệ khóa luôn được áp dụng theo danh sách sinh viên</div>
             <div>
               Hệ thống kiểm tra khóa từ email trước. Nếu khóa nằm trong danh sách đang mở thì cho đăng nhập/đăng ký ngay; nếu không, hệ thống mới kiểm tra MSSV/email trong site Quản lý sinh viên. Ví dụ K69 MSSV 24021400 chỉ được vào nếu admin đã thêm/import sinh viên này.
@@ -369,11 +369,11 @@ export function AdminSettings({ token }: { token: string }) {
             {campaignWindows.map(item => {
               const status = campaignWindowStatus(item.openKey, item.closeKey);
               const toneClass = status.tone === 'success'
-                ? 'bg-[#ebf9ee] border-emerald-200/60 text-[#1d833f]'
+                ? 'bg-[#dcfce7] border-emerald-200/60 text-[#1d833f]'
                 : status.tone === 'warning'
-                ? 'bg-[#fff8eb] border-amber-200/60 text-[#b25e00]'
+                ? 'bg-[#ffedd5] border-amber-200/60 text-[#b25e00]'
                 : status.tone === 'danger'
-                ? 'bg-[#fff2f1] border-red-200/60 text-[#d70015]'
+                ? 'bg-[#fee2e2] border-red-200/60 text-[#d70015]'
                 : 'bg-[#f8fafc] border-slate-200/60 text-slate-600';
               return (
                 <div key={item.openKey} className={`flex items-start gap-3 p-3.5 rounded-xl border text-xs ${toneClass}`}>

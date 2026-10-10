@@ -86,7 +86,7 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
       </div>
 
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-[#fbfbfd] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 border-b border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <label
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all border shadow-xs active:scale-[0.98] ${
@@ -125,7 +125,7 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
               placeholder="Nhập nội dung hướng dẫn sử dụng bằng Markdown..."
             />
           </div>
-          <div className="p-5 bg-[#fbfbfd]">
+          <div className="p-5 bg-[#f8fafc]">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">Xem trước</div>
             <div className="prose prose-slate prose-sm max-w-none">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>

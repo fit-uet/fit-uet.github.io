@@ -36,7 +36,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
+      <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
         <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải quy định đăng ký...</span>
       </div>
@@ -53,7 +53,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Quản trị hệ thống
@@ -67,7 +67,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
                 Cài đặt Quy định đăng ký
                 <PageDescriptionTooltip description="Chỉnh sửa nội dung quy định học phần hiển thị cho sinh viên trên hệ thống bằng định dạng Markdown." />
               </h1>
-              <p className="text-xs text-[#86868b] mt-0.5 font-medium">
+              <p className="text-xs text-[#64748b] mt-0.5 font-medium">
                 Quy chế, điều kiện tín chỉ & hướng dẫn đăng ký thực tập
               </p>
             </div>
@@ -80,7 +80,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
             onClick={() => setRules(DEFAULT_REGISTRATION_RULES)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
-            <RotateCcw size={13} className="text-[#86868b]" />
+            <RotateCcw size={13} className="text-[#64748b]" />
             Khôi phục mặc định
           </button>
           <button
@@ -100,11 +100,11 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
           {/* Left: Code / Markdown Editor Pane */}
           <div className="p-6 flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#86868b] flex items-center gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b] flex items-center gap-1.5">
                 <Code2 size={14} className="text-[#034ea1]" />
                 Mã nguồn Markdown
               </span>
-              <span className="text-[11px] font-mono text-[#86868b]">
+              <span className="text-[11px] font-mono text-[#64748b]">
                 {lineCount} dòng · {charCount} ký tự
               </span>
             </div>
@@ -113,15 +113,15 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
               value={rules}
               onChange={(e) => setRules(e.target.value)}
               placeholder="Nhập nội dung quy định theo định dạng Markdown..."
-              className="w-full flex-1 min-h-[560px] border border-black/[0.08] rounded-2xl p-4 text-xs font-mono bg-[#fbfbfd] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner leading-relaxed text-[#0f172a] resize-y"
+              className="w-full flex-1 min-h-[560px] border border-black/[0.08] rounded-2xl p-4 text-xs font-mono bg-[#f8fafc] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner leading-relaxed text-[#0f172a] resize-y"
             />
           </div>
 
           {/* Right: Apple Live Document Preview Pane */}
-          <div className="p-6 bg-[#fbfbfd] flex flex-col">
+          <div className="p-6 bg-[#f8fafc] flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#86868b] flex items-center gap-1.5">
-                <Eye size={14} className="text-[#34c759]" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b] flex items-center gap-1.5">
+                <Eye size={14} className="text-[#15803d]" />
                 Xem trước thực tế (Giao diện sinh viên)
               </span>
               <span className="text-[11px] font-semibold text-[#034ea1] bg-[#034ea1]/10 px-2.5 py-0.5 rounded-full">
@@ -138,7 +138,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
                   <RegistrationRulesMarkdown content={rules} />
                 </div>
               ) : (
-                <p className="text-xs text-[#86868b] italic">Chưa có quy định nào.</p>
+                <p className="text-xs text-[#64748b] italic">Chưa có quy định nào.</p>
               )}
             </div>
           </div>

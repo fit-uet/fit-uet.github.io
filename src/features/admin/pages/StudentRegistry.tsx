@@ -381,7 +381,7 @@ export function StudentRegistry({ token }: { token: string }) {
         </form>
       )}
       {importing && (
-        <div aria-live="polite" className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-[#ebf9ee] px-4 py-3 text-sm text-[#1b7f37]">
+        <div aria-live="polite" className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-[#dcfce7] px-4 py-3 text-sm text-[#1b7f37]">
           <RefreshCw size={18} className="animate-spin shrink-0" />
           <span>{importMessage || 'Hệ thống đang import dữ liệu, vui lòng đợi...'}</span>
         </div>
@@ -474,7 +474,7 @@ export function StudentRegistry({ token }: { token: string }) {
                         </td>
                         <td className="p-2.5 text-right">
                           <div className="flex justify-end gap-1">
-                            <button onClick={handleUpdateStudent} disabled={savingStudent} className="text-[#1b7f37] hover:bg-[#ebf9ee] p-1.5 rounded-lg transition-colors disabled:opacity-50 cursor-pointer" title="Lưu">
+                            <button onClick={handleUpdateStudent} disabled={savingStudent} className="text-[#1b7f37] hover:bg-[#dcfce7] p-1.5 rounded-lg transition-colors disabled:opacity-50 cursor-pointer" title="Lưu">
                               {savingStudent ? <RefreshCw size={15} className="animate-spin" /> : <Save size={15} />}
                             </button>
                             <button onClick={cancelEditStudent} disabled={savingStudent} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-lg transition-colors disabled:opacity-50 cursor-pointer" title="Huỷ">
@@ -498,7 +498,7 @@ export function StudentRegistry({ token }: { token: string }) {
                             <button onClick={() => startEditStudent(s)} className="text-[#034ea1] hover:bg-[#e8f1fb] p-1.5 rounded-lg transition-colors cursor-pointer" title="Sửa">
                               <Edit2 size={15} />
                             </button>
-                            <button onClick={() => handleDelete(selector)} className="text-[#ff3b30] hover:bg-[#fff2f1] p-1.5 rounded-lg transition-colors cursor-pointer" title="Xóa">
+                            <button onClick={() => handleDelete(selector)} className="text-[#b91c1c] hover:bg-[#fee2e2] p-1.5 rounded-lg transition-colors cursor-pointer" title="Xóa">
                               <Trash2 size={15} />
                             </button>
                           </div>

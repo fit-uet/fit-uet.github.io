@@ -954,7 +954,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
               <button
                 onClick={handleSendFilteredRegistrationComment}
                 disabled={filteredRegistrations.length === 0}
-                className="bg-[#fff8eb] text-[#b25e00] border border-[#ffe7ba] px-3.5 py-2 rounded-xl hover:bg-[#ffe7ba] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 transition-all cursor-pointer active:scale-[0.98]"
+                className="bg-[#ffedd5] text-[#b25e00] border border-[#fed7aa] px-3.5 py-2 rounded-xl hover:bg-[#fed7aa] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 transition-all cursor-pointer active:scale-[0.98]"
               >
                 <Send size={14} /> Gửi nhận xét
               </button>

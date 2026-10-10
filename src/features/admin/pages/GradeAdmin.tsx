@@ -172,7 +172,7 @@ export function GradeAdmin({ token }: { token: string }) {
           onClick={() => handleLockAll(true)}
           disabled={lockingBatch}
           title="Khóa toàn bộ điểm của các sinh viên đã nộp để niêm phong sổ điểm"
-          className="bg-[#fff2f1] text-[#d70015] border border-[#ffd8d6] hover:bg-[#ffd8d6] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
+          className="bg-[#fee2e2] text-[#d70015] border border-[#fecaca] hover:bg-[#fecaca] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
         >
           <Lock size={14} /> Khóa tất cả đã nộp
         </button>
@@ -237,14 +237,14 @@ export function GradeAdmin({ token }: { token: string }) {
                       <button
                         onClick={() => toggleLock(row)}
                         disabled={row.grade_status === 'missing'}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-40 transition-all cursor-pointer active:scale-[0.98] ${row.locked_at ? 'bg-[#fff2f1] text-[#d70015] border border-[#ffd8d6] hover:bg-[#ffd8d6]' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-40 transition-all cursor-pointer active:scale-[0.98] ${row.locked_at ? 'bg-[#fee2e2] text-[#d70015] border border-[#fecaca] hover:bg-[#fecaca]' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
                       >
                         {row.locked_at ? 'Mở khóa' : 'Khóa điểm'}
                       </button>
                       <button
                         onClick={() => handleDeleteGradeRow(row)}
                         disabled={Boolean(row.locked_at)}
-                        className="p-1.5 text-slate-400 hover:text-[#d70015] hover:bg-[#fff2f1] rounded-lg transition-colors disabled:opacity-30 cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-[#d70015] hover:bg-[#fee2e2] rounded-lg transition-colors disabled:opacity-30 cursor-pointer"
                         title={row.locked_at ? 'Điểm đã khóa, không thể xóa' : 'Xóa khỏi bảng điểm & nơi thực tập'}
                       >
                         <Trash2 size={15} />

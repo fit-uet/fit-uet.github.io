@@ -69,7 +69,7 @@ export function StudentGradeView({ token }: { token: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
+      <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
         <div className="w-9 h-9 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3.5" />
         <span className="text-xs font-medium tracking-wide">Đang tải bảng điểm học phần...</span>
       </div>
@@ -98,7 +98,7 @@ export function StudentGradeView({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Trang chủ
@@ -112,7 +112,7 @@ export function StudentGradeView({ token }: { token: string }) {
                 Kết quả & Điểm học phần
                 <PageDescriptionTooltip description="Xem bảng điểm chi tiết theo 3 đầu điểm trọng số (20% - 20% - 60%) và nhận xét từ giảng viên hướng dẫn." />
               </h1>
-              <p className="text-xs text-[#86868b] mt-0.5 font-medium">
+              <p className="text-xs text-[#64748b] mt-0.5 font-medium">
                 Học phần Thực tập thực tế · Khoa Công nghệ Thông tin (FIT - UET)
               </p>
             </div>
@@ -132,7 +132,7 @@ export function StudentGradeView({ token }: { token: string }) {
             onClick={() => navigate('/reports/final')}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer"
           >
-            <FileText size={14} className="text-[#86868b]" />
+            <FileText size={14} className="text-[#64748b]" />
             Báo cáo đã nộp
           </button>
         </div>
@@ -142,10 +142,10 @@ export function StudentGradeView({ token }: { token: string }) {
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12">
           {/* Hero Left: Circular Ring & Achievement Identity */}
-          <div className="lg:col-span-5 p-8 sm:p-10 bg-gradient-to-br from-[#034ea1]/[0.03] via-[#34c759]/[0.02] to-transparent border-b lg:border-b-0 lg:border-r border-black/[0.05] flex flex-col justify-between items-center text-center">
+          <div className="lg:col-span-5 p-8 sm:p-10 bg-gradient-to-br from-[#034ea1]/[0.03] via-[#15803d]/[0.02] to-transparent border-b lg:border-b-0 lg:border-r border-black/[0.05] flex flex-col justify-between items-center text-center">
             {/* Status Capsule */}
             <div className="w-full flex items-center justify-between mb-6">
-              <span className="text-[11px] font-bold tracking-widest text-[#86868b] uppercase">
+              <span className="text-[11px] font-bold tracking-widest text-[#64748b] uppercase">
                 Điểm tổng kết
               </span>
               <Badge
@@ -181,7 +181,7 @@ export function StudentGradeView({ token }: { token: string }) {
                   cx="80"
                   cy="80"
                   r={radius}
-                  stroke={finalScoreNum && finalScoreNum >= 8.5 ? '#34c759' : '#034ea1'}
+                  stroke={finalScoreNum && finalScoreNum >= 8.5 ? '#15803d' : '#034ea1'}
                   strokeWidth="12"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
@@ -196,7 +196,7 @@ export function StudentGradeView({ token }: { token: string }) {
                 <span className="text-5xl font-black text-[#0f172a] tracking-tight leading-none">
                   {scoreText(grade?.final_score)}
                 </span>
-                <span className="text-xs font-semibold text-[#86868b] mt-1.5 tracking-wider">
+                <span className="text-xs font-semibold text-[#64748b] mt-1.5 tracking-wider">
                   / 10.0
                 </span>
               </div>
@@ -213,16 +213,16 @@ export function StudentGradeView({ token }: { token: string }) {
             </div>
 
             {/* Bottom Status Seal */}
-            <div className="w-full pt-6 mt-6 border-t border-black/[0.05] flex items-center justify-between text-xs text-[#86868b]">
+            <div className="w-full pt-6 mt-6 border-t border-black/[0.05] flex items-center justify-between text-xs text-[#64748b]">
               <div className="flex items-center gap-1.5 text-left">
                 {grade?.locked_at ? (
                   <>
-                    <Lock size={13} className="text-[#34c759] shrink-0" />
+                    <Lock size={13} className="text-[#15803d] shrink-0" />
                     <span className="font-semibold text-[#1d833f]">Khoa đã chốt điểm chính thức</span>
                   </>
                 ) : (
                   <>
-                    <Clock size={13} className="text-[#86868b] shrink-0" />
+                    <Clock size={13} className="text-[#64748b] shrink-0" />
                     <span>
                       {grade?.grade_submitted_at
                         ? `Cập nhật: ${new Date(grade.grade_submitted_at).toLocaleDateString('vi-VN')}`
@@ -231,7 +231,7 @@ export function StudentGradeView({ token }: { token: string }) {
                   </>
                 )}
               </div>
-              <span className="text-[11px] font-medium text-[#86868b]">Hệ số 10</span>
+              <span className="text-[11px] font-medium text-[#64748b]">Hệ số 10</span>
             </div>
           </div>
 
@@ -247,7 +247,7 @@ export function StudentGradeView({ token }: { token: string }) {
                     Cơ cấu 3 đầu điểm thành phần
                   </h2>
                 </div>
-                <span className="text-[11px] font-semibold text-[#86868b] bg-[#f8fafc] px-2.5 py-1 rounded-full">
+                <span className="text-[11px] font-semibold text-[#64748b] bg-[#f8fafc] px-2.5 py-1 rounded-full">
                   Quy chế Đào tạo FIT UET
                 </span>
               </div>
@@ -255,14 +255,14 @@ export function StudentGradeView({ token }: { token: string }) {
               {/* Progress Meters */}
               <div className="space-y-6">
                 {/* 1. Progress Score - 20% */}
-                <div className="p-4 rounded-2xl bg-[#fbfbfd] border border-black/[0.03]">
+                <div className="p-4 rounded-2xl bg-[#f8fafc] border border-black/[0.03]">
                   <div className="flex items-center justify-between text-xs mb-2">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-[#034ea1]/10 text-[#034ea1] text-[11px] font-bold flex items-center justify-center">
                         1
                       </span>
                       <span className="font-bold text-[#0f172a]">
-                        Điểm định kỳ / Tiến độ <span className="font-normal text-[#86868b]">(Tỉ trọng 20%)</span>
+                        Điểm định kỳ / Tiến độ <span className="font-normal text-[#64748b]">(Tỉ trọng 20%)</span>
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
@@ -270,7 +270,7 @@ export function StudentGradeView({ token }: { token: string }) {
                         {scoreText(grade?.progress_score)}
                       </span>
                       {progressScoreNum !== null && (
-                        <span className="text-[11px] text-[#86868b] font-medium">
+                        <span className="text-[11px] text-[#64748b] font-medium">
                           ({((progressScoreNum * 0.2)).toFixed(2)} đ)
                         </span>
                       )}
@@ -282,20 +282,20 @@ export function StudentGradeView({ token }: { token: string }) {
                       style={{ width: `${Math.min(100, Math.max(0, (progressScoreNum ?? 0) * 10))}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-[#86868b] mt-1.5 leading-normal">
+                  <p className="text-[11px] text-[#64748b] mt-1.5 leading-normal">
                     Đánh giá quá trình liên hệ, báo cáo tiến độ định kỳ với Giảng viên hướng dẫn.
                   </p>
                 </div>
 
                 {/* 2. Report Score - 20% */}
-                <div className="p-4 rounded-2xl bg-[#fbfbfd] border border-black/[0.03]">
+                <div className="p-4 rounded-2xl bg-[#f8fafc] border border-black/[0.03]">
                   <div className="flex items-center justify-between text-xs mb-2">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-[#034ea1]/10 text-[#034ea1] text-[11px] font-bold flex items-center justify-center">
                         2
                       </span>
                       <span className="font-bold text-[#0f172a]">
-                        Điểm báo cáo thực tập <span className="font-normal text-[#86868b]">(Tỉ trọng 20%)</span>
+                        Điểm báo cáo thực tập <span className="font-normal text-[#64748b]">(Tỉ trọng 20%)</span>
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
@@ -303,7 +303,7 @@ export function StudentGradeView({ token }: { token: string }) {
                         {scoreText(grade?.report_score)}
                       </span>
                       {reportScoreNum !== null && (
-                        <span className="text-[11px] text-[#86868b] font-medium">
+                        <span className="text-[11px] text-[#64748b] font-medium">
                           ({((reportScoreNum * 0.2)).toFixed(2)} đ)
                         </span>
                       )}
@@ -315,20 +315,20 @@ export function StudentGradeView({ token }: { token: string }) {
                       style={{ width: `${Math.min(100, Math.max(0, (reportScoreNum ?? 0) * 10))}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-[#86868b] mt-1.5 leading-normal">
+                  <p className="text-[11px] text-[#64748b] mt-1.5 leading-normal">
                     Đánh giá nội dung, cấu trúc và chất lượng quyển báo cáo PDF nộp trên hệ thống.
                   </p>
                 </div>
 
                 {/* 3. Company Score - 60% */}
-                <div className="p-4 rounded-2xl bg-[#fbfbfd] border border-black/[0.03]">
+                <div className="p-4 rounded-2xl bg-[#f8fafc] border border-black/[0.03]">
                   <div className="flex items-center justify-between text-xs mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-[#34c759]/10 text-[#34c759] text-[11px] font-bold flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-[#15803d]/10 text-[#15803d] text-[11px] font-bold flex items-center justify-center">
                         3
                       </span>
                       <span className="font-bold text-[#0f172a]">
-                        Điểm công ty / Đơn vị thực tập <span className="font-normal text-[#86868b]">(Tỉ trọng 60%)</span>
+                        Điểm công ty / Đơn vị thực tập <span className="font-normal text-[#64748b]">(Tỉ trọng 60%)</span>
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
@@ -336,7 +336,7 @@ export function StudentGradeView({ token }: { token: string }) {
                         {scoreText(grade?.company_score)}
                       </span>
                       {companyScoreNum !== null && (
-                        <span className="text-[11px] text-[#86868b] font-medium">
+                        <span className="text-[11px] text-[#64748b] font-medium">
                           ({((companyScoreNum * 0.6)).toFixed(2)} đ)
                         </span>
                       )}
@@ -344,11 +344,11 @@ export function StudentGradeView({ token }: { token: string }) {
                   </div>
                   <div className="h-2 rounded-full bg-[#f2f2f7] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#34c759] transition-all duration-700 ease-out"
+                      className="h-full rounded-full bg-[#15803d] transition-all duration-700 ease-out"
                       style={{ width: `${Math.min(100, Math.max(0, (companyScoreNum ?? 0) * 10))}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-[#86868b] mt-1.5 leading-normal">
+                  <p className="text-[11px] text-[#64748b] mt-1.5 leading-normal">
                     Điểm theo Phiếu đánh giá có chữ ký & dấu công ty được scan gộp trong file báo cáo (hoặc GVHD nếu TT tại Lab trường).
                   </p>
                 </div>
@@ -356,7 +356,7 @@ export function StudentGradeView({ token }: { token: string }) {
             </div>
 
             {/* Apple Formula Pill */}
-            <div className="mt-6 pt-4 border-t border-black/[0.04] text-[11px] text-[#6e6e73] font-mono bg-[#f8fafc]/70 px-4 py-2.5 rounded-xl flex items-center justify-between">
+            <div className="mt-6 pt-4 border-t border-black/[0.04] text-[11px] text-[#334155] font-mono bg-[#f8fafc]/70 px-4 py-2.5 rounded-xl flex items-center justify-between">
               <span>Công thức:</span>
               <strong className="text-[#0f172a]">Điểm tổng kết = (Tiến độ × 0.2) + (Báo cáo × 0.2) + (Doanh nghiệp × 0.6)</strong>
             </div>
@@ -376,18 +376,18 @@ export function StudentGradeView({ token }: { token: string }) {
                 Nhận xét của Giảng viên hướng dẫn
               </h3>
               {grade?.grading_lecturer_name && (
-                <span className="text-xs font-semibold text-[#86868b]">
+                <span className="text-xs font-semibold text-[#64748b]">
                   GV chấm: <strong className="text-[#0f172a]">{grade.grading_lecturer_name}</strong>
                 </span>
               )}
             </div>
 
             {grade?.comment ? (
-              <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#0f172a] leading-relaxed whitespace-pre-wrap font-medium">
+              <div className="bg-[#f8fafc] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#0f172a] leading-relaxed whitespace-pre-wrap font-medium">
                 "{grade.comment}"
               </div>
             ) : (
-              <div className="bg-[#f8fafc]/60 rounded-2xl p-7 text-center text-xs text-[#86868b] font-medium">
+              <div className="bg-[#f8fafc]/60 rounded-2xl p-7 text-center text-xs text-[#64748b] font-medium">
                 Giảng viên chưa để lại nhận xét văn bản bổ sung.
               </div>
             )}
@@ -426,14 +426,14 @@ export function StudentGradeView({ token }: { token: string }) {
                   <Building2 size={17} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                     Nơi thực tập
                   </span>
                   <div className="font-bold text-[#0f172a] text-sm mt-0.5 truncate">
                     {grade?.internship_place || 'Chưa xác nhận'}
                   </div>
                   {grade?.confirmed_at && (
-                    <div className="text-[11px] text-[#86868b] mt-0.5">
+                    <div className="text-[11px] text-[#64748b] mt-0.5">
                       Xác nhận: {new Date(grade.confirmed_at).toLocaleDateString('vi-VN')}
                     </div>
                   )}
@@ -442,11 +442,11 @@ export function StudentGradeView({ token }: { token: string }) {
 
               {/* Primary Advisor */}
               <div className="py-3.5 flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-2xl bg-[#34c759]/10 text-[#34c759] flex items-center justify-center shrink-0 mt-0.5 shadow-inner">
+                <div className="w-9 h-9 rounded-2xl bg-[#15803d]/10 text-[#15803d] flex items-center justify-center shrink-0 mt-0.5 shadow-inner">
                   <GraduationCap size={17} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                     GVHD chính
                   </span>
                   <div className="font-bold text-[#0f172a] text-sm mt-0.5">
@@ -475,7 +475,7 @@ export function StudentGradeView({ token }: { token: string }) {
                     <GraduationCap size={17} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
+                    <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                       Đồng hướng dẫn
                     </span>
                     <div className="font-bold text-[#0f172a] text-sm mt-0.5">{grade.co_advisors}</div>

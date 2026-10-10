@@ -313,7 +313,7 @@ export function NotificationAdmin({ token }: { token: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
+      <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
         <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải lịch sử thông báo...</span>
       </div>
@@ -327,7 +327,7 @@ export function NotificationAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Quản trị hệ thống
@@ -341,7 +341,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                 Lịch sử thông báo & Email
                 <PageDescriptionTooltip description="Quản trị hàng đợi email, phát thông báo tự động và soạn thông báo thủ công tới sinh viên/giảng viên." />
               </h1>
-              <p className="text-xs text-[#86868b] mt-0.5 font-medium">
+              <p className="text-xs text-[#64748b] mt-0.5 font-medium">
                 Theo dõi nhật ký email, hàng đợi thông báo hệ thống và quota gửi
               </p>
             </div>
@@ -362,7 +362,7 @@ export function NotificationAdmin({ token }: { token: string }) {
             onClick={exportXlsx}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
-            <Download size={14} className="text-[#86868b]" />
+            <Download size={14} className="text-[#64748b]" />
             Xuất XLSX
           </button>
         </div>
@@ -372,13 +372,13 @@ export function NotificationAdmin({ token }: { token: string }) {
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
               <span>Đã gửi hôm nay</span>
               <Mail size={16} className="text-[#034ea1]" />
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-extrabold text-[#0f172a] tracking-tight">{stats.sent_today || 0}</span>
-              <span className="text-xs text-[#86868b] font-medium">/ {stats.daily_cap || 500} quota</span>
+              <span className="text-xs text-[#64748b] font-medium">/ {stats.daily_cap || 500} quota</span>
             </div>
             <div className="w-full bg-[#f2f2f7] h-1.5 rounded-full overflow-hidden mt-3">
               <div
@@ -389,39 +389,39 @@ export function NotificationAdmin({ token }: { token: string }) {
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
               <span>Đang chờ gửi (Queued)</span>
-              <Clock size={16} className="text-[#ff9500]" />
+              <Clock size={16} className="text-[#c2410c]" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-[#ff9500] tracking-tight">{stats.statuses?.queued || 0}</span>
-              <span className="text-xs text-[#86868b]">email</span>
+              <span className="text-3xl font-extrabold text-[#c2410c] tracking-tight">{stats.statuses?.queued || 0}</span>
+              <span className="text-xs text-[#64748b]">email</span>
             </div>
-            <span className="text-[11px] text-[#86868b] mt-2 font-medium">Batch size: {stats.batch_size || 20}</span>
+            <span className="text-[11px] text-[#64748b] mt-2 font-medium">Batch size: {stats.batch_size || 20}</span>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
               <span>Đã phát thành công</span>
-              <CheckCircle2 size={16} className="text-[#34c759]" />
+              <CheckCircle2 size={16} className="text-[#15803d]" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-[#34c759] tracking-tight">{stats.statuses?.sent || 0}</span>
-              <span className="text-xs text-[#86868b]">email</span>
+              <span className="text-3xl font-extrabold text-[#15803d] tracking-tight">{stats.statuses?.sent || 0}</span>
+              <span className="text-xs text-[#64748b]">email</span>
             </div>
-            <span className="text-[11px] text-[#86868b] mt-2 font-medium">Cổng gửi: {stats.provider || 'Nodemailer'}</span>
+            <span className="text-[11px] text-[#64748b] mt-2 font-medium">Cổng gửi: {stats.provider || 'Nodemailer'}</span>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
               <span>Gửi thất bại / Lỗi</span>
-              <AlertTriangle size={16} className="text-[#ff3b30]" />
+              <AlertTriangle size={16} className="text-[#b91c1c]" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-[#ff3b30] tracking-tight">{stats.statuses?.failed || 0}</span>
-              <span className="text-xs text-[#86868b]">email</span>
+              <span className="text-3xl font-extrabold text-[#b91c1c] tracking-tight">{stats.statuses?.failed || 0}</span>
+              <span className="text-xs text-[#64748b]">email</span>
             </div>
-            <span className="text-[11px] text-[#86868b] mt-2 font-medium">Cần kiểm tra mail server</span>
+            <span className="text-[11px] text-[#64748b] mt-2 font-medium">Cần kiểm tra mail server</span>
           </div>
         </div>
       )}
@@ -436,20 +436,20 @@ export function NotificationAdmin({ token }: { token: string }) {
               </div>
               <h2 className="text-sm font-bold text-[#0f172a] tracking-tight">Soạn thông báo & Email gửi hàng loạt</h2>
             </div>
-            <span className="text-xs text-[#86868b]">
+            <span className="text-xs text-[#64748b]">
               Gửi ngay trong quota, phần vượt quota tự động vào hàng đợi
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Nhóm đối tượng nhận
               </label>
               <select
                 value={manualNotice.target}
                 onChange={(e) => setManualNotice((prev) => ({ ...prev, target: e.target.value }))}
-                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#fbfbfd] focus:bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
+                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#f8fafc] focus:bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
               >
                 <option value="system_all">Cả hệ thống (1 bản ghi website chung)</option>
                 <option value="students_with_registration">Sinh viên đã đăng ký</option>
@@ -463,18 +463,18 @@ export function NotificationAdmin({ token }: { token: string }) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Phương thức phát hành
               </label>
               <select
                 value={manualNotice.delivery_mode}
                 onChange={(e) => setManualNotice((prev) => ({ ...prev, delivery_mode: e.target.value }))}
-                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#fbfbfd] focus:bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
+                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#f8fafc] focus:bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
               >
                 <option value="website_and_email">Hiển thị trên website và gửi email theo quota</option>
                 <option value="website_only">Chỉ hiển thị trên website</option>
               </select>
-              <p className="mt-1.5 text-[11px] leading-relaxed text-[#86868b]">
+              <p className="mt-1.5 text-[11px] leading-relaxed text-[#64748b]">
                 {manualNotice.delivery_mode === 'website_and_email'
                   ? `Email được gửi ngay trong quota còn lại${stats ? ` (${stats.remaining_today || 0})` : ''}; phần vượt quota sẽ chờ gửi sau.`
                   : 'Thông báo chỉ xuất hiện trên website và không gọi dịch vụ email.'}
@@ -484,32 +484,32 @@ export function NotificationAdmin({ token }: { token: string }) {
 
           {manualNotice.target === 'single_account' && (
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Người nhận cụ thể
               </label>
               <input
                 value={manualNotice.recipient}
                 onChange={(e) => setManualNotice((prev) => ({ ...prev, recipient: e.target.value }))}
                 placeholder="Nhập email VNU (@vnu.edu.vn) hoặc Mã số sinh viên..."
-                className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
+                className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#f8fafc] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
               Tiêu đề thông báo / email
             </label>
             <input
               value={manualNotice.subject}
               onChange={(e) => setManualNotice((prev) => ({ ...prev, subject: e.target.value }))}
               placeholder="VD: [FIT-UET] Nhắc nhở nộp báo cáo thực tập tốt nghiệp..."
-              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
+              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#f8fafc] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
               Nội dung thông báo
             </label>
             <textarea
@@ -517,7 +517,7 @@ export function NotificationAdmin({ token }: { token: string }) {
               onChange={(e) => setManualNotice((prev) => ({ ...prev, body: e.target.value }))}
               placeholder="Nhập chi tiết nội dung thông báo gửi đến người dùng..."
               rows={4}
-              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] resize-y leading-relaxed"
+              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#f8fafc] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] resize-y leading-relaxed"
             />
           </div>
 
@@ -545,7 +545,7 @@ export function NotificationAdmin({ token }: { token: string }) {
         {/* Left: Search & Filter Pills */}
         <div className="flex flex-1 flex-wrap items-center gap-2.5 w-full md:w-auto">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" size={14} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64748b]" size={14} />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -593,7 +593,7 @@ export function NotificationAdmin({ token }: { token: string }) {
             disabled={creatingReminders}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
-            <CheckCircle2 size={13} className="text-[#34c759]" />
+            <CheckCircle2 size={13} className="text-[#15803d]" />
             Mở xác nhận TT
           </button>
           <button
@@ -601,14 +601,14 @@ export function NotificationAdmin({ token }: { token: string }) {
             disabled={creatingReminders}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
-            {creatingReminders ? <RefreshCw size={13} className="animate-spin" /> : <Clock size={13} className="text-[#ff9500]" />}
+            {creatingReminders ? <RefreshCw size={13} className="animate-spin" /> : <Clock size={13} className="text-[#c2410c]" />}
             Nhắc nộp báo cáo
           </button>
           {selectedCount > 0 && (
             <button
               onClick={() => deleteNotifications('selected')}
               disabled={deletingNotifications}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#ff3b30] bg-[#fff2f1] hover:bg-[#ffe5e3] border border-[#ffd8d6] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#b91c1c] bg-[#fee2e2] hover:bg-[#ffe5e3] border border-[#fecaca] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
             >
               <Trash2 size={13} />
               Xóa {selectedCount} đã chọn
@@ -620,8 +620,8 @@ export function NotificationAdmin({ token }: { token: string }) {
       {/* Apple Inset Grouped Table */}
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#6e6e73]">
-            <thead className="bg-[#fbfbfd] text-[11px] uppercase font-bold text-[#86868b] tracking-wider border-b border-black/[0.05] select-none">
+          <table className="w-full text-left text-xs text-[#334155]">
+            <thead className="bg-[#f8fafc] text-[11px] uppercase font-bold text-[#64748b] tracking-wider border-b border-black/[0.05] select-none">
               <tr>
                 <th className="px-5 py-3.5 w-12 text-center">
                   <input
@@ -671,7 +671,7 @@ export function NotificationAdmin({ token }: { token: string }) {
             <tbody className="divide-y divide-black/[0.04]">
               {sortedFiltered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center text-[#86868b]">
+                  <td colSpan={6} className="px-5 py-16 text-center text-[#64748b]">
                     Không có thông báo phù hợp với bộ lọc hiện tại.
                   </td>
                 </tr>
@@ -683,12 +683,12 @@ export function NotificationAdmin({ token }: { token: string }) {
                         type="checkbox"
                         checked={selectedNotificationIds.includes(Number(row.id))}
                         onChange={(e) => toggleNotificationSelection(Number(row.id), e.target.checked)}
-                        className="rounded border-slate-300 text-[#ff3b30] focus:ring-[#ff3b30] cursor-pointer"
+                        className="rounded border-slate-300 text-[#b91c1c] focus:ring-[#b91c1c] cursor-pointer"
                       />
                     </td>
                     <td className="px-5 py-4">
                       <div className="font-bold text-[#0f172a] text-xs">{row.recipient_email}</div>
-                      <div className="text-[11px] text-[#86868b] mt-0.5">
+                      <div className="text-[11px] text-[#64748b] mt-0.5">
                         {row.user_name || '-'} {row.student_id ? `· ${row.student_id}` : ''}
                       </div>
                     </td>
@@ -699,10 +699,10 @@ export function NotificationAdmin({ token }: { token: string }) {
                     </td>
                     <td className="px-5 py-4 max-w-xl">
                       <div className="font-bold text-[#0f172a] text-xs">{row.subject}</div>
-                      <div className="text-[11px] text-[#6e6e73] whitespace-pre-wrap mt-1 leading-relaxed line-clamp-2">
+                      <div className="text-[11px] text-[#334155] whitespace-pre-wrap mt-1 leading-relaxed line-clamp-2">
                         {row.body}
                       </div>
-                      <div className="text-[10px] text-[#86868b] mt-1 font-mono">
+                      <div className="text-[10px] text-[#64748b] mt-1 font-mono">
                         Tạo: {row.created_at ? new Date(row.created_at).toLocaleString('vi-VN') : '-'}
                       </div>
                     </td>
@@ -710,30 +710,30 @@ export function NotificationAdmin({ token }: { token: string }) {
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                           row.status === 'sent'
-                            ? 'bg-[#ebf9ee] text-[#1d833f] border-emerald-200/60'
+                            ? 'bg-[#dcfce7] text-[#1d833f] border-emerald-200/60'
                             : row.status === 'failed'
-                            ? 'bg-[#fff2f1] text-[#ff3b30] border-rose-200/60'
+                            ? 'bg-[#fee2e2] text-[#b91c1c] border-rose-200/60'
                             : row.status === 'website_only'
                             ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
-                            : 'bg-[#fff8eb] text-[#b25e00] border-amber-200/60'
+                            : 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             row.status === 'sent'
-                              ? 'bg-[#34c759]'
+                              ? 'bg-[#15803d]'
                               : row.status === 'failed'
-                              ? 'bg-[#ff3b30]'
+                              ? 'bg-[#b91c1c]'
                               : row.status === 'website_only'
                               ? 'bg-[#034ea1]'
-                              : 'bg-[#ff9500]'
+                              : 'bg-[#c2410c]'
                           }`}
                         />
                         {row.status}
                       </span>
-                      {row.error && <div className="text-[10px] text-[#ff3b30] mt-1 font-medium">{row.error}</div>}
+                      {row.error && <div className="text-[10px] text-[#b91c1c] mt-1 font-medium">{row.error}</div>}
                       {row.sent_at && (
-                        <div className="text-[10px] text-[#86868b] mt-0.5">
+                        <div className="text-[10px] text-[#64748b] mt-0.5">
                           Gửi: {new Date(row.sent_at).toLocaleString('vi-VN')}
                         </div>
                       )}
@@ -743,21 +743,21 @@ export function NotificationAdmin({ token }: { token: string }) {
                         <button
                           onClick={() => markStatus(row.id, 'sent')}
                           title="Đánh dấu đã gửi"
-                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-[#1d833f] hover:bg-[#ebf9ee] transition-colors cursor-pointer"
+                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-[#1d833f] hover:bg-[#dcfce7] transition-colors cursor-pointer"
                         >
                           Sent
                         </button>
                         <button
                           onClick={() => markStatus(row.id, 'queued')}
                           title="Đưa lại vào queue"
-                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-[#b25e00] hover:bg-[#fff8eb] transition-colors cursor-pointer"
+                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-[#b25e00] hover:bg-[#ffedd5] transition-colors cursor-pointer"
                         >
                           Queue
                         </button>
                         <button
                           onClick={() => markStatus(row.id, 'failed')}
                           title="Đánh dấu lỗi"
-                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-[#ff3b30] hover:bg-[#fff2f1] transition-colors cursor-pointer"
+                          className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-[#b91c1c] hover:bg-[#fee2e2] transition-colors cursor-pointer"
                         >
                           Fail
                         </button>

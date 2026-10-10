@@ -126,7 +126,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
+      <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
         <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải danh sách báo cáo...</span>
       </div>
@@ -140,7 +140,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Quản trị hệ thống
@@ -164,7 +164,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
           onClick={exportXlsx}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto"
         >
-          <Download size={14} className="text-[#86868b]" />
+          <Download size={14} className="text-[#64748b]" />
           Xuất XLSX
         </button>
       </div>
@@ -172,49 +172,49 @@ export function FinalReportAdmin({ token }: { token: string }) {
       {/* Apple Executive KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
             <span>Chưa nộp</span>
-            <Clock size={16} className="text-[#86868b]" />
+            <Clock size={16} className="text-[#64748b]" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-[#86868b] tracking-tight">{reportStats.missing}</span>
-            <span className="text-xs text-[#86868b]">sinh viên</span>
+            <span className="text-3xl font-extrabold text-[#64748b] tracking-tight">{reportStats.missing}</span>
+            <span className="text-xs text-[#64748b]">sinh viên</span>
           </div>
-          <span className="text-[11px] text-[#86868b] mt-2 font-medium">Cần gửi thông báo nhắc</span>
+          <span className="text-[11px] text-[#64748b] mt-2 font-medium">Cần gửi thông báo nhắc</span>
         </div>
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
             <span>Đã nộp (Chờ duyệt)</span>
             <FileText size={16} className="text-[#034ea1]" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-[#034ea1] tracking-tight">{reportStats.submitted}</span>
-            <span className="text-xs text-[#86868b]">báo cáo</span>
+            <span className="text-xs text-[#64748b]">báo cáo</span>
           </div>
           <span className="text-[11px] text-[#034ea1] mt-2 font-medium">Chờ giảng viên phản hồi</span>
         </div>
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
             <span>Cần nộp lại</span>
-            <AlertCircle size={16} className="text-[#ff9500]" />
+            <AlertCircle size={16} className="text-[#c2410c]" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-[#ff9500] tracking-tight">{reportStats.needs_revision}</span>
-            <span className="text-xs text-[#86868b]">báo cáo</span>
+            <span className="text-3xl font-extrabold text-[#c2410c] tracking-tight">{reportStats.needs_revision}</span>
+            <span className="text-xs text-[#64748b]">báo cáo</span>
           </div>
-          <span className="text-[11px] text-[#ff9500] mt-2 font-medium">Yêu cầu bổ sung nội dung</span>
+          <span className="text-[11px] text-[#c2410c] mt-2 font-medium">Yêu cầu bổ sung nội dung</span>
         </div>
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
             <span>Đã chấp nhận</span>
-            <FileCheck size={16} className="text-[#34c759]" />
+            <FileCheck size={16} className="text-[#15803d]" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-[#34c759] tracking-tight">{reportStats.accepted}</span>
-            <span className="text-xs text-[#86868b]">báo cáo</span>
+            <span className="text-3xl font-extrabold text-[#15803d] tracking-tight">{reportStats.accepted}</span>
+            <span className="text-xs text-[#64748b]">báo cáo</span>
           </div>
           <span className="text-[11px] text-[#1d833f] mt-2 font-medium">Đạt điều kiện chấm điểm</span>
         </div>
@@ -223,7 +223,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
       {/* Apple Search & Filter Pill Bar */}
       <div className="bg-white border border-black/[0.06] rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative flex-1 w-full md:w-auto">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868b]" size={14} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64748b]" size={14} />
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -250,8 +250,8 @@ export function FinalReportAdmin({ token }: { token: string }) {
       {/* Apple Inset Grouped Table */}
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#6e6e73]">
-            <thead className="bg-[#fbfbfd] text-[11px] uppercase font-bold text-[#86868b] tracking-wider border-b border-black/[0.05] select-none">
+          <table className="w-full text-left text-xs text-[#334155]">
+            <thead className="bg-[#f8fafc] text-[11px] uppercase font-bold text-[#64748b] tracking-wider border-b border-black/[0.05] select-none">
               <tr>
                 <th className="px-5 py-3.5">Sinh viên</th>
                 <th className="px-5 py-3.5">Nơi thực tập</th>
@@ -263,7 +263,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
             <tbody className="divide-y divide-black/[0.04]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-16 text-center text-[#86868b]">
+                  <td colSpan={5} className="px-5 py-16 text-center text-[#64748b]">
                     Không có sinh viên hoặc báo cáo phù hợp với bộ lọc.
                   </td>
                 </tr>
@@ -272,8 +272,8 @@ export function FinalReportAdmin({ token }: { token: string }) {
                   <tr key={row.user_id} className="hover:bg-[#f8fafc]/60 transition-colors align-top">
                     <td className="px-5 py-4">
                       <div className="font-bold text-[#0f172a] text-xs">{cleanStudentName(row.student_name, row.student_id)}</div>
-                      <div className="text-xs text-[#86868b] font-mono mt-0.5">{row.student_id || '-'}</div>
-                      <div className="text-[11px] text-[#86868b] mt-0.5">
+                      <div className="text-xs text-[#64748b] font-mono mt-0.5">{row.student_id || '-'}</div>
+                      <div className="text-[11px] text-[#64748b] mt-0.5">
                         {row.class_name || '-'} · {row.course_code || '-'}
                       </div>
                     </td>
@@ -281,47 +281,47 @@ export function FinalReportAdmin({ token }: { token: string }) {
                     <td className="px-5 py-4">
                       <div className="font-semibold text-[#0f172a]">{row.primary_advisors || '-'}</div>
                       {row.co_advisors && (
-                        <div className="text-[11px] text-[#86868b] mt-0.5">Đồng HD: {row.co_advisors}</div>
+                        <div className="text-[11px] text-[#64748b] mt-0.5">Đồng HD: {row.co_advisors}</div>
                       )}
                     </td>
                     <td className="px-5 py-4">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                           row.report_status === 'accepted'
-                            ? 'bg-[#ebf9ee] text-[#1d833f] border-emerald-200/60'
+                            ? 'bg-[#dcfce7] text-[#1d833f] border-emerald-200/60'
                             : row.report_status === 'needs_revision'
-                            ? 'bg-[#fff8eb] text-[#b25e00] border-amber-200/60'
+                            ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
                             : row.report_status === 'submitted'
                             ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
-                            : 'bg-[#f8fafc] text-[#86868b] border-black/[0.04]'
+                            : 'bg-[#f8fafc] text-[#64748b] border-black/[0.04]'
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             row.report_status === 'accepted'
-                              ? 'bg-[#34c759]'
+                              ? 'bg-[#15803d]'
                               : row.report_status === 'needs_revision'
-                              ? 'bg-[#ff9500]'
+                              ? 'bg-[#c2410c]'
                               : row.report_status === 'submitted'
                               ? 'bg-[#034ea1]'
-                              : 'bg-[#86868b]'
+                              : 'bg-[#64748b]'
                           }`}
                         />
                         {statusLabel(row.report_status)}
                       </span>
 
                       {row.original_filename && (
-                        <div className="text-[11px] text-[#86868b] mt-1 font-mono">
+                        <div className="text-[11px] text-[#64748b] mt-1 font-mono">
                           {row.original_filename} · {formatBytes(Number(row.file_size || 0))}
                         </div>
                       )}
                       {row.report_submitted_at && (
-                        <div className="text-[10px] text-[#86868b] mt-0.5">
+                        <div className="text-[10px] text-[#64748b] mt-0.5">
                           Nộp lúc: {new Date(row.report_submitted_at).toLocaleString('vi-VN')}
                         </div>
                       )}
                       {row.lecturer_comment && (
-                        <div className="text-[11px] text-[#b25e00] mt-1.5 font-medium bg-[#fff8eb] p-2 rounded-xl border border-amber-100">
+                        <div className="text-[11px] text-[#b25e00] mt-1.5 font-medium bg-[#ffedd5] p-2 rounded-xl border border-amber-100">
                           Nhận xét: {row.lecturer_comment}
                         </div>
                       )}
@@ -338,19 +338,19 @@ export function FinalReportAdmin({ token }: { token: string }) {
                           </button>
                           <button
                             onClick={() => updateStatus(row.user_id, 'accepted')}
-                            className="px-3 py-1 rounded-full text-xs font-semibold text-[#1d833f] bg-[#ebf9ee] hover:bg-emerald-100 transition-colors cursor-pointer"
+                            className="px-3 py-1 rounded-full text-xs font-semibold text-[#1d833f] bg-[#dcfce7] hover:bg-emerald-100 transition-colors cursor-pointer"
                           >
                             Duyệt
                           </button>
                           <button
                             onClick={() => updateStatus(row.user_id, 'needs_revision')}
-                            className="px-3 py-1 rounded-full text-xs font-semibold text-[#b25e00] bg-[#fff8eb] hover:bg-amber-100 transition-colors cursor-pointer"
+                            className="px-3 py-1 rounded-full text-xs font-semibold text-[#b25e00] bg-[#ffedd5] hover:bg-amber-100 transition-colors cursor-pointer"
                           >
                             Yêu cầu sửa
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-[#86868b] italic">Chưa có file</span>
+                        <span className="text-xs text-[#64748b] italic">Chưa có file</span>
                       )}
                     </td>
                   </tr>

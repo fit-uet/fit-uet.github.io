@@ -82,7 +82,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
+      <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
         <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải thông tin doanh nghiệp...</span>
       </div>
@@ -92,11 +92,11 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
   if (!company || company.error) {
     return (
       <div className="max-w-xl mx-auto py-20 text-center space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-[#ff3b30]/10 text-[#ff3b30] flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-[#b91c1c]/10 text-[#b91c1c] flex items-center justify-center mx-auto">
           <Building2 size={24} />
         </div>
         <h2 className="text-xl font-bold text-[#0f172a]">Không tìm thấy doanh nghiệp</h2>
-        <p className="text-xs text-[#86868b]">Doanh nghiệp không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
+        <p className="text-xs text-[#64748b]">Doanh nghiệp không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] transition-all cursor-pointer"
@@ -115,7 +115,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button
           onClick={() => navigate(-1)}
-          className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer"
+          className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer"
         >
           <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
           Quay lại
@@ -145,7 +145,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 setEditing(false);
                 setEditForm({ ...company, description: companyDescriptionText(company.description) || '' });
               }}
-              className="text-[#86868b] hover:text-[#0f172a] p-1.5 rounded-full hover:bg-[#f8fafc] transition-colors cursor-pointer"
+              className="text-[#64748b] hover:text-[#0f172a] p-1.5 rounded-full hover:bg-[#f8fafc] transition-colors cursor-pointer"
             >
               <X size={16} />
             </button>
@@ -153,18 +153,18 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Tên công ty / Đơn vị *
               </label>
               <input
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Mô tả giới thiệu
               </label>
               <textarea
@@ -172,100 +172,100 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                 rows={3}
                 placeholder="Giới thiệu chung về doanh nghiệp..."
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Chỉ tiêu tiếp nhận (Số lượng SV)
               </label>
               <input
                 type="number"
                 value={editForm.slots}
                 onChange={(e) => setEditForm({ ...editForm, slots: parseInt(e.target.value) || 0 })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all font-semibold"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all font-semibold"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Người liên hệ
               </label>
               <input
                 value={editForm.contact_name}
                 onChange={(e) => setEditForm({ ...editForm, contact_name: e.target.value })}
                 placeholder="Họ tên người phụ trách tuyển dụng..."
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Email liên hệ
               </label>
               <input
                 value={editForm.contact_email}
                 onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Số điện thoại
               </label>
               <input
                 value={editForm.phone}
                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Địa chỉ văn phòng
               </label>
               <input
                 value={editForm.address}
                 onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Link tuyển dụng / JD chi tiết
               </label>
               <input
                 value={editForm.recruitment_link}
                 onChange={(e) => setEditForm({ ...editForm, recruitment_link: e.target.value })}
                 placeholder="https://..."
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all font-mono"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all font-mono"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Lịch sử & Quy mô tổ chức
               </label>
               <textarea
                 value={editForm.history}
                 onChange={(e) => setEditForm({ ...editForm, history: e.target.value })}
                 rows={3}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#86868b] mb-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">
                 Yêu cầu & Tiêu chí tiếp nhận
               </label>
               <textarea
                 value={editForm.qualifications}
                 onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
                 rows={3}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
+                className="w-full bg-[#f8fafc] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
               />
             </div>
           </div>
@@ -303,15 +303,15 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-bold bg-[#34c759]/10 text-[#1d833f]">
+                <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-bold bg-[#15803d]/10 text-[#1d833f]">
                   <CheckCircle2 size={12} /> Đối tác thực tập FIT UET
                 </span>
                 <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#f8fafc] text-[#0f172a]">
-                  <Users size={12} className="text-[#86868b]" /> Chỉ tiêu: {company.slots} sinh viên
+                  <Users size={12} className="text-[#64748b]" /> Chỉ tiêu: {company.slots} sinh viên
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] tracking-tight">{company.name}</h1>
-              <p className="text-xs sm:text-sm text-[#6e6e73] mt-2 max-w-2xl leading-relaxed">{description}</p>
+              <p className="text-xs sm:text-sm text-[#334155] mt-2 max-w-2xl leading-relaxed">{description}</p>
             </div>
           </div>
 
@@ -332,12 +332,12 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8 items-start">
           {/* Left: Contact Specifications (col-span-5) */}
           <div className="lg:col-span-5 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#86868b]">Thông tin liên hệ & Địa điểm</h3>
-            <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 divide-y divide-black/[0.04] text-xs">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748b]">Thông tin liên hệ & Địa điểm</h3>
+            <div className="bg-[#f8fafc] border border-black/[0.04] rounded-2xl p-5 divide-y divide-black/[0.04] text-xs">
               <div className="py-2.5 first:pt-0 flex items-start gap-3">
                 <Mail size={15} className="text-[#034ea1] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] uppercase font-bold text-[#86868b]">Email tuyển dụng</span>
+                  <span className="text-[10px] uppercase font-bold text-[#64748b]">Email tuyển dụng</span>
                   <div className="font-semibold text-[#0f172a] mt-0.5 truncate">
                     {company.contact_email ? (
                       <a href={`mailto:${company.contact_email}`} className="text-[#034ea1] hover:underline">
@@ -351,9 +351,9 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
               </div>
 
               <div className="py-2.5 flex items-start gap-3">
-                <Phone size={15} className="text-[#34c759] shrink-0 mt-0.5" />
+                <Phone size={15} className="text-[#15803d] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] uppercase font-bold text-[#86868b]">Điện thoại</span>
+                  <span className="text-[10px] uppercase font-bold text-[#64748b]">Điện thoại</span>
                   <div className="font-semibold text-[#0f172a] mt-0.5">
                     {company.phone ? (
                       <a href={`tel:${company.phone}`} className="hover:underline">
@@ -369,15 +369,15 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
               <div className="py-2.5 flex items-start gap-3">
                 <Users size={15} className="text-[#af52de] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] uppercase font-bold text-[#86868b]">Người phụ trách</span>
+                  <span className="text-[10px] uppercase font-bold text-[#64748b]">Người phụ trách</span>
                   <div className="font-semibold text-[#0f172a] mt-0.5">{company.contact_name || 'Chưa cập nhật'}</div>
                 </div>
               </div>
 
               <div className="py-2.5 last:pb-0 flex items-start gap-3">
-                <MapPin size={15} className="text-[#ff9500] shrink-0 mt-0.5" />
+                <MapPin size={15} className="text-[#c2410c] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] uppercase font-bold text-[#86868b]">Địa chỉ trụ sở</span>
+                  <span className="text-[10px] uppercase font-bold text-[#64748b]">Địa chỉ trụ sở</span>
                   <div className="font-semibold text-[#0f172a] mt-0.5 leading-normal">{company.address || 'Chưa cập nhật'}</div>
                 </div>
               </div>
@@ -388,19 +388,19 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
           <div className="lg:col-span-7 space-y-6">
             {/* History Card */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#86868b] mb-3 flex items-center gap-1.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748b] mb-3 flex items-center gap-1.5">
                 <BookOpen size={14} className="text-[#034ea1]" />
                 Lịch sử & Quy mô tổ chức
               </h3>
-              <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#0f172a] leading-relaxed whitespace-pre-wrap">
+              <div className="bg-[#f8fafc] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#0f172a] leading-relaxed whitespace-pre-wrap">
                 {company.history || 'Đơn vị chưa cập nhật thông tin chi tiết về lịch sử phát triển và quy mô.'}
               </div>
             </div>
 
             {/* Qualifications Card */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#86868b] mb-3 flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-[#34c759]" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748b] mb-3 flex items-center gap-1.5">
+                <CheckCircle2 size={14} className="text-[#15803d]" />
                 Yêu cầu & Tiêu chí tiếp nhận sinh viên
               </h3>
               <div className="bg-[#034ea1]/[0.04] border border-[#034ea1]/15 rounded-2xl p-5 text-xs text-[#005bb5] leading-relaxed whitespace-pre-wrap font-medium">

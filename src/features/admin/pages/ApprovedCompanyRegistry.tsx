@@ -229,13 +229,13 @@ export function ApprovedCompanyRegistry({ token }: { token: string }) {
                 <td className="p-3 text-right">
                   {editingId === c.id ? (
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => handleUpdate(c.id)} className="text-[#1b7f37] hover:bg-[#ebf9ee] p-1.5 rounded-lg transition-colors cursor-pointer" title="Lưu"><Save size={15} /></button>
+                      <button onClick={() => handleUpdate(c.id)} className="text-[#1b7f37] hover:bg-[#dcfce7] p-1.5 rounded-lg transition-colors cursor-pointer" title="Lưu"><Save size={15} /></button>
                       <button onClick={() => setEditingId(null)} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-lg transition-colors cursor-pointer" title="Hủy"><X size={15} /></button>
                     </div>
                   ) : (
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => { setEditingId(c.id); setEditName(c.name || ''); }} className="text-[#034ea1] hover:bg-[#e8f1fb] p-1.5 rounded-lg transition-colors cursor-pointer" title="Sửa"><Edit2 size={15} /></button>
-                      <button onClick={() => handleDelete(c.id, c.name)} className="text-[#ff3b30] hover:bg-[#fff2f1] p-1.5 rounded-lg transition-colors cursor-pointer" title="Xóa"><Trash2 size={15} /></button>
+                      <button onClick={() => handleDelete(c.id, c.name)} className="text-[#b91c1c] hover:bg-[#fee2e2] p-1.5 rounded-lg transition-colors cursor-pointer" title="Xóa"><Trash2 size={15} /></button>
                     </div>
                   )}
                 </td>

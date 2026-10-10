@@ -128,7 +128,7 @@ export function FAQView({ user, token }: { user: any, token: string }) {
               rows={4}
               maxLength={2000}
               placeholder="Nhập câu hỏi của bạn..."
-              className="w-full px-4 py-3 border border-[#d1d1d6] rounded-xl text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-white shadow-xs resize-y"
+              className="w-full px-4 py-3 border border-[#cbd5e1] rounded-xl text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-white shadow-xs resize-y"
             />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="text-xs text-slate-400 font-medium">{newQuestion.length}/2000 ký tự</span>

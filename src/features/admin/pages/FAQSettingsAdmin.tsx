@@ -83,7 +83,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
+      <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
         <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải cấu hình FAQ...</span>
       </div>
@@ -101,13 +101,13 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Quản trị hệ thống
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#ff9500]/10 text-[#ff9500] flex items-center justify-center shadow-inner shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#c2410c]/10 text-[#c2410c] flex items-center justify-center shadow-inner shrink-0">
               <CircleHelp size={22} />
             </div>
             <div>
@@ -115,7 +115,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
                 Cài đặt FAQ
                 <PageDescriptionTooltip description="Chọn nhóm người dùng và chỉnh nội dung FAQ hiển thị cho sinh viên hoặc giảng viên bằng Markdown." />
               </h1>
-              <p className="text-xs text-[#86868b] mt-0.5 font-medium">
+              <p className="text-xs text-[#64748b] mt-0.5 font-medium">
                 Biên soạn câu hỏi thường gặp cho Sinh viên & Giảng viên
               </p>
             </div>
@@ -136,7 +136,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
       {/* Editor & Preview Split Workspace */}
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
         {/* Apple Segmented Strip & Action Bar */}
-        <div className="px-6 py-4 border-b border-black/[0.05] bg-[#fbfbfd] flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="px-6 py-4 border-b border-black/[0.05] bg-[#f8fafc] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <SegmentedControl
             value={activeTab}
             onChange={(val) => setActiveTab(val as 'student' | 'lecturer')}
@@ -150,11 +150,11 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
             <label
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all border shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] ${
                 importingDocx
-                  ? 'bg-[#f8fafc] text-[#86868b] border-black/[0.04] cursor-not-allowed'
+                  ? 'bg-[#f8fafc] text-[#64748b] border-black/[0.04] cursor-not-allowed'
                   : 'bg-white text-[#0f172a] border-black/[0.08] hover:bg-[#f8fafc]'
               }`}
             >
-              <Upload size={13} className="text-[#86868b]" />
+              <Upload size={13} className="text-[#64748b]" />
               {importingDocx ? 'Đang phân tích Word...' : 'Import file Word (.docx)'}
               <input
                 type="file"
@@ -172,7 +172,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
               onClick={() => setFaq((prev: any) => ({ ...prev, [activeKey]: activeDefault }))}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
             >
-              <RotateCcw size={12} className="text-[#86868b]" />
+              <RotateCcw size={12} className="text-[#64748b]" />
               Khôi phục mặc định
             </button>
           </div>
@@ -183,11 +183,11 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
           {/* Left: Code / Markdown Editor Pane */}
           <div className="p-6 flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#86868b] flex items-center gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b] flex items-center gap-1.5">
                 <Code2 size={14} className="text-[#034ea1]" />
                 Mã nguồn Markdown ({activeTab === 'student' ? 'Sinh viên' : 'Giảng viên'})
               </span>
-              <span className="text-[11px] font-mono text-[#86868b]">
+              <span className="text-[11px] font-mono text-[#64748b]">
                 {lineCount} dòng · {charCount} ký tự
               </span>
             </div>
@@ -196,18 +196,18 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
               value={currentContent}
               onChange={(e) => setFaq((prev: any) => ({ ...prev, [activeKey]: e.target.value }))}
               placeholder="Nhập nội dung FAQ theo định dạng Markdown..."
-              className="w-full flex-1 min-h-[540px] border border-black/[0.08] rounded-2xl p-4 text-xs font-mono bg-[#fbfbfd] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner leading-relaxed text-[#0f172a] resize-y"
+              className="w-full flex-1 min-h-[540px] border border-black/[0.08] rounded-2xl p-4 text-xs font-mono bg-[#f8fafc] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner leading-relaxed text-[#0f172a] resize-y"
             />
           </div>
 
           {/* Right: Apple Live Document Preview Pane */}
-          <div className="p-6 bg-[#fbfbfd] flex flex-col">
+          <div className="p-6 bg-[#f8fafc] flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#86868b] flex items-center gap-1.5">
-                <Eye size={14} className="text-[#34c759]" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b] flex items-center gap-1.5">
+                <Eye size={14} className="text-[#15803d]" />
                 Xem trước thực tế (Apple Support Style)
               </span>
-              <span className="text-[11px] font-semibold text-[#34c759] bg-[#ebf9ee] px-2.5 py-0.5 rounded-full">
+              <span className="text-[11px] font-semibold text-[#15803d] bg-[#dcfce7] px-2.5 py-0.5 rounded-full">
                 Hiển thị người dùng
               </span>
             </div>

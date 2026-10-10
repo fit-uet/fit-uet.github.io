@@ -76,7 +76,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
       </div>
 
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-[#fbfbfd] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="p-4 border-b border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
               <CircleHelp size={16} className="text-[#034ea1]" /> Câu hỏi gửi tới FAQ
@@ -93,8 +93,8 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     q.status === 'answered'
-                      ? 'bg-[#ebf9ee] text-[#1d833f] border border-emerald-200/60'
-                      : 'bg-[#fff8eb] text-[#b25e00] border border-amber-200/60'
+                      ? 'bg-[#dcfce7] text-[#1d833f] border border-emerald-200/60'
+                      : 'bg-[#ffedd5] text-[#b25e00] border border-amber-200/60'
                   }`}>
                     {q.status === 'answered' ? 'Đã trả lời' : 'Chờ trả lời'}
                   </span>

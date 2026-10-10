@@ -175,7 +175,7 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
           <span className="text-[#0369a1] text-[11px] font-semibold uppercase tracking-wider mb-1">Số nơi thực tập</span>
           <span className="text-3xl font-bold tracking-tight text-[#0369a1]">{uniquePlaces}</span>
         </div>
-        <div className="bg-[#ebf9ee] p-4.5 rounded-2xl border border-[#d1f2d9] shadow-xs flex flex-col">
+        <div className="bg-[#dcfce7] p-4.5 rounded-2xl border border-[#d1f2d9] shadow-xs flex flex-col">
           <span className="text-[#1b7f37] text-[11px] font-semibold uppercase tracking-wider mb-1">Thực tập công ty</span>
           <span className="text-3xl font-bold tracking-tight text-[#1b7f37]">{companyCount}</span>
         </div>
@@ -236,7 +236,7 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
                       <div className="text-[10px] font-medium text-slate-400 mt-0.5">{item.class_name || '-'}</div>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${item.internship_type === 'school' ? 'bg-[#e8f1fb] text-[#034ea1]' : item.internship_type === 'partner' ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-[#ebf9ee] text-[#1b7f37]'}`}>
+                      <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${item.internship_type === 'school' ? 'bg-[#e8f1fb] text-[#034ea1]' : item.internship_type === 'partner' ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-[#dcfce7] text-[#1b7f37]'}`}>
                         {typeLabel(item.internship_type)}
                       </span>
                     </td>
@@ -248,7 +248,7 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
                       <button
                         onClick={() => handleDeleteFinal(item)}
                         disabled={Boolean(item.locked_at)}
-                        className="p-1.5 text-slate-400 hover:text-[#d70015] hover:bg-[#fff2f1] rounded-lg transition-colors disabled:opacity-30 cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-[#d70015] hover:bg-[#fee2e2] rounded-lg transition-colors disabled:opacity-30 cursor-pointer"
                         title={item.locked_at ? 'Đã khóa điểm, không thể xóa' : 'Xóa khỏi danh sách thực tập chính thức & bảng điểm'}
                       >
                         <Trash2 size={15} />

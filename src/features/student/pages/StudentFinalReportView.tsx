@@ -204,14 +204,14 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
             </div>
 
             {!finalInternship ? (
-              <div className="rounded-2xl border border-amber-200/80 bg-[#fff8eb] p-5 text-xs text-amber-900 leading-relaxed">
+              <div className="rounded-2xl border border-amber-200/80 bg-[#ffedd5] p-5 text-xs text-amber-900 leading-relaxed">
                 <strong className="block font-bold text-amber-800 mb-1">Chưa xác nhận nơi thực tập</strong>
                 Bạn cần hoàn tất bước xác nhận nơi thực tập chính thức trên trang chủ trước khi nộp báo cáo.
               </div>
             ) : finalReport ? (
               /* Already Submitted - Apple Document Card */
               <div className="space-y-4">
-                <div className="rounded-2xl border border-slate-200/80 bg-[#fbfbfd] p-5 flex items-start gap-4">
+                <div className="rounded-2xl border border-slate-200/80 bg-[#f8fafc] p-5 flex items-start gap-4">
                   <div className="w-12 h-14 rounded-xl bg-red-50 border border-red-100 text-red-600 flex flex-col items-center justify-center shrink-0 shadow-xs">
                     <FileText size={22} />
                     <span className="text-[9px] font-black uppercase mt-0.5 tracking-wider">PDF</span>
@@ -228,7 +228,7 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
                 </div>
 
                 {finalReport.lecturer_comment && (
-                  <div className="rounded-2xl border border-amber-200/80 bg-[#fff8eb] p-4 text-xs text-amber-900 leading-relaxed">
+                  <div className="rounded-2xl border border-amber-200/80 bg-[#ffedd5] p-4 text-xs text-amber-900 leading-relaxed">
                     <strong className="block font-bold text-amber-800 mb-1">Ghi chú của Giảng viên hướng dẫn:</strong>
                     {finalReport.lecturer_comment}
                   </div>

@@ -622,7 +622,7 @@ Khoa Công nghệ Thông tin`);
       </div>
 
       {importing && (
-        <div aria-live="polite" className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-[#ebf9ee] px-4 py-3 text-sm text-[#1b7f37]">
+        <div aria-live="polite" className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-[#dcfce7] px-4 py-3 text-sm text-[#1b7f37]">
           <RefreshCw size={18} className="animate-spin shrink-0" />
           <span>{importMessage || 'Hệ thống đang import dữ liệu, vui lòng đợi...'}</span>
         </div>
