@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Users, CheckCircle2, Download, FileText, MessageCircle, GraduationCap } from 'lucide-react';
 import { saveAs } from 'file-saver';
 
-import { API_BASE, saveXlsx, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
+import { API_BASE, saveXlsx, formatCourseCode, cleanStudentName } from '../../../shared';
 import { ReportReviewPanel, type ReviewTarget } from './ReportReviewPanel';
 
 export function LecturerHome({ user, token }: { user: any, token: string }) {
@@ -221,20 +221,29 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Sinh viên phụ trách</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Học phần Thực tập thực tế · Khoa Công nghệ Thông tin</p>
+          <p className="text-xs text-slate-500 mt-0.5">Học phần Thực tập</p>
         </div>
         <div className="flex items-center gap-2">
+          {groupLecturerId && (
+            <button
+              onClick={() => navigate(`/chat/group/${groupLecturerId}`)}
+              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
+            >
+              <Users size={14} className="text-blue-600" /> Chat nhóm
+            </button>
+          )}
+          <button
+            onClick={exportLecturerStudentsXlsx}
+            disabled={loadingStudents || students.length === 0}
+            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98] disabled:opacity-50"
+          >
+            <Download size={14} className="text-slate-500" /> Xuất Excel
+          </button>
           <button
             onClick={() => navigate('/lecturer/grades')}
             className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
           >
             <CheckCircle2 size={14} /> Chấm điểm thực tập
-          </button>
-          <button
-            onClick={exportLecturerStudentsXlsx}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-          >
-            <Download size={14} className="text-slate-500" /> Xuất Excel
           </button>
         </div>
       </div>
@@ -301,36 +310,10 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/75">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
-                <span>Sinh viên phụ trách</span>
-                <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                  Tổng số SV hướng dẫn: {advisedStudentCount}
-                </span>
-                <PageDescriptionTooltip description="Danh sách sinh viên đã được Khoa phân công cho giảng viên." />
-              </h3>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${uncontactedCount > 0 ? 'bg-[#fee2e2] border-[#fecaca] text-[#d70015]' : 'bg-[#dcfce7] border-[#d1f2d9] text-[#1b7f37]'}`}>
-                {uncontactedCount > 0 ? `Chưa liên hệ: ${uncontactedCount}` : 'Tất cả đã liên hệ'}
-              </div>
-              <button
-                onClick={exportLecturerStudentsXlsx}
-                disabled={loadingStudents || students.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-              >
-                <Download size={14} /> Xuất XLSX
-              </button>
-              <button
-                onClick={() => groupLecturerId && navigate(`/chat/group/${groupLecturerId}`)}
-                disabled={!groupLecturerId}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors hover:bg-blue-100/80 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-              >
-                <Users size={14} /> Chat nhóm
-              </button>
-            </div>
+        <div className="px-6 py-3.5 border-b border-slate-100 bg-slate-50/75 flex items-center justify-between gap-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Danh sách sinh viên</span>
+          <div className={`rounded-xl border px-3 py-1 text-xs font-semibold ${uncontactedCount > 0 ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+            {uncontactedCount > 0 ? `Chưa liên hệ: ${uncontactedCount}` : 'Tất cả đã liên hệ'}
           </div>
         </div>
         <div className="overflow-x-auto">

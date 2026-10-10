@@ -131,7 +131,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
 
             <div className="flex-1 min-h-[560px] bg-white border border-black/[0.06] rounded-2xl p-6 shadow-xs overflow-y-auto max-h-[660px]">
               <h3 className="text-xs font-bold text-[#0f172a] uppercase tracking-wider mb-4 pb-2 border-b border-black/[0.04]">
-                Quy định Thực tập tốt nghiệp
+                Quy định Học phần Thực tập
               </h3>
               {String(rules || '').trim() ? (
                 <div className="text-xs text-[#0f172a] leading-relaxed">

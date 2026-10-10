@@ -1075,7 +1075,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Báo cáo thực tập tốt nghiệp</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Báo cáo thực tập</h3>
                   <p className="text-xs text-slate-500 mt-1">
                     Hạn nộp: {campaign.final_report_close_at ? formatGMT7(campaign.final_report_close_at) : 'Chưa thiết lập'} (GMT+7)
                   </p>
@@ -1130,7 +1130,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                 </div>
               ) : (
                 <div className="p-8 text-center border border-dashed border-slate-250 rounded-xl space-y-2.5 bg-slate-50/40">
-                  <p className="text-xs text-slate-500">Bạn chưa nộp file báo cáo thực tập tốt nghiệp.</p>
+                  <p className="text-xs text-slate-500">Bạn chưa nộp file báo cáo thực tập.</p>
                   <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#034ea1] text-white hover:bg-[#023a7a] cursor-pointer shadow-xs hover:shadow transition-all active:scale-[0.98]">
                     <Upload size={14} />
                     {uploadingReport ? 'Đang tải lên...' : 'Chọn file PDF để nộp'}
@@ -1549,7 +1549,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                         </div>
                         {a.lecturer_email && (
                           <a
-                            href={`mailto:${a.lecturer_email}?subject=[Thực tập tốt nghiệp] ${user?.name} - ${user?.student_id}`}
+                            href={`mailto:${a.lecturer_email}?subject=[Học phần Thực tập] ${user?.name} - ${user?.student_id}`}
                             className="bg-white text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-50 shadow-xs"
                           >
                             Gửi email

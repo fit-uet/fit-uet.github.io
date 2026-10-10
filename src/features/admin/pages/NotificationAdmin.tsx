@@ -503,7 +503,7 @@ export function NotificationAdmin({ token }: { token: string }) {
             <input
               value={manualNotice.subject}
               onChange={(e) => setManualNotice((prev) => ({ ...prev, subject: e.target.value }))}
-              placeholder="VD: [FIT-UET] Nhắc nhở nộp báo cáo thực tập tốt nghiệp..."
+              placeholder="VD: [FIT-UET] Nhắc nhở nộp báo cáo thực tập..."
               className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#f8fafc] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
             />
           </div>

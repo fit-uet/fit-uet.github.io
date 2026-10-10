@@ -113,7 +113,7 @@ export function StudentGradeView({ token }: { token: string }) {
                 <PageDescriptionTooltip description="Xem bảng điểm chi tiết theo 3 đầu điểm trọng số (20% - 20% - 60%) và nhận xét từ giảng viên hướng dẫn." />
               </h1>
               <p className="text-xs text-[#64748b] mt-0.5 font-medium">
-                Học phần Thực tập thực tế · Khoa Công nghệ Thông tin (FIT - UET)
+                Học phần Thực tập
               </p>
             </div>
           </div>

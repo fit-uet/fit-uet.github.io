@@ -163,7 +163,7 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#034ea1] flex items-center justify-center">
               <FileText size={18} />
             </div>
-            Báo cáo thực tập tốt nghiệp
+            Báo cáo thực tập
             <PageDescriptionTooltip description="Nộp 01 file báo cáo PDF hoàn chỉnh (đã scan gộp trang Phiếu đánh giá có dấu mộc công ty) để GVHD chấm và nhập điểm." />
           </h2>
         </div>
