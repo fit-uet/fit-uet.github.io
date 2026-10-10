@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { User as UserIcon, Users, CheckCircle2, Download, FileText, CircleHelp, MessageCircle, GraduationCap, BookOpen } from 'lucide-react';
+import { Users, CheckCircle2, Download, FileText, MessageCircle, GraduationCap } from 'lucide-react';
 import { saveAs } from 'file-saver';
 
 import { API_BASE, saveXlsx, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
@@ -217,52 +217,26 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
         />
       )}
       <div className="max-w-6xl mx-auto space-y-6">
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4 shrink-0">
-            {user.picture ? (
-              <img src={user.picture} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-white shadow-sm object-cover" />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700">
-                <UserIcon size={26} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-blue-700 mb-1 flex items-center gap-1.5">
-                <GraduationCap size={14} className="text-blue-600" /> Giảng viên hướng dẫn
-              </p>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 whitespace-nowrap">{user.name}</h2>
-              <p className="text-sm text-slate-500 mt-0.5">{user.email}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
-            <button
-              onClick={() => navigate('/lecturer/grades')}
-              className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-            >
-              <CheckCircle2 size={14} /> Chấm điểm thực tập
-            </button>
-            <button
-              onClick={() => navigate('/profile')}
-              className="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-            >
-              <UserIcon size={14} className="text-slate-500" /> Cập nhật hồ sơ
-            </button>
-            <button
-              onClick={() => navigate('/plan')}
-              className="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-            >
-              <FileText size={14} className="text-slate-500" /> Kế hoạch triển khai
-            </button>
-            <button
-              onClick={() => navigate('/lecturer-guide')}
-              className="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-            >
-              <CircleHelp size={14} className="text-slate-500" /> Hướng dẫn sử dụng
-            </button>
-          </div>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Sinh viên phụ trách</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Học phần Thực tập thực tế · Khoa Công nghệ Thông tin</p>
         </div>
-
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/lecturer/grades')}
+            className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
+          >
+            <CheckCircle2 size={14} /> Chấm điểm thực tập
+          </button>
+          <button
+            onClick={exportLecturerStudentsXlsx}
+            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
+          >
+            <Download size={14} className="text-slate-500" /> Xuất Excel
+          </button>
+        </div>
       </div>
 
       {/* Thống kê sinh viên phụ trách */}

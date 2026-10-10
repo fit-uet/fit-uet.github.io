@@ -925,64 +925,36 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* 1. Student Profile Header Card */}
+      {/* Student Academic Info & Quick Actions */}
       {user && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              {user.picture ? (
-                <img src={user.picture} alt="Avatar" className="w-14 h-14 rounded-full border-2 border-white shadow-sm object-cover" />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700">
-                  <GraduationCap size={24} />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700 mb-0.5 flex items-center gap-1.5">
-                  <GraduationCap size={13} className="text-blue-600" /> Sinh viên thực tập · Kỳ {campaign.year}
-                </p>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">{user.name}</h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 break-all">
-                  MSSV: <span className="font-semibold text-slate-800">{user.student_id || studentIdFromEmail}</span> · Lớp: <span className="font-semibold text-slate-800">{user.class_name || 'Chưa cập nhật'}</span> · {user.email}
-                </p>
-              </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-xs">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="text-xs font-bold text-[#034ea1] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+              Kỳ {campaign.year}
+            </span>
+            <div className="text-xs text-slate-600 flex items-center gap-2">
+              <span>MSSV: <strong className="text-slate-900">{user.student_id || studentIdFromEmail}</strong></span>
+              <span className="text-slate-300">·</span>
+              <span>Lớp: <strong className="text-slate-900">{user.class_name || 'Chưa cập nhật'}</strong></span>
             </div>
-            <div className="flex flex-wrap gap-2">
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-slate-600 hover:text-[#034ea1] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 transition-colors"
+            >
+              <ExternalLink size={13} className="text-slate-500" /> Biểu mẫu Drive
+            </a>
+            {user?.role === 'admin' && (
               <button
-                onClick={() => navigate('/profile')}
-                className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
+                onClick={() => navigate('/admin')}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <UserIcon size={13} className="text-slate-500" /> Cập nhật hồ sơ
+                <Shield size={13} /> Quản trị Khoa
               </button>
-              <button
-                onClick={() => navigate('/plan')}
-                className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-              >
-                <FileText size={13} className="text-slate-500" /> Kế hoạch triển khai
-              </button>
-              <a
-                href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-              >
-                <ExternalLink size={13} className="text-slate-500" /> Biểu mẫu Drive
-              </a>
-              <button
-                onClick={() => navigate('/faq')}
-                className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-              >
-                <CircleHelp size={13} className="text-slate-500" /> Xem FAQ
-              </button>
-              {user?.role === 'admin' && (
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-                >
-                  <Shield size={13} /> Quản trị Khoa
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}

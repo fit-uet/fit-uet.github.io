@@ -199,13 +199,8 @@ function App() {
                   <div className="relative">
                     <button onClick={() => { setIsMenuOpen(!isMenuOpen); setIsNotificationOpen(false); }} className="flex items-center gap-2 hover:bg-white/10 text-white p-1 pr-2 rounded-xl transition-all cursor-pointer group focus:outline-none">
                       <div className="text-right hidden sm:block">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <p className="text-xs font-semibold group-hover:text-blue-100 transition-colors leading-normal">{user.name}</p>
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-white/20 text-white uppercase tracking-wider">
-                            {user.role === 'admin' ? 'Quản trị' : user.role === 'lecturer' ? 'Giảng viên' : 'Sinh viên'}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-blue-100 opacity-80 group-hover:opacity-100 transition-all">{user.email}</p>
+                        <p className="text-xs font-semibold group-hover:text-blue-100 transition-colors leading-tight">{user.name}</p>
+                        <p className="text-[10px] text-blue-100/80 group-hover:text-blue-100 transition-all leading-tight mt-0.5">{user.email}</p>
                       </div>
                       {user.picture ? (
                         <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full border-2 border-white/60 shadow-sm group-hover:border-white transition-colors object-cover" />
