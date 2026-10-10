@@ -271,7 +271,7 @@ chatRouter.post('/api/chat/groups/:lecturerId/attachments', requireAuth, express
       args: [lecturerId],
     })).rows[0] as any;
     if (Number(threadUsage?.total || 0) + file.length > CHAT_THREAD_STORAGE_LIMIT_BYTES) {
-      return res.status(413).json({ error: `Nhóm trao đổi này đã gần vượt quota lưu file ${Math.round(CHAT_THREAD_STORAGE_LIMIT_BYTES / 1024 / 1024)} MB. Vui lòng dùng file nhỏ hơn hoặc trao đổi qua kênh lưu trữ khác.` });
+      return res.status(413).json({ error: 'Nhóm trao đổi này đã đầy dung lượng lưu trữ file. Vui lòng dùng file nhỏ hơn hoặc trao đổi qua kênh lưu trữ khác.' });
     }
     const dailyUsage = (await db.execute({
       sql: `
@@ -293,7 +293,7 @@ chatRouter.post('/api/chat/groups/:lecturerId/attachments', requireAuth, express
       args: [req.user.id, req.user.id],
     })).rows[0] as any;
     if (Number(dailyUsage?.total || 0) + file.length > CHAT_DAILY_UPLOAD_LIMIT_BYTES) {
-      return res.status(429).json({ error: `Bạn đã gần vượt quota gửi file trong ngày ${Math.round(CHAT_DAILY_UPLOAD_LIMIT_BYTES / 1024 / 1024)} MB. Vui lòng gửi tiếp vào ngày mai hoặc dùng file nhỏ hơn.` });
+      return res.status(429).json({ error: 'Bạn đã đạt giới hạn gửi file trong ngày. Vui lòng gửi tiếp vào ngày mai hoặc dùng file nhỏ hơn.' });
     }
 
     const key = chatGroupAttachmentObjectKey(lecturerId, Number(req.user.id), originalFilename);
@@ -447,7 +447,7 @@ chatRouter.post('/api/chat/threads/:studentUserId/:lecturerId/attachments', requ
       args: [studentUserId, lecturerId],
     })).rows[0] as any;
     if (Number(threadUsage?.total || 0) + file.length > CHAT_THREAD_STORAGE_LIMIT_BYTES) {
-      return res.status(413).json({ error: `Cuộc trò chuyện này đã gần vượt quota lưu file ${Math.round(CHAT_THREAD_STORAGE_LIMIT_BYTES / 1024 / 1024)} MB. Vui lòng dùng file nhỏ hơn hoặc trao đổi qua kênh lưu trữ khác.` });
+      return res.status(413).json({ error: 'Cuộc trò chuyện này đã đầy dung lượng lưu trữ file. Vui lòng dùng file nhỏ hơn hoặc trao đổi qua kênh lưu trữ khác.' });
     }
     const dailyUsage = (await db.execute({
       sql: `
@@ -469,7 +469,7 @@ chatRouter.post('/api/chat/threads/:studentUserId/:lecturerId/attachments', requ
       args: [req.user.id, req.user.id],
     })).rows[0] as any;
     if (Number(dailyUsage?.total || 0) + file.length > CHAT_DAILY_UPLOAD_LIMIT_BYTES) {
-      return res.status(429).json({ error: `Bạn đã gần vượt quota gửi file trong ngày ${Math.round(CHAT_DAILY_UPLOAD_LIMIT_BYTES / 1024 / 1024)} MB. Vui lòng gửi tiếp vào ngày mai hoặc dùng file nhỏ hơn.` });
+      return res.status(429).json({ error: 'Bạn đã đạt giới hạn gửi file trong ngày. Vui lòng gửi tiếp vào ngày mai hoặc dùng file nhỏ hơn.' });
     }
 
     const key = chatAttachmentObjectKey(studentUserId, lecturerId, Number(req.user.id), originalFilename);

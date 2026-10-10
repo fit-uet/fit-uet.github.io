@@ -480,7 +480,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                   </button>
                 </div>
                 <div className="text-[10px] text-slate-400 mt-2 flex justify-between gap-3 font-medium">
-                  <span>File hỗ trợ: PDF, Office, TXT, ZIP, JPG/PNG. Tối đa 10 MB/file; hệ thống có quota lưu trữ theo cuộc trò chuyện và theo ngày.</span>
+                  <span>File hỗ trợ: PDF, Office, TXT, ZIP, JPG/PNG. Tối đa 10 MB/file.</span>
                   <span>{draft.length}/2000</span>
                 </div>
               </form>

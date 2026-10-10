@@ -1846,7 +1846,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                 <div className="bg-slate-50/50 border border-slate-200 p-5 rounded-2xl space-y-3.5 shadow-inner">
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Đăng ký giảng viên hướng dẫn</h4>
-                    <p className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">Chỉ điền khi sinh viên đã liên hệ và được giảng viên đồng ý hướng dẫn. Nếu chưa có GVHD, để trống; Khoa sẽ phân công sau theo quota còn lại.</p>
+                    <p className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">Chỉ điền khi sinh viên đã liên hệ và được giảng viên đồng ý hướng dẫn. Nếu chưa có GVHD, để trống; Khoa sẽ phân công sau.</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                     <select
