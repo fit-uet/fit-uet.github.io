@@ -67,13 +67,13 @@ export function FAQView({ user, token }: { user: any, token: string }) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <CircleHelp className="text-[#0071e3]" /> FAQ
+                <CircleHelp className="text-[#034ea1]" /> FAQ
                 <PageDescriptionTooltip description={<>Nội dung câu hỏi thường gặp dành cho vai trò <strong>{roleLabel}</strong>.</>} />
               </h2>
             </div>
             {user?.role === 'admin' && (
               <div className="flex flex-wrap items-center gap-2">
-                <button onClick={() => navigate('/admin/faq-questions')} className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
+                <button onClick={() => navigate('/admin/faq-questions')} className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
                   <Send size={14} /> Trả lời câu hỏi
                 </button>
                 <button onClick={() => navigate('/admin/faq')} className="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
@@ -128,11 +128,11 @@ export function FAQView({ user, token }: { user: any, token: string }) {
               rows={4}
               maxLength={2000}
               placeholder="Nhập câu hỏi của bạn..."
-              className="w-full px-4 py-3 border border-[#d1d1d6] rounded-xl text-xs focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all bg-white shadow-xs resize-y"
+              className="w-full px-4 py-3 border border-[#d1d1d6] rounded-xl text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-white shadow-xs resize-y"
             />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="text-xs text-slate-400 font-medium">{newQuestion.length}/2000 ký tự</span>
-              <button onClick={submitQuestion} disabled={submittingQuestion || !newQuestion.trim()} className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]">
+              <button onClick={submitQuestion} disabled={submittingQuestion || !newQuestion.trim()} className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]">
                 {submittingQuestion ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />} Gửi câu hỏi
               </button>
             </div>

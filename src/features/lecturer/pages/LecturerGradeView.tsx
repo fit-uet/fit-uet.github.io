@@ -283,17 +283,17 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
           <div>
             <button
               onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/')}
-              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
             >
               <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
               {user?.role === 'admin' ? 'Quản trị hệ thống' : 'Trang chủ'}
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center shadow-inner shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shadow-inner shrink-0">
                 <Award size={22} />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
                   Chấm điểm thực tập
                   <PageDescriptionTooltip
                     description={
@@ -314,9 +314,9 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
           <button
             onClick={fetchGrades}
             disabled={loadingGrades}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer self-start sm:self-auto"
           >
-            <RefreshCw size={13} className={loadingGrades ? 'animate-spin text-[#0071e3]' : 'text-[#86868b]'} />
+            <RefreshCw size={13} className={loadingGrades ? 'animate-spin text-[#034ea1]' : 'text-[#86868b]'} />
             Tải lại
           </button>
         </div>
@@ -325,7 +325,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
             <span className="text-[11px] font-bold text-[#86868b] uppercase tracking-wider">Tổng sinh viên</span>
-            <div className="mt-2 text-3xl font-black text-[#1d1d1f] tracking-tight">{stats.total}</div>
+            <div className="mt-2 text-3xl font-black text-[#0f172a] tracking-tight">{stats.total}</div>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
@@ -385,9 +385,9 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                     const hasReport = !!row.report_status;
 
                     return (
-                      <tr key={row.user_id} className="hover:bg-[#f5f5f7]/60 transition-colors align-top">
+                      <tr key={row.user_id} className="hover:bg-[#f8fafc]/60 transition-colors align-top">
                         <td className="px-5 py-4">
-                          <div className="font-bold text-[#1d1d1f] text-xs">{row.student_name}</div>
+                          <div className="font-bold text-[#0f172a] text-xs">{row.student_name}</div>
                           <div className="text-xs text-[#86868b] font-mono mt-0.5">{row.student_id || '-'}</div>
                           <div className="text-[11px] text-[#86868b] mt-0.5">{row.class_name || '-'}</div>
                           {row.advisor_role === 'co' ? (
@@ -400,7 +400,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-[#1d1d1f] font-medium max-w-[180px] truncate">
+                        <td className="px-5 py-4 text-[#0f172a] font-medium max-w-[180px] truncate">
                           {row.internship_place || '-'}
                         </td>
                         <td className="px-5 py-4">
@@ -412,8 +412,8 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                   : row.report_status === 'needs_revision'
                                   ? 'bg-[#fff8eb] text-[#b25e00] border-amber-200/60'
                                   : row.report_status
-                                  ? 'bg-[#0071e3]/10 text-[#0071e3] border-[#0071e3]/20'
-                                  : 'bg-[#f5f5f7] text-[#86868b] border-black/[0.04]'
+                                  ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
+                                  : 'bg-[#f8fafc] text-[#86868b] border-black/[0.04]'
                               }`}
                             >
                               {statusLabel(row.report_status)}
@@ -441,7 +441,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <button
                                 onClick={() => openReviewByIndex(idx)}
-                                className="inline-flex items-center gap-1 text-[#0071e3] hover:bg-[#0071e3]/15 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer bg-[#0071e3]/10 shadow-xs"
+                                className="inline-flex items-center gap-1 text-[#034ea1] hover:bg-[#034ea1]/15 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer bg-[#034ea1]/10 shadow-xs"
                               >
                                 <FileText size={11} /> {hasReport ? 'Xem & Chấm' : 'Chấm điểm'}
                               </button>
@@ -449,7 +449,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                 <button
                                   onClick={() => downloadReport(row)}
                                   title="Tải file PDF"
-                                  className="p-1 rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.05] transition-colors cursor-pointer border border-black/[0.08]"
+                                  className="p-1 rounded-full text-[#86868b] hover:text-[#0f172a] hover:bg-black/[0.05] transition-colors cursor-pointer border border-black/[0.08]"
                                 >
                                   <Download size={11} />
                                 </button>
@@ -472,10 +472,10 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                 disabled={disabled}
                                 value={edit[field] ?? ''}
                                 onChange={(e) => updateScoreEdit(row.user_id, field, e.target.value)}
-                                className={`w-18 rounded-xl px-2 py-1.5 text-xs font-bold text-center outline-none transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b] bg-[#fbfbfd] focus:bg-white ${
+                                className={`w-18 rounded-xl px-2 py-1.5 text-xs font-bold text-center outline-none transition-all disabled:bg-[#f8fafc] disabled:text-[#86868b] bg-[#fbfbfd] focus:bg-white ${
                                   error
                                     ? 'border border-[#ff3b30] focus:ring-2 focus:ring-[#ff3b30]/20'
-                                    : 'border border-black/[0.08] focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20'
+                                    : 'border border-black/[0.08] focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20'
                                 }`}
                               />
                               {error && <div className="mt-1 text-[9px] text-[#ff3b30] font-semibold">{error}</div>}
@@ -496,20 +496,20 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                               value={edit.comment ?? ''}
                               onChange={(e) => updateGradeEdit(row.user_id, 'comment', e.target.value)}
                               placeholder="Nhận xét của giảng viên..."
-                              className="w-full border border-black/[0.08] rounded-xl px-3 py-1.5 text-xs bg-[#fbfbfd] focus:bg-white focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all disabled:bg-[#f5f5f7] disabled:text-[#86868b]"
+                              className="w-full border border-black/[0.08] rounded-xl px-3 py-1.5 text-xs bg-[#fbfbfd] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all disabled:bg-[#f8fafc] disabled:text-[#86868b]"
                             />
                             <div className="flex items-center gap-1.5">
                               <button
                                 disabled={disabled || savingKey === `${row.user_id}:draft`}
                                 onClick={() => saveGrade(row, false)}
-                                className="rounded-full border border-black/[0.08] bg-white px-3 py-1 text-xs font-semibold text-[#1d1d1f] hover:bg-[#f5f5f7] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
+                                className="rounded-full border border-black/[0.08] bg-white px-3 py-1 text-xs font-semibold text-[#0f172a] hover:bg-[#f8fafc] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
                               >
                                 {savingKey === `${row.user_id}:draft` ? 'Đang lưu...' : 'Lưu nháp'}
                               </button>
                               <button
                                 disabled={disabled || savingKey === `${row.user_id}:submit`}
                                 onClick={() => saveGrade(row, true)}
-                                className="rounded-full bg-[#0071e3] px-3.5 py-1 text-xs font-semibold text-white hover:bg-[#0077ed] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
+                                className="rounded-full bg-[#034ea1] px-3.5 py-1 text-xs font-semibold text-white hover:bg-[#023a7a] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
                               >
                                 {savingKey === `${row.user_id}:submit` ? 'Đang nộp...' : 'Nộp điểm'}
                               </button>

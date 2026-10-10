@@ -134,7 +134,7 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0071e3] border-t-transparent animate-spin mb-3" />
+        <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải thông tin báo cáo...</span>
       </div>
     );
@@ -155,12 +155,12 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
         <div>
           <button
             onClick={() => navigate('/')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-2.5"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-2.5"
           >
             &larr; Quay lại trang chủ
           </button>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071e3] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#034ea1] flex items-center justify-center">
               <FileText size={18} />
             </div>
             Báo cáo thực tập tốt nghiệp
@@ -171,7 +171,7 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
           href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-white text-slate-700 border border-black/[0.08] px-3.5 py-2 rounded-xl hover:bg-[#f5f5f7] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+          className="bg-white text-slate-700 border border-black/[0.08] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
         >
           <ExternalLink size={14} className="text-slate-400" /> Tải mẫu báo cáo của Khoa
         </a>
@@ -184,7 +184,7 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
           <div className="bg-white border border-slate-200/80 rounded-3xl p-7 shadow-xs space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <FileCheck size={18} className="text-[#0071e3]" /> Trạng thái nộp bài
+                <FileCheck size={18} className="text-[#034ea1]" /> Trạng thái nộp bài
               </h3>
               <Badge
                 variant={
@@ -237,12 +237,12 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <button
                     onClick={downloadMyFinalReport}
-                    className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2 rounded-xl hover:bg-[#f5f5f7] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Download size={14} /> Tải file PDF đã nộp
                   </button>
                   {finalReportWindowStatus === 'open' && (
-                    <label className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer">
+                    <label className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer">
                       {uploading ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
                       {uploading ? 'Đang tải lên...' : 'Nộp lại bản PDF mới'}
                       <input
@@ -262,11 +262,11 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
                 <label
                   className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center text-center transition-all ${
                     finalReportWindowStatus === 'open' && !uploading
-                      ? 'border-slate-200 hover:border-[#0071e3] bg-[#f5f5f7]/40 hover:bg-white cursor-pointer group'
+                      ? 'border-slate-200 hover:border-[#034ea1] bg-[#f8fafc]/40 hover:bg-white cursor-pointer group'
                       : 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
                   }`}
                 >
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#0071e3] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#034ea1] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-xs">
                     {uploading ? <RefreshCw size={24} className="animate-spin" /> : <Upload size={24} />}
                   </div>
                   <span className="text-sm font-bold text-slate-900 mb-1">
@@ -336,9 +336,9 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
           </div>
 
           {/* Submission Requirements Checklist */}
-          <div className="bg-[#ebf4ff] border border-[#bfe0ff]/80 rounded-2xl p-6 text-xs text-[#005bb5] leading-relaxed space-y-3">
+          <div className="bg-[#e8f1fb] border border-[#bfe0ff]/80 rounded-2xl p-6 text-xs text-[#005bb5] leading-relaxed space-y-3">
             <h4 className="font-bold text-sm text-[#004085] flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-[#0071e3]" /> Cần nộp những gì để hoàn thành?
+              <CheckCircle2 size={16} className="text-[#034ea1]" /> Cần nộp những gì để hoàn thành?
             </h4>
             <ol className="list-decimal pl-4 space-y-2.5 text-[11px]">
               <li>

@@ -253,12 +253,12 @@ export function StudentRegistry({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             &larr; Quay lại Quản trị
           </button>
-          <h2 className="text-2xl font-bold text-[#1d1d1f] flex items-center gap-2">
-            <Users className="text-[#0071e3]" size={24} /> CSDL Sinh viên
+          <h2 className="text-2xl font-bold text-[#0f172a] flex items-center gap-2">
+            <Users className="text-[#034ea1]" size={24} /> CSDL Sinh viên
             <PageDescriptionTooltip description="Danh sách sinh viên và các thông tin cơ bản trong cơ sở dữ liệu hệ thống." />
           </h2>
         </div>
@@ -272,29 +272,29 @@ export function StudentRegistry({ token }: { token: string }) {
             placeholder="Tìm theo Mã SV, Tên, Lớp..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-[#e5e5ea] rounded-xl text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all shadow-xs text-[#1d1d1f]"
+            className="w-full pl-9 pr-4 py-2 border border-[#e2e8f0] rounded-xl text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-xs text-[#0f172a]"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl px-3 py-2">
-            <input type="checkbox" checked={override} disabled={importing} onChange={e => setOverride(e.target.checked)} className="rounded border-slate-300 text-[#0071e3] focus:ring-[#0071e3] w-4 h-4 disabled:opacity-60 cursor-pointer animate-none" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-2">
+            <input type="checkbox" checked={override} disabled={importing} onChange={e => setOverride(e.target.checked)} className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1] w-4 h-4 disabled:opacity-60 cursor-pointer animate-none" />
             Ghi đè SV
           </label>
-          <label className={`px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer border border-black/[0.08] hover:bg-[#f5f5f7] bg-white text-[#1d1d1f] active:scale-[0.98] ${importing ? 'bg-slate-100 text-slate-400 cursor-wait pointer-events-none' : ''}`}>
+          <label className={`px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer border border-black/[0.08] hover:bg-[#f8fafc] bg-white text-[#0f172a] active:scale-[0.98] ${importing ? 'bg-slate-100 text-slate-400 cursor-wait pointer-events-none' : ''}`}>
             {importing ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />} {importing ? 'Đang import...' : 'Import XLSX'}
             <input type="file" accept=".xlsx,.xls,.csv" disabled={importing} className="hidden" onChange={handleFileUpload} onClick={(e) => { (e.target as any).value = null }} />
           </label>
           <button
             onClick={() => setShowAddForm(prev => !prev)}
             disabled={importing}
-            className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
+            className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
           >
             {showAddForm ? <X size={14} /> : <Plus size={14} />} {showAddForm ? 'Đóng' : 'Thêm sinh viên'}
           </button>
           <button
             onClick={exportXlsx}
             disabled={importing}
-            className="bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
+            className="bg-white hover:bg-[#f8fafc] text-[#0f172a] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
           >
             <Download size={14} /> Xuất XLSX
           </button>
@@ -308,7 +308,7 @@ export function StudentRegistry({ token }: { token: string }) {
               <input
                 value={newStudent.student_id}
                 onChange={e => setNewStudent({ ...newStudent, student_id: e.target.value })}
-                className="w-full border border-[#e5e5ea] rounded-xl px-3.5 py-2 text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
+                className="w-full border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
                 placeholder="24021400"
               />
             </div>
@@ -317,7 +317,7 @@ export function StudentRegistry({ token }: { token: string }) {
               <input
                 value={newStudent.name}
                 onChange={e => setNewStudent({ ...newStudent, name: e.target.value })}
-                className="w-full border border-[#e5e5ea] rounded-xl px-3.5 py-2 text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
+                className="w-full border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
                 placeholder="Nguyễn Văn A"
               />
             </div>
@@ -327,7 +327,7 @@ export function StudentRegistry({ token }: { token: string }) {
                 type="date"
                 value={newStudent.dob}
                 onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })}
-                className="w-full border border-[#e5e5ea] rounded-xl px-3.5 py-2 text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
+                className="w-full border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
               />
             </div>
             <div>
@@ -335,7 +335,7 @@ export function StudentRegistry({ token }: { token: string }) {
               <input
                 value={newStudent.phone}
                 onChange={e => setNewStudent({ ...newStudent, phone: e.target.value })}
-                className="w-full border border-[#e5e5ea] rounded-xl px-3.5 py-2 text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
+                className="w-full border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
                 placeholder="09..."
               />
             </div>
@@ -344,7 +344,7 @@ export function StudentRegistry({ token }: { token: string }) {
               <input
                 value={newStudent.class_name}
                 onChange={e => setNewStudent({ ...newStudent, class_name: e.target.value })}
-                className="w-full border border-[#e5e5ea] rounded-xl px-3.5 py-2 text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
+                className="w-full border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
                 placeholder="QH-2024-I/CQ..."
               />
             </div>
@@ -354,7 +354,7 @@ export function StudentRegistry({ token }: { token: string }) {
                 type="email"
                 value={newStudent.personal_email}
                 onChange={e => setNewStudent({ ...newStudent, personal_email: e.target.value })}
-                className="w-full border border-[#e5e5ea] rounded-xl px-3.5 py-2 text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
+                className="w-full border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all font-semibold text-slate-900 shadow-xs"
                 placeholder="email@example.com"
               />
             </div>
@@ -363,14 +363,14 @@ export function StudentRegistry({ token }: { token: string }) {
                 type="button"
                 onClick={() => { setNewStudent(emptyStudentForm); setShowAddForm(false); }}
                 disabled={savingStudent}
-                className="bg-white text-[#1d1d1f] border border-black/[0.08] px-3.5 py-2 rounded-xl hover:bg-[#f5f5f7] text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                className="bg-white text-[#0f172a] border border-black/[0.08] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50"
               >
                 Huỷ
               </button>
               <button
                 type="submit"
                 disabled={savingStudent}
-                className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 {savingStudent ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
                 {savingStudent ? 'Đang lưu...' : 'Lưu sinh viên'}
@@ -424,7 +424,7 @@ export function StudentRegistry({ token }: { token: string }) {
                 const selector = studentSelector(s);
                 const isEditing = editingStudentKey === selector;
                 return (
-                  <tr key={selector} className="hover:bg-[#f5f5f7] transition-colors align-top">
+                  <tr key={selector} className="hover:bg-[#f8fafc] transition-colors align-top">
                     <td className="p-3.5 text-xs text-slate-400">{(pagination.safePage - 1) * pageSize + idx + 1}</td>
                     {isEditing ? (
                       <>
@@ -432,14 +432,14 @@ export function StudentRegistry({ token }: { token: string }) {
                           <input
                             value={editStudent.student_id}
                             onChange={e => setEditStudent({ ...editStudent, student_id: e.target.value })}
-                            className="w-28 border border-[#0071e3] rounded-xl px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 transition-all bg-white shadow-xs"
+                            className="w-28 border border-[#034ea1] rounded-xl px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 transition-all bg-white shadow-xs"
                           />
                         </td>
                         <td className="p-2.5">
                           <input
                             value={editStudent.name}
                             onChange={e => setEditStudent({ ...editStudent, name: e.target.value })}
-                            className="w-44 border border-[#0071e3] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 transition-all bg-white shadow-xs"
+                            className="w-44 border border-[#034ea1] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 transition-all bg-white shadow-xs"
                           />
                         </td>
                         <td className="p-2.5">
@@ -447,14 +447,14 @@ export function StudentRegistry({ token }: { token: string }) {
                             type="date"
                             value={editStudent.dob}
                             onChange={e => setEditStudent({ ...editStudent, dob: e.target.value })}
-                            className="w-36 border border-[#0071e3] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 transition-all bg-white shadow-xs"
+                            className="w-36 border border-[#034ea1] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 transition-all bg-white shadow-xs"
                           />
                         </td>
                         <td className="p-2.5">
                           <input
                             value={editStudent.phone}
                             onChange={e => setEditStudent({ ...editStudent, phone: e.target.value })}
-                            className="w-32 border border-[#0071e3] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 transition-all bg-white shadow-xs"
+                            className="w-32 border border-[#034ea1] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 transition-all bg-white shadow-xs"
                           />
                         </td>
                         <td className="p-2.5">
@@ -462,14 +462,14 @@ export function StudentRegistry({ token }: { token: string }) {
                             type="email"
                             value={editStudent.personal_email}
                             onChange={e => setEditStudent({ ...editStudent, personal_email: e.target.value })}
-                            className="w-48 border border-[#0071e3] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 transition-all bg-white shadow-xs"
+                            className="w-48 border border-[#034ea1] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 transition-all bg-white shadow-xs"
                           />
                         </td>
                         <td className="p-2.5">
                           <input
                             value={editStudent.class_name}
                             onChange={e => setEditStudent({ ...editStudent, class_name: e.target.value })}
-                            className="w-40 border border-[#0071e3] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 transition-all bg-white shadow-xs"
+                            className="w-40 border border-[#034ea1] rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 transition-all bg-white shadow-xs"
                           />
                         </td>
                         <td className="p-2.5 text-right">
@@ -489,13 +489,13 @@ export function StudentRegistry({ token }: { token: string }) {
                         <td className="p-3.5 text-xs font-semibold text-slate-900">{s.name}</td>
                         <td className="p-3.5 text-xs text-slate-600">{s.dob}</td>
                         <td className="p-3.5 text-xs text-slate-600">{s.phone || '-'}</td>
-                        <td className="p-3.5 text-xs text-slate-600">{s.personal_email ? <a href={`mailto:${s.personal_email}`} className="text-[#0071e3] hover:underline">{s.personal_email}</a> : '-'}</td>
+                        <td className="p-3.5 text-xs text-slate-600">{s.personal_email ? <a href={`mailto:${s.personal_email}`} className="text-[#034ea1] hover:underline">{s.personal_email}</a> : '-'}</td>
                         <td className="p-3.5 text-xs text-slate-600">
-                          <span className="bg-[#f5f5f7] border border-black/[0.06] text-slate-700 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">{s.class_name}</span>
+                          <span className="bg-[#f8fafc] border border-black/[0.06] text-slate-700 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">{s.class_name}</span>
                         </td>
                         <td className="p-3.5 text-xs text-right">
                           <div className="flex justify-end gap-1">
-                            <button onClick={() => startEditStudent(s)} className="text-[#0071e3] hover:bg-[#ebf4ff] p-1.5 rounded-lg transition-colors cursor-pointer" title="Sửa">
+                            <button onClick={() => startEditStudent(s)} className="text-[#034ea1] hover:bg-[#e8f1fb] p-1.5 rounded-lg transition-colors cursor-pointer" title="Sửa">
                               <Edit2 size={15} />
                             </button>
                             <button onClick={() => handleDelete(selector)} className="text-[#ff3b30] hover:bg-[#fff2f1] p-1.5 rounded-lg transition-colors cursor-pointer" title="Xóa">

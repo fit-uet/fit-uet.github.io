@@ -394,7 +394,7 @@ export function AdvisorAssignmentAdmin({ token, view = 'assignments' }: { token:
           <div className="min-w-0">
             <button onClick={() => navigate('/admin')} className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer mb-2 active:scale-[0.98]">&larr; Quay lại Quản trị</button>
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2 leading-tight">
-              <Users className="text-[#0071e3] shrink-0" size={26} /> {pageTitle}
+              <Users className="text-[#034ea1] shrink-0" size={26} /> {pageTitle}
             </h2>
           </div>
           <div>
@@ -433,32 +433,32 @@ export function AdvisorAssignmentAdmin({ token, view = 'assignments' }: { token:
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   placeholder="Tìm sinh viên, nơi thực tập, giảng viên..."
-                  className="w-full pl-9 pr-4 py-2 border border-[#e5e5ea] rounded-xl text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all shadow-xs"
+                  className="w-full pl-9 pr-4 py-2 border border-[#e2e8f0] rounded-xl text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-xs"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                <label className={`px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 border border-[#e5e5ea] bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] ${importing ? 'bg-slate-100 text-slate-400 cursor-wait pointer-events-none' : ''}`}>
+                <label className={`px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 border border-[#e2e8f0] bg-white text-[#0f172a] hover:bg-[#f8fafc] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] ${importing ? 'bg-slate-100 text-slate-400 cursor-wait pointer-events-none' : ''}`}>
                   {importing ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />} Import XLSX
                   <input type="file" accept=".xlsx,.xls,.csv" disabled={importing} className="hidden" onChange={handleImport} onClick={(e) => { (e.target as HTMLInputElement).value = ''; }} />
                 </label>
                 <button
                   onClick={autoAssignPrimary}
                   disabled={autoAssigning}
-                  className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                  className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
                   {autoAssigning ? <RefreshCw size={14} className="animate-spin" /> : <Users size={14} />} Tự phân công
                 </button>
                 <button
                   onClick={syncLegacyAdvisorData}
                   disabled={syncingLegacyAdvisors}
-                  className="bg-white text-[#1d1d1f] border border-[#e5e5ea] px-3.5 py-2 rounded-xl hover:bg-[#f5f5f7] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                  className="bg-white text-[#0f172a] border border-[#e2e8f0] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
                   {syncingLegacyAdvisors ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />} Đồng bộ dữ liệu cũ
                 </button>
                 <div className="relative">
                   <button
                     onClick={() => setIsAssignExportMenuOpen(!isAssignExportMenuOpen)}
-                    className="bg-white text-[#1d1d1f] border border-[#e5e5ea] px-3.5 py-2 rounded-xl hover:bg-[#f5f5f7] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
+                    className="bg-white text-[#0f172a] border border-[#e2e8f0] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
                   >
                     <Download size={14} /> Xuất XLSX
                   </button>

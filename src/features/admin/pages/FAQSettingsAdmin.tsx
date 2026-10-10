@@ -84,7 +84,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0071e3] border-t-transparent animate-spin mb-3" />
+        <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải cấu hình FAQ...</span>
       </div>
     );
@@ -101,7 +101,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Quản trị hệ thống
@@ -111,7 +111,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
               <CircleHelp size={22} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
                 Cài đặt FAQ
                 <PageDescriptionTooltip description="Chọn nhóm người dùng và chỉnh nội dung FAQ hiển thị cho sinh viên hoặc giảng viên bằng Markdown." />
               </h1>
@@ -126,7 +126,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
         <button
           onClick={saveFaq}
           disabled={saving}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
         >
           {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
           Lưu thay đổi FAQ
@@ -150,8 +150,8 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
             <label
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all border shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] ${
                 importingDocx
-                  ? 'bg-[#f5f5f7] text-[#86868b] border-black/[0.04] cursor-not-allowed'
-                  : 'bg-white text-[#1d1d1f] border-black/[0.08] hover:bg-[#f5f5f7]'
+                  ? 'bg-[#f8fafc] text-[#86868b] border-black/[0.04] cursor-not-allowed'
+                  : 'bg-white text-[#0f172a] border-black/[0.08] hover:bg-[#f8fafc]'
               }`}
             >
               <Upload size={13} className="text-[#86868b]" />
@@ -170,7 +170,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
 
             <button
               onClick={() => setFaq((prev: any) => ({ ...prev, [activeKey]: activeDefault }))}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] hover:bg-[#f5f5f7] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
             >
               <RotateCcw size={12} className="text-[#86868b]" />
               Khôi phục mặc định
@@ -184,7 +184,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
           <div className="p-6 flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#86868b] flex items-center gap-1.5">
-                <Code2 size={14} className="text-[#0071e3]" />
+                <Code2 size={14} className="text-[#034ea1]" />
                 Mã nguồn Markdown ({activeTab === 'student' ? 'Sinh viên' : 'Giảng viên'})
               </span>
               <span className="text-[11px] font-mono text-[#86868b]">
@@ -196,7 +196,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
               value={currentContent}
               onChange={(e) => setFaq((prev: any) => ({ ...prev, [activeKey]: e.target.value }))}
               placeholder="Nhập nội dung FAQ theo định dạng Markdown..."
-              className="w-full flex-1 min-h-[540px] border border-black/[0.08] rounded-2xl p-4 text-xs font-mono bg-[#fbfbfd] focus:bg-white focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner leading-relaxed text-[#1d1d1f] resize-y"
+              className="w-full flex-1 min-h-[540px] border border-black/[0.08] rounded-2xl p-4 text-xs font-mono bg-[#fbfbfd] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner leading-relaxed text-[#0f172a] resize-y"
             />
           </div>
 
@@ -213,7 +213,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
             </div>
 
             <div className="flex-1 min-h-[540px] bg-white border border-black/[0.06] rounded-2xl p-6 shadow-xs overflow-y-auto max-h-[640px]">
-              <div className="prose prose-slate prose-sm max-w-none text-[#1d1d1f]">
+              <div className="prose prose-slate prose-sm max-w-none text-[#0f172a]">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentContent}</ReactMarkdown>
               </div>
             </div>

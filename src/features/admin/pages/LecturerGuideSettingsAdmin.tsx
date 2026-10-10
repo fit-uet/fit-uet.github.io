@@ -64,7 +64,7 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             &larr; Quay lại Quản trị
           </button>
@@ -79,7 +79,7 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
         <button
           onClick={handleSaveGuide}
           disabled={saving}
-          className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+          className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
         >
           {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Lưu hướng dẫn
         </button>
@@ -92,7 +92,7 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all border shadow-xs active:scale-[0.98] ${
                 importingDocx
                   ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                  : 'bg-white text-slate-700 border-black/[0.08] hover:bg-[#f5f5f7]'
+                  : 'bg-white text-slate-700 border-black/[0.08] hover:bg-[#f8fafc]'
               }`}
             >
               <Upload size={14} className="text-slate-500" />
@@ -108,7 +108,7 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
             </label>
             <button
               onClick={() => setGuideContent(DEFAULT_LECTURER_GUIDE)}
-              className="text-xs font-semibold text-slate-700 bg-white border border-black/[0.08] px-3.5 py-1.5 rounded-xl hover:bg-[#f5f5f7] shadow-xs active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+              className="text-xs font-semibold text-slate-700 bg-white border border-black/[0.08] px-3.5 py-1.5 rounded-xl hover:bg-[#f8fafc] shadow-xs active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
             >
               Khôi phục mặc định
             </button>
@@ -119,7 +119,7 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
           <div className="p-5 border-b lg:border-b-0 lg:border-r border-slate-100">
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nội dung Hướng dẫn sử dụng</label>
             <textarea
-              className="w-full min-h-[560px] border border-slate-200 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all font-mono bg-[#f5f5f7]/50 focus:bg-white shadow-inner resize-y leading-relaxed text-slate-800"
+              className="w-full min-h-[560px] border border-slate-200 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all font-mono bg-[#f8fafc]/50 focus:bg-white shadow-inner resize-y leading-relaxed text-slate-800"
               value={guideContent}
               onChange={(e) => setGuideContent(e.target.value)}
               placeholder="Nhập nội dung hướng dẫn sử dụng bằng Markdown..."

@@ -314,7 +314,7 @@ export function NotificationAdmin({ token }: { token: string }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0071e3] border-t-transparent animate-spin mb-3" />
+        <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải lịch sử thông báo...</span>
       </div>
     );
@@ -327,17 +327,17 @@ export function NotificationAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Quản trị hệ thống
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center shadow-inner shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shadow-inner shrink-0">
               <Bell size={22} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
                 Lịch sử thông báo & Email
                 <PageDescriptionTooltip description="Quản trị hàng đợi email, phát thông báo tự động và soạn thông báo thủ công tới sinh viên/giảng viên." />
               </h1>
@@ -352,15 +352,15 @@ export function NotificationAdmin({ token }: { token: string }) {
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => setShowManualComposer(!showManualComposer)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer"
           >
-            <Plus size={14} className="text-[#0071e3]" />
+            <Plus size={14} className="text-[#034ea1]" />
             Soạn thông báo
             {showManualComposer ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
           <button
             onClick={exportXlsx}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <Download size={14} className="text-[#86868b]" />
             Xuất XLSX
@@ -374,15 +374,15 @@ export function NotificationAdmin({ token }: { token: string }) {
           <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
             <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
               <span>Đã gửi hôm nay</span>
-              <Mail size={16} className="text-[#0071e3]" />
+              <Mail size={16} className="text-[#034ea1]" />
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-extrabold text-[#1d1d1f] tracking-tight">{stats.sent_today || 0}</span>
+              <span className="text-3xl font-extrabold text-[#0f172a] tracking-tight">{stats.sent_today || 0}</span>
               <span className="text-xs text-[#86868b] font-medium">/ {stats.daily_cap || 500} quota</span>
             </div>
             <div className="w-full bg-[#f2f2f7] h-1.5 rounded-full overflow-hidden mt-3">
               <div
-                className="bg-[#0071e3] h-full rounded-full transition-all duration-500"
+                className="bg-[#034ea1] h-full rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(100, Math.max(0, ((stats.sent_today || 0) / (stats.daily_cap || 500)) * 100))}%` }}
               />
             </div>
@@ -431,10 +431,10 @@ export function NotificationAdmin({ token }: { token: string }) {
         <div className="bg-white border border-black/[0.06] rounded-3xl p-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-black/[0.04]">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center">
                 <Send size={15} />
               </div>
-              <h2 className="text-sm font-bold text-[#1d1d1f] tracking-tight">Soạn thông báo & Email gửi hàng loạt</h2>
+              <h2 className="text-sm font-bold text-[#0f172a] tracking-tight">Soạn thông báo & Email gửi hàng loạt</h2>
             </div>
             <span className="text-xs text-[#86868b]">
               Gửi ngay trong quota, phần vượt quota tự động vào hàng đợi
@@ -449,7 +449,7 @@ export function NotificationAdmin({ token }: { token: string }) {
               <select
                 value={manualNotice.target}
                 onChange={(e) => setManualNotice((prev) => ({ ...prev, target: e.target.value }))}
-                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3]"
+                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#fbfbfd] focus:bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
               >
                 <option value="system_all">Cả hệ thống (1 bản ghi website chung)</option>
                 <option value="students_with_registration">Sinh viên đã đăng ký</option>
@@ -469,7 +469,7 @@ export function NotificationAdmin({ token }: { token: string }) {
               <select
                 value={manualNotice.delivery_mode}
                 onChange={(e) => setManualNotice((prev) => ({ ...prev, delivery_mode: e.target.value }))}
-                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#fbfbfd] focus:bg-white text-[#1d1d1f] outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3]"
+                className="w-full border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs bg-[#fbfbfd] focus:bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
               >
                 <option value="website_and_email">Hiển thị trên website và gửi email theo quota</option>
                 <option value="website_only">Chỉ hiển thị trên website</option>
@@ -491,7 +491,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                 value={manualNotice.recipient}
                 onChange={(e) => setManualNotice((prev) => ({ ...prev, recipient: e.target.value }))}
                 placeholder="Nhập email VNU (@vnu.edu.vn) hoặc Mã số sinh viên..."
-                className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3]"
+                className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
               />
             </div>
           )}
@@ -504,7 +504,7 @@ export function NotificationAdmin({ token }: { token: string }) {
               value={manualNotice.subject}
               onChange={(e) => setManualNotice((prev) => ({ ...prev, subject: e.target.value }))}
               placeholder="VD: [FIT-UET] Nhắc nhở nộp báo cáo thực tập tốt nghiệp..."
-              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3]"
+              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1]"
             />
           </div>
 
@@ -517,21 +517,21 @@ export function NotificationAdmin({ token }: { token: string }) {
               onChange={(e) => setManualNotice((prev) => ({ ...prev, body: e.target.value }))}
               placeholder="Nhập chi tiết nội dung thông báo gửi đến người dùng..."
               rows={4}
-              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] resize-y leading-relaxed"
+              className="w-full px-3.5 py-2.5 border border-black/[0.08] rounded-xl text-xs bg-[#fbfbfd] focus:bg-white outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] resize-y leading-relaxed"
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <button
               onClick={() => setShowManualComposer(false)}
-              className="px-4 py-2 rounded-full border border-black/[0.08] text-xs font-semibold text-[#1d1d1f] hover:bg-[#f5f5f7] cursor-pointer"
+              className="px-4 py-2 rounded-full border border-black/[0.08] text-xs font-semibold text-[#0f172a] hover:bg-[#f8fafc] cursor-pointer"
             >
               Đóng
             </button>
             <button
               onClick={createManualNotice}
               disabled={creatingManual}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.98] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all cursor-pointer shadow-xs disabled:opacity-50"
             >
               {creatingManual ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
               {creatingManual ? 'Đang gửi...' : 'Gửi thông báo'}
@@ -550,13 +550,13 @@ export function NotificationAdmin({ token }: { token: string }) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm email, sinh viên, tiêu đề..."
-              className="w-full pl-9 pr-4 py-2 border border-black/[0.08] rounded-full text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all text-[#1d1d1f]"
+              className="w-full pl-9 pr-4 py-2 border border-black/[0.08] rounded-full text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all text-[#0f172a]"
             />
           </div>
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="border border-black/[0.08] rounded-full px-3.5 py-2 text-xs font-semibold bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] outline-none cursor-pointer"
+            className="border border-black/[0.08] rounded-full px-3.5 py-2 text-xs font-semibold bg-[#f8fafc] hover:bg-[#e8e8ed] text-[#0f172a] outline-none cursor-pointer"
           >
             <option value="">Tất cả loại thông báo</option>
             {types.map((type) => (
@@ -568,7 +568,7 @@ export function NotificationAdmin({ token }: { token: string }) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-black/[0.08] rounded-full px-3.5 py-2 text-xs font-semibold bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] outline-none cursor-pointer"
+            className="border border-black/[0.08] rounded-full px-3.5 py-2 text-xs font-semibold bg-[#f8fafc] hover:bg-[#e8e8ed] text-[#0f172a] outline-none cursor-pointer"
           >
             <option value="">Tất cả trạng thái</option>
             <option value="queued">Queued (Chờ gửi)</option>
@@ -583,7 +583,7 @@ export function NotificationAdmin({ token }: { token: string }) {
           <button
             onClick={() => sendQueued('all', 'quota')}
             disabled={sendingQueue || !stats?.statuses?.queued || !stats?.remaining_today}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.98] transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {sendingQueue ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
             Gửi theo quota
@@ -591,7 +591,7 @@ export function NotificationAdmin({ token }: { token: string }) {
           <button
             onClick={createFinalConfirmationOpen}
             disabled={creatingReminders}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             <CheckCircle2 size={13} className="text-[#34c759]" />
             Mở xác nhận TT
@@ -599,7 +599,7 @@ export function NotificationAdmin({ token }: { token: string }) {
           <button
             onClick={createFinalReportReminders}
             disabled={creatingReminders}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             {creatingReminders ? <RefreshCw size={13} className="animate-spin" /> : <Clock size={13} className="text-[#ff9500]" />}
             Nhắc nộp báo cáo
@@ -629,14 +629,14 @@ export function NotificationAdmin({ token }: { token: string }) {
                     checked={pageSelected}
                     disabled={paginatedIds.length === 0}
                     onChange={(e) => toggleCurrentPageSelection(e.target.checked)}
-                    className="rounded border-slate-300 text-[#0071e3] focus:ring-[#0071e3] cursor-pointer"
+                    className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1] cursor-pointer"
                     title="Chọn tất cả trong trang"
                   />
                 </th>
                 <th className="px-5 py-3.5">
                   <button
                     onClick={() => sortNotifications('recipient')}
-                    className="font-bold hover:text-[#1d1d1f] flex items-center gap-1 cursor-pointer"
+                    className="font-bold hover:text-[#0f172a] flex items-center gap-1 cursor-pointer"
                   >
                     Người nhận {sortLabel('recipient')}
                   </button>
@@ -644,7 +644,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                 <th className="px-5 py-3.5">
                   <button
                     onClick={() => sortNotifications('type')}
-                    className="font-bold hover:text-[#1d1d1f] flex items-center gap-1 cursor-pointer"
+                    className="font-bold hover:text-[#0f172a] flex items-center gap-1 cursor-pointer"
                   >
                     Loại {sortLabel('type')}
                   </button>
@@ -652,7 +652,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                 <th className="px-5 py-3.5">
                   <button
                     onClick={() => sortNotifications('created_at')}
-                    className="font-bold hover:text-[#1d1d1f] flex items-center gap-1 cursor-pointer"
+                    className="font-bold hover:text-[#0f172a] flex items-center gap-1 cursor-pointer"
                   >
                     Nội dung thông báo {sortLabel('created_at')}
                   </button>
@@ -660,7 +660,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                 <th className="px-5 py-3.5">
                   <button
                     onClick={() => sortNotifications('status')}
-                    className="font-bold hover:text-[#1d1d1f] flex items-center gap-1 cursor-pointer"
+                    className="font-bold hover:text-[#0f172a] flex items-center gap-1 cursor-pointer"
                   >
                     Trạng thái {sortLabel('status')}
                   </button>
@@ -677,7 +677,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                 </tr>
               ) : (
                 paginatedRows.map((row) => (
-                  <tr key={row.id} className="hover:bg-[#f5f5f7]/60 transition-colors align-top">
+                  <tr key={row.id} className="hover:bg-[#f8fafc]/60 transition-colors align-top">
                     <td className="px-5 py-4 text-center">
                       <input
                         type="checkbox"
@@ -687,18 +687,18 @@ export function NotificationAdmin({ token }: { token: string }) {
                       />
                     </td>
                     <td className="px-5 py-4">
-                      <div className="font-bold text-[#1d1d1f] text-xs">{row.recipient_email}</div>
+                      <div className="font-bold text-[#0f172a] text-xs">{row.recipient_email}</div>
                       <div className="text-[11px] text-[#86868b] mt-0.5">
                         {row.user_name || '-'} {row.student_id ? `· ${row.student_id}` : ''}
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="inline-block text-[10px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] px-2.5 py-0.5 rounded-full border border-black/[0.04] whitespace-nowrap">
+                      <span className="inline-block text-[10px] font-semibold bg-[#f8fafc] text-[#0f172a] px-2.5 py-0.5 rounded-full border border-black/[0.04] whitespace-nowrap">
                         {notificationTypeLabel(row.type)}
                       </span>
                     </td>
                     <td className="px-5 py-4 max-w-xl">
-                      <div className="font-bold text-[#1d1d1f] text-xs">{row.subject}</div>
+                      <div className="font-bold text-[#0f172a] text-xs">{row.subject}</div>
                       <div className="text-[11px] text-[#6e6e73] whitespace-pre-wrap mt-1 leading-relaxed line-clamp-2">
                         {row.body}
                       </div>
@@ -714,7 +714,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                             : row.status === 'failed'
                             ? 'bg-[#fff2f1] text-[#ff3b30] border-rose-200/60'
                             : row.status === 'website_only'
-                            ? 'bg-[#0071e3]/10 text-[#0071e3] border-[#0071e3]/20'
+                            ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
                             : 'bg-[#fff8eb] text-[#b25e00] border-amber-200/60'
                         }`}
                       >
@@ -725,7 +725,7 @@ export function NotificationAdmin({ token }: { token: string }) {
                               : row.status === 'failed'
                               ? 'bg-[#ff3b30]'
                               : row.status === 'website_only'
-                              ? 'bg-[#0071e3]'
+                              ? 'bg-[#034ea1]'
                               : 'bg-[#ff9500]'
                           }`}
                         />

@@ -1143,7 +1143,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                     >
                       <Download size={14} className="text-slate-500" /> Tải PDF
                     </button>
-                    <label className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]">
+                    <label className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]">
                       <Upload size={14} />
                       {uploadingReport ? 'Đang nộp...' : 'Nộp lại'}
                       <input
@@ -1159,7 +1159,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
               ) : (
                 <div className="p-8 text-center border border-dashed border-slate-250 rounded-xl space-y-2.5 bg-slate-50/40">
                   <p className="text-xs text-slate-500">Bạn chưa nộp file báo cáo thực tập tốt nghiệp.</p>
-                  <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#0071e3] text-white hover:bg-[#0077ed] cursor-pointer shadow-xs hover:shadow transition-all active:scale-[0.98]">
+                  <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#034ea1] text-white hover:bg-[#023a7a] cursor-pointer shadow-xs hover:shadow transition-all active:scale-[0.98]">
                     <Upload size={14} />
                     {uploadingReport ? 'Đang tải lên...' : 'Chọn file PDF để nộp'}
                     <input
@@ -1260,7 +1260,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                         <div key={reg.id} className="flex items-start sm:items-center justify-between p-3.5 bg-slate-50/60 hover:bg-slate-100/60 border border-slate-200 rounded-xl transition-colors">
                           <div className="min-w-0 flex-1 pr-4">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[10px] font-bold text-[#0071e3] bg-[#0071e3]/10 px-2 py-0.5 rounded border border-[#0071e3]/20">NV{idx + 1}</span>
+                              <span className="text-[10px] font-bold text-[#034ea1] bg-[#034ea1]/10 px-2 py-0.5 rounded border border-[#034ea1]/20">NV{idx + 1}</span>
                               <span className="text-sm font-semibold text-slate-900">
                                 {reg.company_name === 'Công ty khác' ? `(Khác) ${reg.other_company_name || ''}` : reg.company_name}
                               </span>
@@ -1306,7 +1306,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                         <ol className="space-y-1.5 text-xs text-slate-900">
                           {selectedPreferencePreview.map((item, idx) => (
                             <li key={item.key} className="flex items-center gap-2">
-                              <span className="font-bold text-[#0071e3] bg-[#0071e3]/10 px-1.5 py-0.5 rounded text-[10px]">NV{idx + 1}</span>
+                              <span className="font-bold text-[#034ea1] bg-[#034ea1]/10 px-1.5 py-0.5 rounded text-[10px]">NV{idx + 1}</span>
                               <span className="font-semibold text-slate-800">{item.name}</span>
                             </li>
                           ))}
@@ -1327,7 +1327,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                         type="button"
                         onClick={savePreferenceEdits}
                         disabled={savingPreferences}
-                        className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50 shadow-xs"
+                        className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50 shadow-xs"
                       >
                         {savingPreferences ? 'Đang lưu...' : 'Lưu thay đổi'}
                       </button>
@@ -1372,7 +1372,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                       disabled={selectedWishCount === 0}
                       onClick={() => setRegisterModalOpen(true)}
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shadow-xs ${
-                        selectedWishCount === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#0071e3] text-white hover:bg-[#0077ed]'
+                        selectedWishCount === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#034ea1] text-white hover:bg-[#023a7a]'
                       }`}
                     >
                       Đăng ký ({selectedWishCount})
@@ -1515,7 +1515,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                     type="button"
                     onClick={() => openFinalConfirm('company')}
                     disabled={confirmationWindowStatus !== 'open' || approvedFinalOptions.length === 0}
-                    className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50 shadow-xs"
+                    className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50 shadow-xs"
                   >
                     Xác nhận công ty
                   </button>
@@ -1648,7 +1648,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                   <button
                     type="submit"
                     disabled={advisorRequestSaving || !canEditAdvisorRequest}
-                    className="bg-[#0071e3] text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-[#0077ed] cursor-pointer disabled:opacity-50 shadow-xs"
+                    className="bg-[#034ea1] text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-[#023a7a] cursor-pointer disabled:opacity-50 shadow-xs"
                   >
                     {advisorRequestSaving ? 'Đang lưu...' : 'Lưu đăng ký GVHD'}
                   </button>

@@ -90,7 +90,7 @@ export function AdminDashboard({ token, user: propUser }: { token: string; user?
                   </div>
                 </div>
                 <div className="flex items-baseline justify-between mt-1">
-                  <span className="text-3xl font-bold text-[#0071e3]">{loadingStats ? '—' : stats.confirmedCount}</span>
+                  <span className="text-3xl font-bold text-[#034ea1]">{loadingStats ? '—' : stats.confirmedCount}</span>
                   <span className="text-[11px] font-medium text-slate-400">
                     {stats.registeredCount ? `${Math.round((stats.confirmedCount / stats.registeredCount) * 100)}%` : '0%'}
                   </span>
@@ -137,37 +137,37 @@ export function AdminDashboard({ token, user: propUser }: { token: string; user?
                   title: 'Quản lý Đăng ký',
                   desc: 'Xem, lọc, duyệt danh sách nguyện vọng đăng ký thực tập của sinh viên.',
                   path: '/admin/registrations',
-                  icon: <LayoutDashboard className="text-[#0071e3]" size={18} />,
+                  icon: <LayoutDashboard className="text-[#034ea1]" size={18} />,
                 },
                 {
                   title: 'Quản lý Sinh viên',
                   desc: 'Import, xuất dữ liệu và cập nhật thông tin sinh viên.',
                   path: '/admin/students',
-                  icon: <Users className="text-[#0071e3]" size={18} />,
+                  icon: <Users className="text-[#034ea1]" size={18} />,
                 },
                 {
                   title: 'Quản lý Giảng viên',
                   desc: 'Danh sách và thông tin các giảng viên hướng dẫn.',
                   path: '/admin/lecturers',
-                  icon: <UserIcon className="text-[#0071e3]" size={18} />,
+                  icon: <UserIcon className="text-[#034ea1]" size={18} />,
                 },
                 {
                   title: 'Quản lý Doanh nghiệp',
                   desc: 'Danh sách doanh nghiệp tiếp nhận thực tập.',
                   path: '/admin/companies',
-                  icon: <Building2 className="text-[#0071e3]" size={18} />,
+                  icon: <Building2 className="text-[#034ea1]" size={18} />,
                 },
                 {
                   title: 'Phân công GVHD',
                   desc: 'Phân giảng viên hướng dẫn chính & đồng hướng dẫn.',
                   path: '/admin/advisors',
-                  icon: <Settings className="text-[#0071e3]" size={18} />,
+                  icon: <Settings className="text-[#034ea1]" size={18} />,
                 },
                 {
                   title: 'Báo cáo thực tập',
                   desc: 'Theo dõi, duyệt báo cáo thực tập của sinh viên.',
                   path: '/admin/reports',
-                  icon: <FileText className="text-[#0071e3]" size={18} />,
+                  icon: <FileText className="text-[#034ea1]" size={18} />,
                 },
                 {
                   title: 'Bảng điểm thực tập',
@@ -179,7 +179,7 @@ export function AdminDashboard({ token, user: propUser }: { token: string; user?
                   title: 'CSDL Thẩm định',
                   desc: 'Duyệt tự động các công ty sinh viên tự liên hệ.',
                   path: '/admin/approved-companies',
-                  icon: <Shield className="text-[#0071e3]" size={18} />,
+                  icon: <Shield className="text-[#034ea1]" size={18} />,
                 },
                 {
                   title: 'Thông báo và Email',
@@ -210,11 +210,11 @@ export function AdminDashboard({ token, user: propUser }: { token: string; user?
                   key={item.path}
                   type="button"
                   onClick={() => navigate(item.path)}
-                  className="text-left p-4 rounded-2xl border border-slate-200 bg-white hover:border-[#0071e3]/40 hover:shadow-md transition-all duration-150 shadow-xs cursor-pointer flex flex-col justify-between min-h-[115px] group active:scale-[0.98]"
+                  className="text-left p-4 rounded-2xl border border-slate-200 bg-white hover:border-[#034ea1]/40 hover:shadow-md transition-all duration-150 shadow-xs cursor-pointer flex flex-col justify-between min-h-[115px] group active:scale-[0.98]"
                 >
                   <div className="flex items-center justify-between gap-2 w-full">
-                    <span className="font-semibold text-xs text-slate-800 group-hover:text-[#0071e3] transition-colors">{item.title}</span>
-                    <span className="p-1.5 bg-[#f5f5f7] rounded-xl border border-slate-100">{item.icon}</span>
+                    <span className="font-semibold text-xs text-slate-800 group-hover:text-[#034ea1] transition-colors">{item.title}</span>
+                    <span className="p-1.5 bg-[#f8fafc] rounded-xl border border-slate-100">{item.icon}</span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-2 font-normal line-clamp-2 leading-relaxed">{item.desc}</p>
                 </button>

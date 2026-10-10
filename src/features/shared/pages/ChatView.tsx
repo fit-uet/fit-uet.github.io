@@ -265,7 +265,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071e3] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#034ea1] flex items-center justify-center">
               <MessageCircle size={18} />
             </div>
             Trao đổi với {user.role === 'student' ? 'giảng viên hướng dẫn' : 'sinh viên'}
@@ -275,7 +275,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
         <button
           onClick={fetchThreads}
           disabled={loadingThreads}
-          className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2 rounded-xl hover:bg-[#f5f5f7] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
+          className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
         >
           <RefreshCw size={14} className={`text-slate-500 ${loadingThreads ? 'animate-spin' : ''}`} /> Tải lại
         </button>
@@ -303,12 +303,12 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                   key={key}
                   onClick={() => openThread(thread)}
                   className={`w-full text-left p-4 transition-all cursor-pointer ${
-                    active ? 'bg-[#ebf4ff] text-[#0071e3]' : 'hover:bg-[#f5f5f7] text-slate-800'
+                    active ? 'bg-[#e8f1fb] text-[#034ea1]' : 'hover:bg-[#f8fafc] text-slate-800'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className={`font-semibold text-xs truncate ${active ? 'text-[#0071e3]' : 'text-slate-900'}`}>
+                      <div className={`font-semibold text-xs truncate ${active ? 'text-[#034ea1]' : 'text-slate-900'}`}>
                         {threadTitle(thread)}
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5 truncate">{threadSubtitle(thread) || '-'}</div>
@@ -317,7 +317,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                       </div>
                     </div>
                     {Number(thread.unread_count || 0) > 0 && (
-                      <span className="min-w-5 h-5 px-1.5 rounded-full bg-[#0071e3] text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-xs">
+                      <span className="min-w-5 h-5 px-1.5 rounded-full bg-[#034ea1] text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-xs">
                         {Number(thread.unread_count) > 99 ? '99+' : thread.unread_count}
                       </span>
                     )}
@@ -336,7 +336,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                 <div className="font-bold text-slate-900 text-sm">{threadTitle(selectedThread)}</div>
                 <div className="text-[11px] text-slate-400 mt-0.5">{threadSubtitle(selectedThread) || '-'}</div>
               </div>
-              <div className="flex-1 p-5 overflow-y-auto bg-[#f5f5f7]/30 space-y-3">
+              <div className="flex-1 p-5 overflow-y-auto bg-[#f8fafc]/30 space-y-3">
                 {loadingMessages ? (
                   <div className="text-xs text-slate-400 text-center py-10 font-medium">Đang tải tin nhắn...</div>
                 ) : messages.length === 0 ? (
@@ -348,7 +348,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                     <div key={uiKey} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[78%] rounded-2xl px-4 py-3 shadow-xs ${
                         mine
-                          ? 'bg-[#0071e3] text-white'
+                          ? 'bg-[#034ea1] text-white'
                           : 'bg-white border border-black/[0.06] text-slate-800'
                       }`}>
                         <div className={`text-[10px] font-semibold mb-1 ${mine ? 'text-white/80' : 'text-slate-400'}`}>
@@ -360,7 +360,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                             <div className={`flex max-w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold ${
                               mine
                                 ? 'border-white/20 bg-white/10 text-white'
-                                : 'border-black/[0.08] bg-[#f5f5f7] text-slate-700'
+                                : 'border-black/[0.08] bg-[#f8fafc] text-slate-700'
                             }`}>
                               <Paperclip size={14} className="shrink-0" />
                               <span className="min-w-0 flex-1">
@@ -421,11 +421,11 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
               </div>
               <form onSubmit={sendMessage} className="p-4 border-t border-slate-100 bg-white">
                 {selectedFile && (
-                  <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-[#bfe0ff]/80 bg-[#ebf4ff] px-3.5 py-2 text-xs text-[#005bb5]">
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-[#bfe0ff]/80 bg-[#e8f1fb] px-3.5 py-2 text-xs text-[#005bb5]">
                     <div className="min-w-0 flex items-center gap-2">
                       <Paperclip size={14} className="shrink-0" />
                       <span className="truncate font-semibold">{selectedFile.name}</span>
-                      <span className="shrink-0 text-[#0071e3] font-medium">{formatChatBytes(selectedFile.size)}</span>
+                      <span className="shrink-0 text-[#034ea1] font-medium">{formatChatBytes(selectedFile.size)}</span>
                     </div>
                     <button
                       type="button"
@@ -438,12 +438,12 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                 )}
                 {uploadProgress !== null && (
                   <div className="mb-3 rounded-xl border border-[#bfe0ff]/80 bg-white px-3.5 py-2 shadow-xs">
-                    <div className="flex items-center justify-between text-[10px] font-semibold text-[#0071e3]">
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-[#034ea1]">
                       <span>Đang tải file lên</span>
                       <span>{uploadProgress}%</span>
                     </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#ebf4ff]">
-                      <div className="h-full rounded-full bg-[#0071e3] transition-all" style={{ width: `${uploadProgress}%` }} />
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#e8f1fb]">
+                      <div className="h-full rounded-full bg-[#034ea1] transition-all" style={{ width: `${uploadProgress}%` }} />
                     </div>
                   </div>
                 )}
@@ -459,7 +459,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={sending}
-                    className="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-xl border border-black/[0.08] bg-white text-slate-600 hover:bg-[#f5f5f7] active:scale-[0.96] disabled:opacity-50 transition-all cursor-pointer shadow-xs"
+                    className="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-xl border border-black/[0.08] bg-white text-slate-600 hover:bg-[#f8fafc] active:scale-[0.96] disabled:opacity-50 transition-all cursor-pointer shadow-xs"
                     title="Đính kèm file"
                   >
                     <Paperclip size={16} />
@@ -469,12 +469,12 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
                     onChange={e => setDraft(e.target.value)}
                     maxLength={2000}
                     rows={2}
-                    className="flex-1 bg-[#f5f5f7]/70 focus:bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner resize-none placeholder-slate-400 leading-relaxed"
+                    className="flex-1 bg-[#f8fafc]/70 focus:bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner resize-none placeholder-slate-400 leading-relaxed"
                     placeholder="Nhập tin nhắn..."
                   />
                   <button
                     disabled={sending || (!draft.trim() && !selectedFile)}
-                    className="h-10 px-5 shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0071e3] text-xs font-semibold text-white hover:bg-[#0077ed] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
+                    className="h-10 px-5 shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#034ea1] text-xs font-semibold text-white hover:bg-[#023a7a] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
                   >
                     <Send size={14} /> Gửi
                   </button>

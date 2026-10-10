@@ -84,14 +84,14 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
       <div>
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
         >
           &larr; Quay lại
         </button>
       </div>
       <div className="bg-white p-8 rounded-2xl shadow-xs border border-slate-200/80">
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-6 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071e3] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#034ea1] flex items-center justify-center">
             <UserIcon size={18} />
           </div>
           Cập nhật Hồ sơ cá nhân
@@ -109,7 +109,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
 
         <form onSubmit={handleSave} className="space-y-5">
           {/* Avatar + info banner */}
-          <div className="flex items-center gap-4 mb-6 p-4 bg-[#f5f5f7]/60 rounded-2xl border border-black/[0.04]">
+          <div className="flex items-center gap-4 mb-6 p-4 bg-[#f8fafc]/60 rounded-2xl border border-black/[0.04]">
             {user.picture ? (
               <img src={user.picture} alt="Avatar" className="w-16 h-16 rounded-full border-2 border-white shadow-xs object-cover" />
             ) : (
@@ -151,7 +151,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                  className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                 />
               </div>
             </div>
@@ -166,7 +166,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                     required
                     value={formData.student_id}
                     onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-mono font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                    className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-mono font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                   />
                 </div>
                 <div>
@@ -176,7 +176,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                    className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                   />
                 </div>
                 <div>
@@ -187,7 +187,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                     required
                     value={formData.dob}
                     onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                    className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                   />
                 </div>
                 <div>
@@ -198,7 +198,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                     title="Vui lòng nhập số điện thoại hợp lệ (10 số, VD: 0912345678)"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                    className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                     placeholder="VD: 0912345678"
                   />
                 </div>
@@ -208,7 +208,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                     type="email"
                     value={formData.personal_email}
                     onChange={(e) => setFormData({ ...formData, personal_email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                    className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                     placeholder="VD: abc@gmail.com"
                   />
                 </div>
@@ -218,7 +218,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                     required
                     value={formData.class_name}
                     onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                    className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                   >
                     <option value="">-- Chọn lớp khóa học --</option>
                     {classesList.map(c => (
@@ -232,7 +232,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                     required
                     value={formData.course_code}
                     onChange={(e) => setFormData({ ...formData, course_code: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                    className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                   >
                     <option value="">-- Chọn học phần --</option>
                     <option value="Thực tập Doanh nghiệp INT4002">Thực tập Doanh nghiệp INT4002</option>
@@ -248,7 +248,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
             <button
               type="submit"
               disabled={saving}
-              className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={14} /> {saving ? 'Đang lưu...' : 'Lưu Hồ sơ'}
             </button>

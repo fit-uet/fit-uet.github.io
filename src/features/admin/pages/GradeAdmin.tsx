@@ -155,13 +155,13 @@ export function GradeAdmin({ token }: { token: string }) {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Tìm sinh viên, nơi TT, GVHD..."
-            className="w-full pl-9 pr-4 py-2 border border-[#e5e5ea] rounded-xl text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all shadow-xs"
+            className="w-full pl-9 pr-4 py-2 border border-[#e2e8f0] rounded-xl text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-xs"
           />
         </div>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="border border-[#e5e5ea] rounded-xl px-3 py-2 text-xs font-semibold bg-white text-[#1d1d1f] shadow-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] cursor-pointer"
+          className="border border-[#e2e8f0] rounded-xl px-3 py-2 text-xs font-semibold bg-white text-[#0f172a] shadow-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] cursor-pointer"
         >
           <option value="">Tất cả trạng thái</option>
           <option value="missing">Chưa có</option>
@@ -186,7 +186,7 @@ export function GradeAdmin({ token }: { token: string }) {
         </button>
         <button
           onClick={exportXlsx}
-          className="bg-white text-[#1d1d1f] border border-[#e5e5ea] hover:bg-[#f5f5f7] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
+          className="bg-white text-[#0f172a] border border-[#e2e8f0] hover:bg-[#f8fafc] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
         >
           <Download size={14} /> Xuất XLSX
         </button>
@@ -209,7 +209,7 @@ export function GradeAdmin({ token }: { token: string }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">Không có dữ liệu phù hợp.</td></tr>
               ) : paginatedRows.map(row => (
-                <tr key={row.user_id} className="hover:bg-[#f5f5f7] transition-colors align-top">
+                <tr key={row.user_id} className="hover:bg-[#f8fafc] transition-colors align-top">
                   <td className="px-4 py-4">
                     <div className="font-semibold text-slate-900">{cleanStudentName(row.student_name, row.student_id, row.email)}</div>
                     <div className="text-xs text-slate-500 font-mono">{row.student_id || '-'}</div>

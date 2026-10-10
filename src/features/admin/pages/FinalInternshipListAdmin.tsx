@@ -136,11 +136,11 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             &larr; Quay lại Quản trị
           </button>
-          <h2 className="text-2xl font-bold text-[#1d1d1f] flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-[#0f172a] flex items-center gap-2">
             <CheckCircle2 className="text-[#1b7f37]" size={24} /> Danh sách xác nhận thực tập
             <PageDescriptionTooltip description="Sinh viên đã xác nhận nơi thực tập chính thức để lấy điểm học phần." />
           </h2>
@@ -148,14 +148,14 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={fetchRows}
-            className="bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+            className="bg-white hover:bg-[#f8fafc] text-[#0f172a] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
           >
             <RefreshCw size={14} /> Tải lại
           </button>
           <button
             onClick={exportXlsx}
             disabled={filteredRows.length === 0}
-            className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download size={14} /> Xuất XLSX
           </button>
@@ -165,11 +165,11 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
         <div className="bg-white p-4.5 rounded-2xl border border-black/[0.08] shadow-xs flex flex-col">
           <span className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider mb-1">Tổng xác nhận</span>
-          <span className="text-3xl font-bold tracking-tight text-[#1d1d1f]">{rows.length}</span>
+          <span className="text-3xl font-bold tracking-tight text-[#0f172a]">{rows.length}</span>
         </div>
-        <div className="bg-[#ebf4ff] p-4.5 rounded-2xl border border-[#cce4ff] shadow-xs flex flex-col">
-          <span className="text-[#0071e3] text-[11px] font-semibold uppercase tracking-wider mb-1">Số sinh viên</span>
-          <span className="text-3xl font-bold tracking-tight text-[#0071e3]">{uniqueStudents}</span>
+        <div className="bg-[#e8f1fb] p-4.5 rounded-2xl border border-[#d4e5f7] shadow-xs flex flex-col">
+          <span className="text-[#034ea1] text-[11px] font-semibold uppercase tracking-wider mb-1">Số sinh viên</span>
+          <span className="text-3xl font-bold tracking-tight text-[#034ea1]">{uniqueStudents}</span>
         </div>
         <div className="bg-[#f0f9ff] p-4.5 rounded-2xl border border-[#bae6fd] shadow-xs flex flex-col">
           <span className="text-[#0369a1] text-[11px] font-semibold uppercase tracking-wider mb-1">Số nơi thực tập</span>
@@ -192,13 +192,13 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Tìm mã SV, tên, nơi thực tập, GVHD..."
-            className="w-full pl-9 pr-4 py-2 border border-[#e5e5ea] rounded-xl text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all shadow-xs text-[#1d1d1f]"
+            className="w-full pl-9 pr-4 py-2 border border-[#e2e8f0] rounded-xl text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-xs text-[#0f172a]"
           />
         </div>
         <select
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value)}
-          className="border border-[#e5e5ea] rounded-xl px-3 py-2 text-xs font-semibold bg-white text-[#1d1d1f] shadow-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] cursor-pointer"
+          className="border border-[#e2e8f0] rounded-xl px-3 py-2 text-xs font-semibold bg-white text-[#0f172a] shadow-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] cursor-pointer"
         >
           <option value="">Tất cả loại</option>
           <option value="company">Công ty</option>
@@ -229,14 +229,14 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
                 </tr>
               ) : (
                 paginatedRows.map(item => (
-                  <tr key={item.id} className="hover:bg-[#f5f5f7] transition-colors">
+                  <tr key={item.id} className="hover:bg-[#f8fafc] transition-colors">
                     <td className="px-5 py-3.5 font-mono font-medium text-slate-900">{item.student_id || '-'}</td>
                     <td className="px-5 py-3.5">
                       <div className="font-semibold text-slate-900">{cleanStudentName(item.student_name, item.student_id)}</div>
                       <div className="text-[10px] font-medium text-slate-400 mt-0.5">{item.class_name || '-'}</div>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${item.internship_type === 'school' ? 'bg-[#ebf4ff] text-[#0071e3]' : item.internship_type === 'partner' ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-[#ebf9ee] text-[#1b7f37]'}`}>
+                      <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${item.internship_type === 'school' ? 'bg-[#e8f1fb] text-[#034ea1]' : item.internship_type === 'partner' ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-[#ebf9ee] text-[#1b7f37]'}`}>
                         {typeLabel(item.internship_type)}
                       </span>
                     </td>

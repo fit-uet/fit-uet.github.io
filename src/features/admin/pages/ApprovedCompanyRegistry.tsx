@@ -146,12 +146,12 @@ export function ApprovedCompanyRegistry({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin/companies')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             &larr; Quay lại Quản lý công ty
           </button>
-          <h2 className="text-2xl font-bold text-[#1d1d1f] flex items-center gap-2">
-            <Shield className="text-[#0071e3]" size={24} /> Danh sách công ty thẩm định nội bộ
+          <h2 className="text-2xl font-bold text-[#0f172a] flex items-center gap-2">
+            <Shield className="text-[#034ea1]" size={24} /> Danh sách công ty thẩm định nội bộ
             <PageDescriptionTooltip description={<>Danh sách này dùng để tự động duyệt công ty sinh viên tự liên hệ, không công khai cho sinh viên. Tổng: <strong>{companies.length}</strong></>} />
           </h2>
         </div>
@@ -164,22 +164,22 @@ export function ApprovedCompanyRegistry({ token }: { token: string }) {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Tìm tên, nguồn..."
-            className="w-full pl-9 pr-4 py-2 border border-[#e5e5ea] rounded-xl text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all shadow-xs text-[#1d1d1f]"
+            className="w-full pl-9 pr-4 py-2 border border-[#e2e8f0] rounded-xl text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-xs text-[#0f172a]"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl px-3 py-2">
-            <input type="checkbox" checked={override} disabled={importing} onChange={e => setOverride(e.target.checked)} className="rounded border-slate-300 text-[#0071e3] focus:ring-[#0071e3] w-4 h-4 disabled:opacity-60 cursor-pointer" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-2">
+            <input type="checkbox" checked={override} disabled={importing} onChange={e => setOverride(e.target.checked)} className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1] w-4 h-4 disabled:opacity-60 cursor-pointer" />
             Ghi đè
           </label>
-          <label className={`px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer border border-black/[0.08] hover:bg-[#f5f5f7] bg-white text-[#1d1d1f] active:scale-[0.98] ${importing ? 'bg-slate-100 text-slate-400 cursor-wait pointer-events-none' : ''}`}>
+          <label className={`px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer border border-black/[0.08] hover:bg-[#f8fafc] bg-white text-[#0f172a] active:scale-[0.98] ${importing ? 'bg-slate-100 text-slate-400 cursor-wait pointer-events-none' : ''}`}>
             {importing ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />} {importing ? 'Đang import...' : 'Import XLSX'}
             <input type="file" accept=".xlsx,.xls,.csv" disabled={importing} className="hidden" onChange={handleImport} onClick={(e) => { (e.target as HTMLInputElement).value = ''; }} />
           </label>
           <button
             onClick={exportXlsx}
             disabled={loading || importing}
-            className="bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
+            className="bg-white hover:bg-[#f8fafc] text-[#0f172a] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
           >
             <Download size={14} /> Xuất XLSX
           </button>
@@ -192,11 +192,11 @@ export function ApprovedCompanyRegistry({ token }: { token: string }) {
           onChange={e => setNewName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
           placeholder="Tên công ty đã thẩm định"
-          className="flex-1 border border-[#e5e5ea] rounded-xl px-3.5 py-2 text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all shadow-xs"
+          className="flex-1 border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-xs"
         />
         <button
           onClick={handleAdd}
-          className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+          className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
         >
           <Plus size={15} /> Thêm công ty
         </button>
@@ -215,11 +215,11 @@ export function ApprovedCompanyRegistry({ token }: { token: string }) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {paginatedApprovedCompanies.map((c, idx) => (
-              <tr key={c.id} className="hover:bg-[#f5f5f7] transition-colors">
+              <tr key={c.id} className="hover:bg-[#f8fafc] transition-colors">
                 <td className="p-3 text-slate-400">{(safeCurrentPage - 1) * pageSize + idx + 1}</td>
                 <td className="p-3">
                   {editingId === c.id ? (
-                    <input autoFocus value={editName} onChange={e => setEditName(e.target.value)} className="w-full border border-[#0071e3] rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all bg-white font-semibold text-slate-800 shadow-xs" />
+                    <input autoFocus value={editName} onChange={e => setEditName(e.target.value)} className="w-full border border-[#034ea1] rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all bg-white font-semibold text-slate-800 shadow-xs" />
                   ) : (
                     <span className="font-semibold text-slate-900">{c.name}</span>
                   )}
@@ -234,7 +234,7 @@ export function ApprovedCompanyRegistry({ token }: { token: string }) {
                     </div>
                   ) : (
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => { setEditingId(c.id); setEditName(c.name || ''); }} className="text-[#0071e3] hover:bg-[#ebf4ff] p-1.5 rounded-lg transition-colors cursor-pointer" title="Sửa"><Edit2 size={15} /></button>
+                      <button onClick={() => { setEditingId(c.id); setEditName(c.name || ''); }} className="text-[#034ea1] hover:bg-[#e8f1fb] p-1.5 rounded-lg transition-colors cursor-pointer" title="Sửa"><Edit2 size={15} /></button>
                       <button onClick={() => handleDelete(c.id, c.name)} className="text-[#ff3b30] hover:bg-[#fff2f1] p-1.5 rounded-lg transition-colors cursor-pointer" title="Xóa"><Trash2 size={15} /></button>
                     </div>
                   )}

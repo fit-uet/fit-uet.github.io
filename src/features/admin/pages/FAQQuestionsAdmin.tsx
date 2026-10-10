@@ -55,12 +55,12 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             &larr; Quay lại Quản trị
           </button>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071e3] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#034ea1] flex items-center justify-center">
               <Send size={18} />
             </div>
             Trả lời câu hỏi FAQ
@@ -69,7 +69,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
         </div>
         <button
           onClick={fetchFaqQuestions}
-          className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2 rounded-xl hover:bg-[#f5f5f7] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+          className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
         >
           <RefreshCw size={14} className="text-slate-500" /> Tải lại
         </button>
@@ -79,7 +79,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
         <div className="p-4 border-b border-slate-100 bg-[#fbfbfd] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
-              <CircleHelp size={16} className="text-[#0071e3]" /> Câu hỏi gửi tới FAQ
+              <CircleHelp size={16} className="text-[#034ea1]" /> Câu hỏi gửi tới FAQ
             </h3>
             <p className="text-xs text-slate-500 mt-1">Còn <strong>{pendingQuestions}</strong> câu hỏi đang chờ trả lời.</p>
           </div>
@@ -105,7 +105,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
                 </div>
                 <div className="text-sm font-semibold text-slate-800">{q.user_name || q.user_email || 'Người dùng'}</div>
                 <div className="text-xs text-slate-500 font-mono mt-0.5 mb-3">{q.student_id || q.user_email || ''}</div>
-                <div className="text-xs font-medium text-slate-700 whitespace-pre-wrap bg-[#f5f5f7]/60 border border-black/[0.06] rounded-xl p-3.5 leading-relaxed">
+                <div className="text-xs font-medium text-slate-700 whitespace-pre-wrap bg-[#f8fafc]/60 border border-black/[0.06] rounded-xl p-3.5 leading-relaxed">
                   {q.question}
                 </div>
               </div>
@@ -115,7 +115,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
                   onChange={e => setAnswerDrafts(prev => ({ ...prev, [Number(q.id)]: e.target.value }))}
                   rows={5}
                   placeholder="Nhập câu trả lời..."
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all bg-[#f5f5f7]/50 focus:bg-white shadow-inner resize-y font-medium text-slate-700 leading-relaxed"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-[#f8fafc]/50 focus:bg-white shadow-inner resize-y font-medium text-slate-700 leading-relaxed"
                 />
                 {q.answered_at && (
                   <div className="text-xs text-slate-400 font-medium">
@@ -126,7 +126,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
                   <button
                     onClick={() => answerQuestion(Number(q.id))}
                     disabled={answeringId === Number(q.id)}
-                    className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {answeringId === Number(q.id) ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
                     {q.status === 'answered' ? 'Cập nhật trả lời' : 'Trả lời'}

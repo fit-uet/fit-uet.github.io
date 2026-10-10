@@ -238,7 +238,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
           <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
             <button
               onClick={() => navigate('/lecturer/grades')}
-              className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
+              className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
             >
               <CheckCircle2 size={14} /> Chấm điểm thực tập
             </button>
@@ -438,7 +438,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => openReview(student)}
-                              className="inline-flex items-center gap-1 text-[#0071e3] hover:bg-[#ebf4ff] px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-[#dbeafe] bg-[#ebf4ff]/70 shadow-xs active:scale-[0.98]"
+                              className="inline-flex items-center gap-1 text-[#034ea1] hover:bg-[#e8f1fb] px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-[#d4e5f7] bg-[#e8f1fb]/70 shadow-xs active:scale-[0.98]"
                             >
                               <FileText size={12} /> Xem & Chấm
                             </button>
@@ -462,7 +462,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
                   <td className="p-4">
                     <button
                       onClick={() => navigate(`/chat/${student.user_id}/${student.lecturer_id}`)}
-                      className="inline-flex items-center gap-1 rounded-xl bg-[#ebf4ff] border border-[#dbeafe] px-2.5 py-1 text-xs font-semibold text-[#0071e3] hover:bg-[#dbeafe] transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
+                      className="inline-flex items-center gap-1 rounded-xl bg-[#e8f1fb] border border-[#d4e5f7] px-2.5 py-1 text-xs font-semibold text-[#034ea1] hover:bg-[#d4e5f7] transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
                     >
                       <MessageCircle size={14} /> Chat
                     </button>

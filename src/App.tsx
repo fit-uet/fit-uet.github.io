@@ -199,7 +199,12 @@ function App() {
                   <div className="relative">
                     <button onClick={() => { setIsMenuOpen(!isMenuOpen); setIsNotificationOpen(false); }} className="flex items-center gap-2 hover:bg-white/10 text-white p-1 pr-2 rounded-xl transition-all cursor-pointer group focus:outline-none">
                       <div className="text-right hidden sm:block">
-                        <p className="text-xs font-semibold group-hover:text-blue-100 transition-colors leading-normal">{user.name}</p>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <p className="text-xs font-semibold group-hover:text-blue-100 transition-colors leading-normal">{user.name}</p>
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-white/20 text-white uppercase tracking-wider">
+                            {user.role === 'admin' ? 'Quản trị' : user.role === 'lecturer' ? 'Giảng viên' : 'Sinh viên'}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-blue-100 opacity-80 group-hover:opacity-100 transition-all">{user.email}</p>
                       </div>
                       {user.picture ? (
@@ -279,12 +284,12 @@ function App() {
             {!token ? (
               <div className="max-w-md mx-auto mt-16 bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 text-center">
                 <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-blue-100/60 shadow-xs">
-                  <LogIn className="text-[#0071e3]" size={26} />
+                  <LogIn className="text-[#034ea1]" size={26} />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Đăng nhập</h2>
                 <p className="text-slate-500 text-xs mb-6 leading-relaxed">
                   Hệ thống đăng ký và quản lý Thực tập FIT UET.<br />
-                  Yêu cầu đăng nhập bằng VNU mail <strong className="text-[#0071e3] font-semibold">@vnu.edu.vn</strong>
+                  Yêu cầu đăng nhập bằng VNU mail <strong className="text-[#034ea1] font-semibold">@vnu.edu.vn</strong>
                 </p>
 
                 <div className="flex justify-center border border-slate-100 p-4 bg-slate-50/70 rounded-xl">

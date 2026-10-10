@@ -26,7 +26,7 @@ export function LecturerGuideView({ token, user }: { token: string; user: any })
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button onClick={() => navigate('/')} className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer mb-2 active:scale-[0.98]">&larr; Quay lại trang chủ</button>
         {user?.role === 'admin' && (
-          <button onClick={() => navigate('/admin/lecturer-guide')} className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
+          <button onClick={() => navigate('/admin/lecturer-guide')} className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
             <Edit2 size={14} /> Cài đặt hướng dẫn
           </button>
         )}
@@ -50,11 +50,11 @@ export function LecturerGuideView({ token, user }: { token: string; user: any })
               ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 text-slate-600 space-y-1" {...props} />,
               ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 text-slate-600 space-y-1" {...props} />,
               strong: ({ node, ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
-              a: ({ node, ...props }) => <a className="text-[#0071e3] hover:underline" {...props} />,
+              a: ({ node, ...props }) => <a className="text-[#034ea1] hover:underline" {...props} />,
               table: ({ node, ...props }) => <div className="overflow-x-auto mb-6 rounded-xl border border-slate-200"><table className="min-w-full divide-y divide-slate-100 text-xs" {...props} /></div>,
               thead: ({ node, ...props }) => <thead className="bg-[#f9f9fb]" {...props} />,
               tbody: ({ node, ...props }) => <tbody className="divide-y divide-slate-100 bg-white" {...props} />,
-              tr: ({ node, ...props }) => <tr className="hover:bg-[#f5f5f7] transition-colors" {...props} />,
+              tr: ({ node, ...props }) => <tr className="hover:bg-[#f8fafc] transition-colors" {...props} />,
               th: ({ node, ...props }) => <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-700" {...props} />,
               td: ({ node, ...props }) => <td className="px-4 py-2.5 text-xs text-slate-600" {...props} />,
             }}

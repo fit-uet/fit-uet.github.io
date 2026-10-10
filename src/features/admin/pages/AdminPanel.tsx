@@ -946,7 +946,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={openAddRegistration}
-              className="bg-[#0071e3] text-white px-3.5 py-2 rounded-xl hover:bg-[#0077ed] text-xs font-semibold shadow-sm flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer active:scale-[0.98]"
+              className="bg-[#034ea1] text-white px-3.5 py-2 rounded-xl hover:bg-[#023a7a] text-xs font-semibold shadow-sm flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer active:scale-[0.98]"
             >
               <Plus size={14} /> Thêm đăng ký
             </button>
@@ -961,7 +961,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
             </span>
             <button
               onClick={handleApproveAll}
-              className="bg-[#ebf4ff] text-[#0071e3] border border-[#dbeafe] px-3.5 py-2 rounded-xl hover:bg-[#dbeafe] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer active:scale-[0.98]"
+              className="bg-[#e8f1fb] text-[#034ea1] border border-[#d4e5f7] px-3.5 py-2 rounded-xl hover:bg-[#d4e5f7] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer active:scale-[0.98]"
             >
               <CheckCircle2 size={14} /> Duyệt tất cả
             </button>
@@ -969,7 +969,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
             <div className="relative">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                className="bg-white text-[#1d1d1f] border border-[#e5e5ea] px-3.5 py-2 rounded-xl hover:bg-[#f5f5f7] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer active:scale-[0.98]"
+                className="bg-white text-[#0f172a] border border-[#e2e8f0] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer active:scale-[0.98]"
               >
                 <Download size={14} /> Xuất dữ liệu <ChevronDown size={12} />
               </button>
@@ -1018,7 +1018,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
             <button
               onClick={handleSaveToGoogleSheets}
               disabled={savingToSheet}
-              className="bg-white text-[#1d1d1f] border border-[#e5e5ea] px-3.5 py-2 rounded-xl hover:bg-[#f5f5f7] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 disabled:cursor-wait transition-all cursor-pointer active:scale-[0.98]"
+              className="bg-white text-[#0f172a] border border-[#e2e8f0] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] text-xs font-semibold shadow-xs flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 disabled:cursor-wait transition-all cursor-pointer active:scale-[0.98]"
             >
               {savingToSheet ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
               {savingToSheet ? 'Đang lưu...' : 'Lưu Google Sheets'}
@@ -1035,7 +1035,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
               placeholder="Tìm sinh viên, lớp, công ty..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-[#e5e5ea] rounded-xl text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all shadow-xs"
+              className="w-full pl-9 pr-4 py-2 border border-[#e2e8f0] rounded-xl text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-xs"
             />
           </div>
 
@@ -1043,7 +1043,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
             <select
               value={filterCourse}
               onChange={(e) => setFilterCourse(e.target.value)}
-              className="px-3 py-2 border border-[#e5e5ea] bg-white text-[#1d1d1f] rounded-xl text-xs font-semibold shadow-xs focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all cursor-pointer"
+              className="px-3 py-2 border border-[#e2e8f0] bg-white text-[#0f172a] rounded-xl text-xs font-semibold shadow-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all cursor-pointer"
             >
               <option value="">Tất cả học phần</option>
               {uniqueCourses.map(course => (
@@ -1054,7 +1054,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-[#e5e5ea] bg-white text-[#1d1d1f] rounded-xl text-xs font-semibold shadow-xs focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all cursor-pointer"
+              className="px-3 py-2 border border-[#e2e8f0] bg-white text-[#0f172a] rounded-xl text-xs font-semibold shadow-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all cursor-pointer"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="pending">Chờ duyệt</option>

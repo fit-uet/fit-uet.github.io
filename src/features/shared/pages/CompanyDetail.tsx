@@ -83,7 +83,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0071e3] border-t-transparent animate-spin mb-3" />
+        <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải thông tin doanh nghiệp...</span>
       </div>
     );
@@ -95,11 +95,11 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
         <div className="w-12 h-12 rounded-2xl bg-[#ff3b30]/10 text-[#ff3b30] flex items-center justify-center mx-auto">
           <Building2 size={24} />
         </div>
-        <h2 className="text-xl font-bold text-[#1d1d1f]">Không tìm thấy doanh nghiệp</h2>
+        <h2 className="text-xl font-bold text-[#0f172a]">Không tìm thấy doanh nghiệp</h2>
         <p className="text-xs text-[#86868b]">Doanh nghiệp không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] transition-all cursor-pointer"
         >
           Quay lại
         </button>
@@ -115,7 +115,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button
           onClick={() => navigate(-1)}
-          className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer"
+          className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer"
         >
           <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
           Quay lại
@@ -124,7 +124,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
         {user?.role === 'admin' && !editing && (
           <button
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.98] transition-all cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all cursor-pointer shadow-xs"
           >
             <Edit2 size={13} />
             Chỉnh sửa thông tin
@@ -136,8 +136,8 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
       {user?.role === 'admin' && editing && editForm && (
         <div className="bg-white rounded-3xl p-7 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-5">
           <div className="flex items-center justify-between pb-3 border-b border-black/[0.04]">
-            <h2 className="text-base font-bold text-[#1d1d1f] tracking-tight flex items-center gap-2">
-              <Edit2 size={16} className="text-[#0071e3]" />
+            <h2 className="text-base font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
+              <Edit2 size={16} className="text-[#034ea1]" />
               Chỉnh sửa thông tin doanh nghiệp
             </h2>
             <button
@@ -145,7 +145,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 setEditing(false);
                 setEditForm({ ...company, description: companyDescriptionText(company.description) || '' });
               }}
-              className="text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-full hover:bg-[#f5f5f7] transition-colors cursor-pointer"
+              className="text-[#86868b] hover:text-[#0f172a] p-1.5 rounded-full hover:bg-[#f8fafc] transition-colors cursor-pointer"
             >
               <X size={16} />
             </button>
@@ -159,7 +159,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
               <input
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-[#1d1d1f] outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-[#0f172a] outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
@@ -172,7 +172,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                 rows={3}
                 placeholder="Giới thiệu chung về doanh nghiệp..."
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all leading-relaxed resize-y"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
               />
             </div>
 
@@ -184,7 +184,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 type="number"
                 value={editForm.slots}
                 onChange={(e) => setEditForm({ ...editForm, slots: parseInt(e.target.value) || 0 })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all font-semibold"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all font-semibold"
               />
             </div>
 
@@ -196,7 +196,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 value={editForm.contact_name}
                 onChange={(e) => setEditForm({ ...editForm, contact_name: e.target.value })}
                 placeholder="Họ tên người phụ trách tuyển dụng..."
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
@@ -207,7 +207,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
               <input
                 value={editForm.contact_email}
                 onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
@@ -218,7 +218,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
               <input
                 value={editForm.phone}
                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
@@ -229,7 +229,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
               <input
                 value={editForm.address}
                 onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all"
               />
             </div>
 
@@ -241,7 +241,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 value={editForm.recruitment_link}
                 onChange={(e) => setEditForm({ ...editForm, recruitment_link: e.target.value })}
                 placeholder="https://..."
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all font-mono"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all font-mono"
               />
             </div>
 
@@ -253,7 +253,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 value={editForm.history}
                 onChange={(e) => setEditForm({ ...editForm, history: e.target.value })}
                 rows={3}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all leading-relaxed resize-y"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
               />
             </div>
 
@@ -265,7 +265,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 value={editForm.qualifications}
                 onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
                 rows={3}
-                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] transition-all leading-relaxed resize-y"
+                className="w-full bg-[#fbfbfd] focus:bg-white border border-black/[0.08] rounded-xl px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all leading-relaxed resize-y"
               />
             </div>
           </div>
@@ -277,14 +277,14 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 setEditForm({ ...company, description: companyDescriptionText(company.description) || '' });
               }}
               disabled={saving}
-              className="px-4 py-2 rounded-full border border-black/[0.08] text-xs font-semibold text-[#1d1d1f] hover:bg-[#f5f5f7] cursor-pointer"
+              className="px-4 py-2 rounded-full border border-black/[0.08] text-xs font-semibold text-[#0f172a] hover:bg-[#f8fafc] cursor-pointer"
             >
               Hủy
             </button>
             <button
               onClick={saveCompany}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.98] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all cursor-pointer shadow-xs disabled:opacity-50"
             >
               {saving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
               Lưu thay đổi
@@ -298,7 +298,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
         {/* Header Strip */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-8 border-b border-black/[0.05]">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-3xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center shrink-0 shadow-inner">
+            <div className="w-16 h-16 rounded-3xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shrink-0 shadow-inner">
               <Building2 size={32} />
             </div>
             <div>
@@ -306,11 +306,11 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-bold bg-[#34c759]/10 text-[#1d833f]">
                   <CheckCircle2 size={12} /> Đối tác thực tập FIT UET
                 </span>
-                <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f]">
+                <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#f8fafc] text-[#0f172a]">
                   <Users size={12} className="text-[#86868b]" /> Chỉ tiêu: {company.slots} sinh viên
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#1d1d1f] tracking-tight">{company.name}</h1>
+              <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] tracking-tight">{company.name}</h1>
               <p className="text-xs sm:text-sm text-[#6e6e73] mt-2 max-w-2xl leading-relaxed">{description}</p>
             </div>
           </div>
@@ -320,7 +320,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
               href={company.recruitment_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.98] transition-all shadow-xs cursor-pointer whitespace-nowrap self-start"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-xs cursor-pointer whitespace-nowrap self-start"
             >
               <span>Xem trang tuyển dụng</span>
               <ExternalLink size={13} />
@@ -335,12 +335,12 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#86868b]">Thông tin liên hệ & Địa điểm</h3>
             <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 divide-y divide-black/[0.04] text-xs">
               <div className="py-2.5 first:pt-0 flex items-start gap-3">
-                <Mail size={15} className="text-[#0071e3] shrink-0 mt-0.5" />
+                <Mail size={15} className="text-[#034ea1] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <span className="text-[10px] uppercase font-bold text-[#86868b]">Email tuyển dụng</span>
-                  <div className="font-semibold text-[#1d1d1f] mt-0.5 truncate">
+                  <div className="font-semibold text-[#0f172a] mt-0.5 truncate">
                     {company.contact_email ? (
-                      <a href={`mailto:${company.contact_email}`} className="text-[#0071e3] hover:underline">
+                      <a href={`mailto:${company.contact_email}`} className="text-[#034ea1] hover:underline">
                         {company.contact_email}
                       </a>
                     ) : (
@@ -354,7 +354,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 <Phone size={15} className="text-[#34c759] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <span className="text-[10px] uppercase font-bold text-[#86868b]">Điện thoại</span>
-                  <div className="font-semibold text-[#1d1d1f] mt-0.5">
+                  <div className="font-semibold text-[#0f172a] mt-0.5">
                     {company.phone ? (
                       <a href={`tel:${company.phone}`} className="hover:underline">
                         {company.phone}
@@ -370,7 +370,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 <Users size={15} className="text-[#af52de] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <span className="text-[10px] uppercase font-bold text-[#86868b]">Người phụ trách</span>
-                  <div className="font-semibold text-[#1d1d1f] mt-0.5">{company.contact_name || 'Chưa cập nhật'}</div>
+                  <div className="font-semibold text-[#0f172a] mt-0.5">{company.contact_name || 'Chưa cập nhật'}</div>
                 </div>
               </div>
 
@@ -378,7 +378,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 <MapPin size={15} className="text-[#ff9500] shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <span className="text-[10px] uppercase font-bold text-[#86868b]">Địa chỉ trụ sở</span>
-                  <div className="font-semibold text-[#1d1d1f] mt-0.5 leading-normal">{company.address || 'Chưa cập nhật'}</div>
+                  <div className="font-semibold text-[#0f172a] mt-0.5 leading-normal">{company.address || 'Chưa cập nhật'}</div>
                 </div>
               </div>
             </div>
@@ -389,10 +389,10 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
             {/* History Card */}
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#86868b] mb-3 flex items-center gap-1.5">
-                <BookOpen size={14} className="text-[#0071e3]" />
+                <BookOpen size={14} className="text-[#034ea1]" />
                 Lịch sử & Quy mô tổ chức
               </h3>
-              <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#1d1d1f] leading-relaxed whitespace-pre-wrap">
+              <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#0f172a] leading-relaxed whitespace-pre-wrap">
                 {company.history || 'Đơn vị chưa cập nhật thông tin chi tiết về lịch sử phát triển và quy mô.'}
               </div>
             </div>
@@ -403,7 +403,7 @@ export function CompanyDetail({ user, token }: { user: any; token: string }) {
                 <CheckCircle2 size={14} className="text-[#34c759]" />
                 Yêu cầu & Tiêu chí tiếp nhận sinh viên
               </h3>
-              <div className="bg-[#0071e3]/[0.04] border border-[#0071e3]/15 rounded-2xl p-5 text-xs text-[#005bb5] leading-relaxed whitespace-pre-wrap font-medium">
+              <div className="bg-[#034ea1]/[0.04] border border-[#034ea1]/15 rounded-2xl p-5 text-xs text-[#005bb5] leading-relaxed whitespace-pre-wrap font-medium">
                 {company.qualifications || 'Đơn vị tiếp nhận sinh viên theo quy chế đào tạo chung của Khoa CNTT.'}
               </div>
             </div>

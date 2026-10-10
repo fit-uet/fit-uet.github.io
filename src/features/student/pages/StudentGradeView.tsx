@@ -70,7 +70,7 @@ export function StudentGradeView({ token }: { token: string }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
-        <div className="w-9 h-9 rounded-full border-2 border-[#0071e3] border-t-transparent animate-spin mb-3.5" />
+        <div className="w-9 h-9 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3.5" />
         <span className="text-xs font-medium tracking-wide">Đang tải bảng điểm học phần...</span>
       </div>
     );
@@ -98,17 +98,17 @@ export function StudentGradeView({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Trang chủ
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center shadow-inner shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shadow-inner shrink-0">
               <Award size={22} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
                 Kết quả & Điểm học phần
                 <PageDescriptionTooltip description="Xem bảng điểm chi tiết theo 3 đầu điểm trọng số (20% - 20% - 60%) và nhận xét từ giảng viên hướng dẫn." />
               </h1>
@@ -123,14 +123,14 @@ export function StudentGradeView({ token }: { token: string }) {
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => navigate('/chat')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer"
           >
-            <MessageCircle size={14} className="text-[#0071e3]" />
+            <MessageCircle size={14} className="text-[#034ea1]" />
             Trao đổi với GVHD
           </button>
           <button
             onClick={() => navigate('/reports/final')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer"
           >
             <FileText size={14} className="text-[#86868b]" />
             Báo cáo đã nộp
@@ -142,7 +142,7 @@ export function StudentGradeView({ token }: { token: string }) {
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12">
           {/* Hero Left: Circular Ring & Achievement Identity */}
-          <div className="lg:col-span-5 p-8 sm:p-10 bg-gradient-to-br from-[#0071e3]/[0.03] via-[#34c759]/[0.02] to-transparent border-b lg:border-b-0 lg:border-r border-black/[0.05] flex flex-col justify-between items-center text-center">
+          <div className="lg:col-span-5 p-8 sm:p-10 bg-gradient-to-br from-[#034ea1]/[0.03] via-[#34c759]/[0.02] to-transparent border-b lg:border-b-0 lg:border-r border-black/[0.05] flex flex-col justify-between items-center text-center">
             {/* Status Capsule */}
             <div className="w-full flex items-center justify-between mb-6">
               <span className="text-[11px] font-bold tracking-widest text-[#86868b] uppercase">
@@ -181,7 +181,7 @@ export function StudentGradeView({ token }: { token: string }) {
                   cx="80"
                   cy="80"
                   r={radius}
-                  stroke={finalScoreNum && finalScoreNum >= 8.5 ? '#34c759' : '#0071e3'}
+                  stroke={finalScoreNum && finalScoreNum >= 8.5 ? '#34c759' : '#034ea1'}
                   strokeWidth="12"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
@@ -193,7 +193,7 @@ export function StudentGradeView({ token }: { token: string }) {
 
               {/* Centered Score */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-5xl font-black text-[#1d1d1f] tracking-tight leading-none">
+                <span className="text-5xl font-black text-[#0f172a] tracking-tight leading-none">
                   {scoreText(grade?.final_score)}
                 </span>
                 <span className="text-xs font-semibold text-[#86868b] mt-1.5 tracking-wider">
@@ -204,10 +204,10 @@ export function StudentGradeView({ token }: { token: string }) {
 
             {/* Classification & GPA Badges */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
-              <span className="px-3.5 py-1.5 rounded-xl bg-[#1d1d1f] text-white font-extrabold text-xs shadow-xs tracking-tight">
+              <span className="px-3.5 py-1.5 rounded-xl bg-[#0f172a] text-white font-extrabold text-xs shadow-xs tracking-tight">
                 Điểm chữ: {letterInfo.letter}
               </span>
-              <span className="px-3.5 py-1.5 rounded-xl bg-white border border-black/[0.08] text-[#1d1d1f] font-semibold text-xs shadow-xs">
+              <span className="px-3.5 py-1.5 rounded-xl bg-white border border-black/[0.08] text-[#0f172a] font-semibold text-xs shadow-xs">
                 GPA: {letterInfo.gpa} · {letterInfo.label}
               </span>
             </div>
@@ -240,14 +240,14 @@ export function StudentGradeView({ token }: { token: string }) {
             <div>
               <div className="flex items-center justify-between mb-6 pb-3 border-b border-black/[0.04]">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-lg bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center">
                     <Sparkles size={15} />
                   </div>
-                  <h2 className="text-sm font-bold text-[#1d1d1f] tracking-tight">
+                  <h2 className="text-sm font-bold text-[#0f172a] tracking-tight">
                     Cơ cấu 3 đầu điểm thành phần
                   </h2>
                 </div>
-                <span className="text-[11px] font-semibold text-[#86868b] bg-[#f5f5f7] px-2.5 py-1 rounded-full">
+                <span className="text-[11px] font-semibold text-[#86868b] bg-[#f8fafc] px-2.5 py-1 rounded-full">
                   Quy chế Đào tạo FIT UET
                 </span>
               </div>
@@ -258,15 +258,15 @@ export function StudentGradeView({ token }: { token: string }) {
                 <div className="p-4 rounded-2xl bg-[#fbfbfd] border border-black/[0.03]">
                   <div className="flex items-center justify-between text-xs mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-[#0071e3]/10 text-[#0071e3] text-[11px] font-bold flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-[#034ea1]/10 text-[#034ea1] text-[11px] font-bold flex items-center justify-center">
                         1
                       </span>
-                      <span className="font-bold text-[#1d1d1f]">
+                      <span className="font-bold text-[#0f172a]">
                         Điểm định kỳ / Tiến độ <span className="font-normal text-[#86868b]">(Tỉ trọng 20%)</span>
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="font-mono font-extrabold text-sm text-[#1d1d1f]">
+                      <span className="font-mono font-extrabold text-sm text-[#0f172a]">
                         {scoreText(grade?.progress_score)}
                       </span>
                       {progressScoreNum !== null && (
@@ -278,7 +278,7 @@ export function StudentGradeView({ token }: { token: string }) {
                   </div>
                   <div className="h-2 rounded-full bg-[#f2f2f7] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#0071e3] transition-all duration-700 ease-out"
+                      className="h-full rounded-full bg-[#034ea1] transition-all duration-700 ease-out"
                       style={{ width: `${Math.min(100, Math.max(0, (progressScoreNum ?? 0) * 10))}%` }}
                     />
                   </div>
@@ -291,15 +291,15 @@ export function StudentGradeView({ token }: { token: string }) {
                 <div className="p-4 rounded-2xl bg-[#fbfbfd] border border-black/[0.03]">
                   <div className="flex items-center justify-between text-xs mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-[#0071e3]/10 text-[#0071e3] text-[11px] font-bold flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-[#034ea1]/10 text-[#034ea1] text-[11px] font-bold flex items-center justify-center">
                         2
                       </span>
-                      <span className="font-bold text-[#1d1d1f]">
+                      <span className="font-bold text-[#0f172a]">
                         Điểm báo cáo thực tập <span className="font-normal text-[#86868b]">(Tỉ trọng 20%)</span>
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="font-mono font-extrabold text-sm text-[#1d1d1f]">
+                      <span className="font-mono font-extrabold text-sm text-[#0f172a]">
                         {scoreText(grade?.report_score)}
                       </span>
                       {reportScoreNum !== null && (
@@ -311,7 +311,7 @@ export function StudentGradeView({ token }: { token: string }) {
                   </div>
                   <div className="h-2 rounded-full bg-[#f2f2f7] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#0071e3] transition-all duration-700 ease-out"
+                      className="h-full rounded-full bg-[#034ea1] transition-all duration-700 ease-out"
                       style={{ width: `${Math.min(100, Math.max(0, (reportScoreNum ?? 0) * 10))}%` }}
                     />
                   </div>
@@ -327,12 +327,12 @@ export function StudentGradeView({ token }: { token: string }) {
                       <span className="w-5 h-5 rounded-full bg-[#34c759]/10 text-[#34c759] text-[11px] font-bold flex items-center justify-center">
                         3
                       </span>
-                      <span className="font-bold text-[#1d1d1f]">
+                      <span className="font-bold text-[#0f172a]">
                         Điểm công ty / Đơn vị thực tập <span className="font-normal text-[#86868b]">(Tỉ trọng 60%)</span>
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="font-mono font-extrabold text-sm text-[#1d1d1f]">
+                      <span className="font-mono font-extrabold text-sm text-[#0f172a]">
                         {scoreText(grade?.company_score)}
                       </span>
                       {companyScoreNum !== null && (
@@ -356,9 +356,9 @@ export function StudentGradeView({ token }: { token: string }) {
             </div>
 
             {/* Apple Formula Pill */}
-            <div className="mt-6 pt-4 border-t border-black/[0.04] text-[11px] text-[#6e6e73] font-mono bg-[#f5f5f7]/70 px-4 py-2.5 rounded-xl flex items-center justify-between">
+            <div className="mt-6 pt-4 border-t border-black/[0.04] text-[11px] text-[#6e6e73] font-mono bg-[#f8fafc]/70 px-4 py-2.5 rounded-xl flex items-center justify-between">
               <span>Công thức:</span>
-              <strong className="text-[#1d1d1f]">Điểm tổng kết = (Tiến độ × 0.2) + (Báo cáo × 0.2) + (Doanh nghiệp × 0.6)</strong>
+              <strong className="text-[#0f172a]">Điểm tổng kết = (Tiến độ × 0.2) + (Báo cáo × 0.2) + (Doanh nghiệp × 0.6)</strong>
             </div>
           </div>
         </div>
@@ -371,32 +371,32 @@ export function StudentGradeView({ token }: { token: string }) {
           {/* Lecturer Comments Card */}
           <div className="bg-white border border-black/[0.06] rounded-3xl p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-black/[0.04]">
-              <h3 className="text-sm font-bold text-[#1d1d1f] tracking-tight flex items-center gap-2">
-                <MessageCircle size={16} className="text-[#0071e3]" />
+              <h3 className="text-sm font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
+                <MessageCircle size={16} className="text-[#034ea1]" />
                 Nhận xét của Giảng viên hướng dẫn
               </h3>
               {grade?.grading_lecturer_name && (
                 <span className="text-xs font-semibold text-[#86868b]">
-                  GV chấm: <strong className="text-[#1d1d1f]">{grade.grading_lecturer_name}</strong>
+                  GV chấm: <strong className="text-[#0f172a]">{grade.grading_lecturer_name}</strong>
                 </span>
               )}
             </div>
 
             {grade?.comment ? (
-              <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#1d1d1f] leading-relaxed whitespace-pre-wrap font-medium">
+              <div className="bg-[#fbfbfd] border border-black/[0.04] rounded-2xl p-5 text-xs text-[#0f172a] leading-relaxed whitespace-pre-wrap font-medium">
                 "{grade.comment}"
               </div>
             ) : (
-              <div className="bg-[#f5f5f7]/60 rounded-2xl p-7 text-center text-xs text-[#86868b] font-medium">
+              <div className="bg-[#f8fafc]/60 rounded-2xl p-7 text-center text-xs text-[#86868b] font-medium">
                 Giảng viên chưa để lại nhận xét văn bản bổ sung.
               </div>
             )}
           </div>
 
           {/* Feedback & Inquiries Callout */}
-          <div className="bg-[#0071e3]/[0.05] border border-[#0071e3]/15 rounded-3xl p-6 text-xs text-[#005bb5] leading-relaxed">
+          <div className="bg-[#034ea1]/[0.05] border border-[#034ea1]/15 rounded-3xl p-6 text-xs text-[#005bb5] leading-relaxed">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-8 h-8 rounded-xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shrink-0 mt-0.5">
                 <AlertCircle size={17} />
               </div>
               <div className="space-y-1">
@@ -414,22 +414,22 @@ export function StudentGradeView({ token }: { token: string }) {
         {/* Right Column: Inset Grouped Internship Passport */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white border border-black/[0.06] rounded-3xl p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <h3 className="text-sm font-bold text-[#1d1d1f] tracking-tight mb-4 pb-3 border-b border-black/[0.04] flex items-center gap-2">
-              <GraduationCap size={17} className="text-[#1d1d1f]" />
+            <h3 className="text-sm font-bold text-[#0f172a] tracking-tight mb-4 pb-3 border-b border-black/[0.04] flex items-center gap-2">
+              <GraduationCap size={17} className="text-[#0f172a]" />
               Hồ sơ phân công & Nơi thực tập
             </h3>
 
             <div className="divide-y divide-black/[0.04] text-xs">
               {/* Internship Company */}
               <div className="py-3.5 flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center shrink-0 mt-0.5 shadow-inner">
+                <div className="w-9 h-9 rounded-2xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shrink-0 mt-0.5 shadow-inner">
                   <Building2 size={17} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
                     Nơi thực tập
                   </span>
-                  <div className="font-bold text-[#1d1d1f] text-sm mt-0.5 truncate">
+                  <div className="font-bold text-[#0f172a] text-sm mt-0.5 truncate">
                     {grade?.internship_place || 'Chưa xác nhận'}
                   </div>
                   {grade?.confirmed_at && (
@@ -449,7 +449,7 @@ export function StudentGradeView({ token }: { token: string }) {
                   <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
                     GVHD chính
                   </span>
-                  <div className="font-bold text-[#1d1d1f] text-sm mt-0.5">
+                  <div className="font-bold text-[#0f172a] text-sm mt-0.5">
                     {grade?.primary_advisors || 'Chưa phân công'}
                   </div>
                   {primaryEmails.length > 0 && (
@@ -458,7 +458,7 @@ export function StudentGradeView({ token }: { token: string }) {
                         <a
                           key={email}
                           href={`mailto:${email}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#0071e3]/10 text-[#0071e3] hover:bg-[#0071e3]/20 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#034ea1]/10 text-[#034ea1] hover:bg-[#034ea1]/20 transition-colors"
                         >
                           <Mail size={10} /> {email}
                         </a>
@@ -478,7 +478,7 @@ export function StudentGradeView({ token }: { token: string }) {
                     <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">
                       Đồng hướng dẫn
                     </span>
-                    <div className="font-bold text-[#1d1d1f] text-sm mt-0.5">{grade.co_advisors}</div>
+                    <div className="font-bold text-[#0f172a] text-sm mt-0.5">{grade.co_advisors}</div>
                     {coEmails.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {coEmails.map((email) => (

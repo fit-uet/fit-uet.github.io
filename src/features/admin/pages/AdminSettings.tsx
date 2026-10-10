@@ -168,12 +168,12 @@ export function AdminSettings({ token }: { token: string }) {
       <div>
         <button
           onClick={() => navigate('/admin')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-black/[0.08] shadow-xs hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
         >
           &larr; Quay lại Quản trị
         </button>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071e3] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#034ea1] flex items-center justify-center">
             <Save size={18} />
           </div>
           Cài đặt hệ thống
@@ -196,7 +196,7 @@ export function AdminSettings({ token }: { token: string }) {
                 const nextYear = e.target.value;
                 setCampaign({ ...campaign, year: nextYear, allowed_registration_cohorts: defaultAllowedCohortsForYear(nextYear) });
               }}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div className="md:col-span-2">
@@ -207,8 +207,8 @@ export function AdminSettings({ token }: { token: string }) {
                   key={item.key}
                   className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs cursor-pointer transition-all ${
                     selectedCohorts.includes(item.key)
-                      ? 'border-[#0071e3]/40 bg-[#ebf4ff] text-[#0071e3] font-semibold'
-                      : 'border-black/[0.08] bg-white text-slate-600 hover:bg-[#f5f5f7]'
+                      ? 'border-[#034ea1]/40 bg-[#e8f1fb] text-[#034ea1] font-semibold'
+                      : 'border-black/[0.08] bg-white text-slate-600 hover:bg-[#f8fafc]'
                   }`}
                 >
                   <span className="font-semibold">{item.key}</span>
@@ -217,7 +217,7 @@ export function AdminSettings({ token }: { token: string }) {
                     type="checkbox"
                     checked={selectedCohorts.includes(item.key)}
                     onChange={() => toggleAllowedCohort(item.key)}
-                    className="rounded border-slate-300 text-[#0071e3] focus:ring-[#0071e3]"
+                    className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1]"
                   />
                 </label>
               ))}
@@ -235,7 +235,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).registration_open_at || ''}
               onChange={e => setCampaign({ ...campaign, registration_open_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -244,7 +244,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).registration_close_at || ''}
               onChange={e => setCampaign({ ...campaign, registration_close_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -253,7 +253,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).confirmation_open_at || ''}
               onChange={e => setCampaign({ ...campaign, confirmation_open_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -262,7 +262,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).confirmation_close_at || ''}
               onChange={e => setCampaign({ ...campaign, confirmation_close_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -271,7 +271,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).final_report_open_at || ''}
               onChange={e => setCampaign({ ...campaign, final_report_open_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -280,7 +280,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).final_report_close_at || ''}
               onChange={e => setCampaign({ ...campaign, final_report_close_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -289,7 +289,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).grading_open_at || ''}
               onChange={e => setCampaign({ ...campaign, grading_open_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -298,7 +298,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).grading_close_at || ''}
               onChange={e => setCampaign({ ...campaign, grading_close_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -307,7 +307,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).advisor_request_open_at || ''}
               onChange={e => setCampaign({ ...campaign, advisor_request_open_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div>
@@ -316,7 +316,7 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).advisor_request_close_at || ''}
               onChange={e => setCampaign({ ...campaign, advisor_request_close_at: e.target.value } as any)}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
           <div className="md:col-span-2">
@@ -324,7 +324,7 @@ export function AdminSettings({ token }: { token: string }) {
             <textarea
               value={campaign.classes_list || ''}
               onChange={e => setCampaign({ ...campaign, classes_list: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner resize-y leading-relaxed"
+              className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner resize-y leading-relaxed"
               rows={2}
             />
           </div>
@@ -338,7 +338,7 @@ export function AdminSettings({ token }: { token: string }) {
                   min="1"
                   value={(campaign as any).advisor_quota_pgs || '5'}
                   onChange={e => setCampaign({ ...campaign, advisor_quota_pgs: e.target.value } as any)}
-                  className="w-full px-3.5 py-2 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all"
+                  className="w-full px-3.5 py-2 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all"
                 />
               </div>
               <div>
@@ -348,7 +348,7 @@ export function AdminSettings({ token }: { token: string }) {
                   min="1"
                   value={(campaign as any).advisor_quota_ts || '8'}
                   onChange={e => setCampaign({ ...campaign, advisor_quota_ts: e.target.value } as any)}
-                  className="w-full px-3.5 py-2 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all"
+                  className="w-full px-3.5 py-2 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all"
                 />
               </div>
               <div>
@@ -358,7 +358,7 @@ export function AdminSettings({ token }: { token: string }) {
                   min="1"
                   value={(campaign as any).advisor_quota_ths || '10'}
                   onChange={e => setCampaign({ ...campaign, advisor_quota_ths: e.target.value } as any)}
-                  className="w-full px-3.5 py-2 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all"
+                  className="w-full px-3.5 py-2 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all"
                 />
               </div>
             </div>
@@ -374,7 +374,7 @@ export function AdminSettings({ token }: { token: string }) {
                 ? 'bg-[#fff8eb] border-amber-200/60 text-[#b25e00]'
                 : status.tone === 'danger'
                 ? 'bg-[#fff2f1] border-red-200/60 text-[#d70015]'
-                : 'bg-[#f5f5f7] border-slate-200/60 text-slate-600';
+                : 'bg-[#f8fafc] border-slate-200/60 text-slate-600';
               return (
                 <div key={item.openKey} className={`flex items-start gap-3 p-3.5 rounded-xl border text-xs ${toneClass}`}>
                   <Clock size={16} className="shrink-0 mt-0.5" />
@@ -392,7 +392,7 @@ export function AdminSettings({ token }: { token: string }) {
           <button
             onClick={handleSaveCampaign}
             disabled={savingCampaign}
-            className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {savingCampaign ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
             {savingCampaign ? 'Đang lưu...' : 'Lưu cấu hình'}
@@ -414,12 +414,12 @@ export function AdminSettings({ token }: { token: string }) {
                 placeholder="https://docs.google.com/spreadsheets/d/1VVH.../edit?usp=sharing"
                 value={sheetUrl}
                 onChange={(e) => setSheetUrl(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                className="flex-1 px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
               />
               <button
                 onClick={handleSaveImportUrl}
                 disabled={savingUrl}
-                className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 <Save size={14} /> {savingUrl ? 'Đang lưu...' : 'Lưu URL'}
               </button>
@@ -434,12 +434,12 @@ export function AdminSettings({ token }: { token: string }) {
                 placeholder="https://docs.google.com/spreadsheets/d/1ABC..."
                 value={exportSheetUrl}
                 onChange={(e) => setExportSheetUrl(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+                className="flex-1 px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
               />
               <button
                 onClick={handleSaveExportUrl}
                 disabled={savingUrl}
-                className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 <Save size={14} /> {savingUrl ? 'Đang lưu...' : 'Lưu URL'}
               </button>
@@ -455,7 +455,7 @@ export function AdminSettings({ token }: { token: string }) {
             <button
               onClick={handleSyncCompanies}
               disabled={syncing}
-              className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2.5 rounded-xl hover:bg-[#f5f5f7] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-60"
+              className="bg-white text-slate-700 border border-black/[0.08] px-4 py-2.5 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-60"
             >
               <RefreshCw size={14} className={syncing ? 'animate-spin text-slate-500' : 'text-slate-500'} />
               {syncing ? 'Đang đồng bộ...' : 'Đồng bộ dữ liệu'}
@@ -464,7 +464,7 @@ export function AdminSettings({ token }: { token: string }) {
         </div>
       </div>
 
-      <div className="bg-[#ebf4ff] text-[#005bb5] p-5 rounded-2xl text-xs leading-relaxed border border-[#bfe0ff]/80">
+      <div className="bg-[#e8f1fb] text-[#005bb5] p-5 rounded-2xl text-xs leading-relaxed border border-[#bfe0ff]/80">
         <strong className="block mb-2 text-sm font-bold text-[#004085]">💡 Mẹo nhập dữ liệu vào Google Sheets:</strong>
         <ol className="list-decimal pl-5 space-y-1">
           <li>Từ danh sách Quản trị &gt; Bấm <strong>Lưu vào Google Sheets</strong> để đồng bộ dữ liệu lên bảng tính.</li>

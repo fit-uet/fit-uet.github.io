@@ -127,7 +127,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#86868b]">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0071e3] border-t-transparent animate-spin mb-3" />
+        <div className="w-8 h-8 rounded-full border-2 border-[#034ea1] border-t-transparent animate-spin mb-3" />
         <span className="text-xs font-medium">Đang tải danh sách báo cáo...</span>
       </div>
     );
@@ -140,17 +140,17 @@ export function FinalReportAdmin({ token }: { token: string }) {
         <div>
           <button
             onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer mb-3"
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#86868b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Quản trị hệ thống
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center shadow-inner shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shadow-inner shrink-0">
               <FileText size={22} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#1d1d1f] tracking-tight flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
                 Quản lý Báo cáo thực tập
                 <PageDescriptionTooltip description="Theo dõi báo cáo PDF cuối kỳ của sinh viên đã xác nhận nơi thực tập, tải file và duyệt trạng thái." />
               </h1>
@@ -162,7 +162,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
         {/* Top Action */}
         <button
           onClick={exportXlsx}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#1d1d1f] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f5f5f7] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto"
         >
           <Download size={14} className="text-[#86868b]" />
           Xuất XLSX
@@ -186,13 +186,13 @@ export function FinalReportAdmin({ token }: { token: string }) {
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#86868b] text-[11px] font-bold uppercase tracking-wider mb-2">
             <span>Đã nộp (Chờ duyệt)</span>
-            <FileText size={16} className="text-[#0071e3]" />
+            <FileText size={16} className="text-[#034ea1]" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-[#0071e3] tracking-tight">{reportStats.submitted}</span>
+            <span className="text-3xl font-extrabold text-[#034ea1] tracking-tight">{reportStats.submitted}</span>
             <span className="text-xs text-[#86868b]">báo cáo</span>
           </div>
-          <span className="text-[11px] text-[#0071e3] mt-2 font-medium">Chờ giảng viên phản hồi</span>
+          <span className="text-[11px] text-[#034ea1] mt-2 font-medium">Chờ giảng viên phản hồi</span>
         </div>
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
@@ -228,7 +228,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Tìm theo mã sinh viên, họ tên, nơi thực tập, GVHD..."
-            className="w-full pl-9 pr-4 py-2 border border-black/[0.08] rounded-full text-xs bg-[#f5f5f7] focus:bg-white focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 outline-none transition-all text-[#1d1d1f]"
+            className="w-full pl-9 pr-4 py-2 border border-black/[0.08] rounded-full text-xs bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all text-[#0f172a]"
           />
         </div>
 
@@ -236,7 +236,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full md:w-auto border border-black/[0.08] rounded-full px-4 py-2 text-xs font-semibold bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] outline-none cursor-pointer"
+            className="w-full md:w-auto border border-black/[0.08] rounded-full px-4 py-2 text-xs font-semibold bg-[#f8fafc] hover:bg-[#e8e8ed] text-[#0f172a] outline-none cursor-pointer"
           >
             <option value="">Tất cả trạng thái nộp</option>
             <option value="missing">Chưa nộp</option>
@@ -269,17 +269,17 @@ export function FinalReportAdmin({ token }: { token: string }) {
                 </tr>
               ) : (
                 paginatedRows.map((row) => (
-                  <tr key={row.user_id} className="hover:bg-[#f5f5f7]/60 transition-colors align-top">
+                  <tr key={row.user_id} className="hover:bg-[#f8fafc]/60 transition-colors align-top">
                     <td className="px-5 py-4">
-                      <div className="font-bold text-[#1d1d1f] text-xs">{cleanStudentName(row.student_name, row.student_id)}</div>
+                      <div className="font-bold text-[#0f172a] text-xs">{cleanStudentName(row.student_name, row.student_id)}</div>
                       <div className="text-xs text-[#86868b] font-mono mt-0.5">{row.student_id || '-'}</div>
                       <div className="text-[11px] text-[#86868b] mt-0.5">
                         {row.class_name || '-'} · {row.course_code || '-'}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-[#1d1d1f] font-medium">{row.internship_place || '-'}</td>
+                    <td className="px-5 py-4 text-[#0f172a] font-medium">{row.internship_place || '-'}</td>
                     <td className="px-5 py-4">
-                      <div className="font-semibold text-[#1d1d1f]">{row.primary_advisors || '-'}</div>
+                      <div className="font-semibold text-[#0f172a]">{row.primary_advisors || '-'}</div>
                       {row.co_advisors && (
                         <div className="text-[11px] text-[#86868b] mt-0.5">Đồng HD: {row.co_advisors}</div>
                       )}
@@ -292,8 +292,8 @@ export function FinalReportAdmin({ token }: { token: string }) {
                             : row.report_status === 'needs_revision'
                             ? 'bg-[#fff8eb] text-[#b25e00] border-amber-200/60'
                             : row.report_status === 'submitted'
-                            ? 'bg-[#0071e3]/10 text-[#0071e3] border-[#0071e3]/20'
-                            : 'bg-[#f5f5f7] text-[#86868b] border-black/[0.04]'
+                            ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
+                            : 'bg-[#f8fafc] text-[#86868b] border-black/[0.04]'
                         }`}
                       >
                         <span
@@ -303,7 +303,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
                               : row.report_status === 'needs_revision'
                               ? 'bg-[#ff9500]'
                               : row.report_status === 'submitted'
-                              ? 'bg-[#0071e3]'
+                              ? 'bg-[#034ea1]'
                               : 'bg-[#86868b]'
                           }`}
                         />
@@ -331,7 +331,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
                         <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
                           <button
                             onClick={() => downloadReport(row.user_id, row.original_filename)}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-[#0071e3] bg-[#0071e3]/10 hover:bg-[#0071e3]/20 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-[#034ea1] bg-[#034ea1]/10 hover:bg-[#034ea1]/20 transition-colors cursor-pointer"
                           >
                             <Download size={12} />
                             Tải PDF
