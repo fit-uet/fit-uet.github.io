@@ -32,7 +32,7 @@ src/
 
 The entire application adheres to the **Apple Human Interface Guidelines (HIG)** design philosophy while preserving the signature FIT UET blue header gradient:
 
-- **Comprehensive Design Specification**: Detailed guidelines live in [`docs/UI_DESIGN_SYSTEM.md`](docs/UI_DESIGN_SYSTEM.md).
+- **Comprehensive Design Specification**: Detailed guidelines live in [`UI_DESIGN_SYSTEM.md`](UI_DESIGN_SYSTEM.md).
 - **Global Tokens**: Defined in `src/index.css` following Apple System Palette:
   - Canvas: Apple System Gray 6 (`#F5F5F7`).
   - Cards / Surfaces: Pure White (`#FFFFFF`) with 16 px squircle radius (`rounded-2xl`), hairline border (`rgba(0,0,0,0.08)` or `#E5E5EA`), and soft multi-layered ambient shadows.
@@ -88,23 +88,23 @@ To eliminate reliance on manual administrator intervention, the notification sub
 flowchart TD
     A["Daily Cron Schedule (07:05 ICT)"] --> B["POST /api/cron/process-email-queue"]
     C["Admin Click 'Gửi theo quota' (Manual Override)"] --> D["POST /api/admin/notifications/send-queued"]
-    
+  
     B --> E["Verify Authentication (CRON_SECRET / Admin Session)"]
     D --> E
-    
+  
     E --> F["Compute remaining_quota = max(0, EMAIL_DAILY_SEND_CAP - sent_today)"]
     F --> G{"remaining_quota > 0 and queued_count > 0?"}
-    
+  
     G -- "No" --> H["Finish gracefully (logged: skipped / quota exhausted)"]
     G -- "Yes" --> I["Fetch queued rows (ORDER BY created_at ASC, id ASC LIMIT remaining_quota)"]
-    
+  
     I --> J["Dispatch emails via Provider (Brevo / Resend) in batches"]
     J --> K{"Provider response"}
-    
+  
     K -- "Success (2xx)" --> L["Update status = 'sent', sent_at = NOW()"]
     K -- "Rate limit / Quota reached (429)" --> M["Stop dispatching; keep status = 'queued' for next day"]
     K -- "Permanent error (4xx/5xx)" --> N["Update status = 'failed', record error details"]
-    
+  
     L --> O["Return summary counters (sent, failed, remaining_today)"]
     M --> O
     N --> O
@@ -123,15 +123,15 @@ To protect both system resources and administrative workflows, the system enforc
 
 #### Recipient Routing Matrix
 
-| Event Type | Intended Recipient | Admin Web Notification | Admin Email | Rationale / Delivery Mode |
-| :--- | :--- | :---: | :---: | :--- |
-| `registration_status_changed` | Student | ❌ No | ❌ No | Push to student regarding registration result |
-| `final_confirmation_open` | Student | ❌ No | ❌ No | Push broadcast/targeted reminder to students |
-| `final_internship_confirmed` | Student | ❌ No | ❌ No | Confirmation receipt for student |
-| `advisor_assigned` | Student | ❌ No | ❌ No | Push assignment details to student |
-| `final_report_due_reminder` | Student | ❌ No | ❌ No | Deadline reminder targeted to students |
-| `final_report_status_changed` | Student | ❌ No | ❌ No | Review feedback pushed to student |
-| **`grade_submitted`** | **Student Only** | ❌ **Excluded** | ❌ **Excluded** | **Push receipt strictly to the graded student. Admin excluded to prevent inbox flooding and quota exhaustion.** |
+| Event Type                      | Intended Recipient     | Admin Web Notification |     Admin Email     | Rationale / Delivery Mode                                                                                             |
+| :------------------------------ | :--------------------- | :--------------------: | :------------------: | :-------------------------------------------------------------------------------------------------------------------- |
+| `registration_status_changed` | Student                |         ❌ No         |        ❌ No        | Push to student regarding registration result                                                                         |
+| `final_confirmation_open`     | Student                |         ❌ No         |        ❌ No        | Push broadcast/targeted reminder to students                                                                          |
+| `final_internship_confirmed`  | Student                |         ❌ No         |        ❌ No        | Confirmation receipt for student                                                                                      |
+| `advisor_assigned`            | Student                |         ❌ No         |        ❌ No        | Push assignment details to student                                                                                    |
+| `final_report_due_reminder`   | Student                |         ❌ No         |        ❌ No        | Deadline reminder targeted to students                                                                                |
+| `final_report_status_changed` | Student                |         ❌ No         |        ❌ No        | Review feedback pushed to student                                                                                     |
+| **`grade_submitted`**   | **Student Only** |  ❌**Excluded**  | ❌**Excluded** | **Push receipt strictly to the graded student. Admin excluded to prevent inbox flooding and quota exhaustion.** |
 
 #### Design Rationale for Admin Exclusion on Grade Submission (`grade_submitted`)
 
@@ -147,14 +147,17 @@ To protect both system resources and administrative workflows, the system enforc
 ## Unconfirmed Internship Students Export Architecture
 
 ### Business Purpose & Operational Context
+
 During the internship campaign lifecycle, students submit up to 5 preferences for internship companies. After interviews are conducted, the Faculty opens the confirmation phase (`final_internships`) where each admitted student must attest and confirm one official location.
 
 Administrators need to rapidly audit and extract the exact cohort of students who have registered on the system but **have not yet confirmed their official internship location**. This list enables the Faculty to:
+
 1. Contact unconfirmed students via email/phone before deadlines expire.
 2. Identify students who failed company interviews to transition them into school-based internships (`Trường Đại học Công nghệ`) with assigned faculty advisors.
 3. Prepare final allocation reports for academic boards.
 
 ### UI Integration
+
 - Located inside the **"Xuất dữ liệu"** dropdown on the primary Registration Admin screen (`/admin/registrations` / `AdminPanel.tsx`).
 - Styled with an amber `UserX` icon and dual-line label:
   - Primary text: **Xuất DS chưa xác nhận (XLSX)**
@@ -162,7 +165,9 @@ Administrators need to rapidly audit and extract the exact cohort of students wh
 - Features a loading spinner state (`RefreshCw`) during generation to prevent duplicate requests.
 
 ### Data Contract & Fields
+
 The exported XLSX file (`danh_sach_sinh_vien_chua_xac_nhan_thuc_tap.xlsx`) includes:
+
 - **STT**: Sequential number
 - **Mã SV**: Student identification number
 - **Họ và tên**: Full student name
@@ -178,7 +183,6 @@ The exported XLSX file (`danh_sach_sinh_vien_chua_xac_nhan_thuc_tap.xlsx`) inclu
 - **Ghi chú**: Relevant registration notes
 
 ### Hybrid Execution & Resilience
+
 1. **Primary Route**: Requests `GET /api/admin/unconfirmed-internships` (available in both Express `server.ts` and Cloudflare Worker `src/worker.ts`).
 2. **Client-side Fallback**: If the server endpoint is momentarily unreachable (e.g. during a deployment restart), the client-side component automatically correlates the in-memory `registrations` state with `GET /api/admin/final-internships` to build and download the complete XLSX file seamlessly.
-
-

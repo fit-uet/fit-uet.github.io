@@ -16,9 +16,9 @@ scratch/
 # Environment files and local credentials
 .env*
 !.env.example
-!.env.production
 .dev.vars
 !.dev.vars.example
+.credentials/
 *.json
 !package.json
 !package-lock.json
@@ -31,4 +31,5 @@ scratch/
 *.sqlite-*
 *.bak*
 *.backup*
+*.sql
 HPSCANS/

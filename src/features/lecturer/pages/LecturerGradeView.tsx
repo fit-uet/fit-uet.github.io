@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, RefreshCw, FileText, Download, ChevronLeft, Award, Clock, AlertCircle, Sparkles, Lock } from 'lucide-react';
 import { saveAs } from 'file-saver';
-import { API_BASE, PageDescriptionTooltip } from '../../../shared';
+import { API_BASE, PageDescriptionTooltip, CACHE_TTL, cachedJsonFetch } from '../../../shared';
 import { ReportReviewPanel, type ReviewTarget } from './ReportReviewPanel';
 
 const SCORE_FIELDS = ['progress_score', 'report_score', 'company_score'] as const;
@@ -12,6 +12,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
   const navigate = useNavigate();
   const [grades, setGrades] = useState<any[]>([]);
   const [gradeEdits, setGradeEdits] = useState<Record<string, any>>({});
+  const [campaign, setCampaign] = useState<any>(null);
   const [loadingGrades, setLoadingGrades] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({});
@@ -44,6 +45,13 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
 
   useEffect(() => {
     fetchGrades();
+    cachedJsonFetch<any>(`${API_BASE}/api/settings/campaign`, {
+      cacheKey: 'settings:campaign',
+      ttlMs: CACHE_TTL.campaign,
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((data) => {
+      if (data && !data.error) setCampaign(data);
+    });
   }, [token]);
 
   const statusLabel = (status?: string) =>
@@ -57,6 +65,33 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
 
   const gradeStatusLabel = (status?: string) =>
     status === 'submitted' ? 'Đã công bố' : status === 'draft' ? 'Bản nháp' : 'Chưa nhập';
+
+  const gradingWindowStatus = useMemo(() => {
+    if (user?.role === 'admin') return { status: 'open', message: '' };
+    const openStr = String(campaign?.grading_open_at || '').trim();
+    const closeStr = String(campaign?.grading_close_at || '').trim();
+    if (!openStr && !closeStr) return { status: 'open', message: '' };
+    const toUTC = (s: string) => (s ? new Date(s + ':00+07:00') : null);
+    const now = new Date();
+    const openUTC = openStr ? toUTC(openStr) : null;
+    const closeUTC = closeStr ? toUTC(closeStr) : null;
+    if (openUTC && now < openUTC) {
+      return {
+        status: 'not_open_yet',
+        message: `Chưa đến thời gian nhập điểm học phần (Mở lúc: ${openStr.replace('T', ' ')} GMT+7).`,
+      };
+    }
+    if (closeUTC && now > closeUTC) {
+      return {
+        status: 'closed',
+        message: `Đã hết thời hạn nhập điểm học phần (Hạn cuối: ${closeStr.replace('T', ' ')} GMT+7). Vui lòng liên hệ Văn phòng Khoa nếu cần hỗ trợ.`,
+      };
+    }
+    return {
+      status: 'open',
+      message: closeStr ? `Hạn chót nhập điểm: ${closeStr.replace('T', ' ')} (GMT+7)` : '',
+    };
+  }, [campaign, user?.role]);
 
   const previewFinalScore = (edit: any) => {
     const p = edit?.progress_score === '' ? null : Number(edit?.progress_score);
@@ -210,10 +245,39 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
           onNext={handleNextStudent}
           hasPrev={reviewIndex > 0}
           hasNext={reviewIndex < grades.length - 1}
+          windowClosed={gradingWindowStatus.status !== 'open'}
+          windowMessage={gradingWindowStatus.message}
         />
       )}
 
       <div className="max-w-7xl mx-auto space-y-6 pb-12">
+        {/* Banner cảnh báo thời hạn chấm điểm */}
+        {gradingWindowStatus.status === 'closed' && (
+          <div className="bg-[#fff2f1] border border-[#ffd8d6] text-[#d70015] rounded-2xl p-4 text-xs flex items-center gap-2.5 font-medium shadow-xs">
+            <AlertCircle size={18} className="shrink-0 text-[#d70015]" />
+            <div>
+              <strong>Đã đóng cổng nhập điểm học phần:</strong> {gradingWindowStatus.message}
+            </div>
+          </div>
+        )}
+
+        {gradingWindowStatus.status === 'not_open_yet' && (
+          <div className="bg-[#fff8eb] border border-[#ffe1a6] text-[#b25e00] rounded-2xl p-4 text-xs flex items-center gap-2.5 font-medium shadow-xs">
+            <Clock size={18} className="shrink-0 text-[#b25e00]" />
+            <div>
+              <strong>Chưa mở cổng nhập điểm:</strong> {gradingWindowStatus.message}
+            </div>
+          </div>
+        )}
+
+        {gradingWindowStatus.status === 'open' && gradingWindowStatus.message && (
+          <div className="bg-[#f0f9ff] border border-[#bae6fd] text-[#0369a1] rounded-2xl p-3 text-xs flex items-center gap-2.5 font-medium shadow-xs">
+            <Clock size={15} className="shrink-0 text-[#0284c7]" />
+            <div>
+              <strong>Thời hạn chấm điểm:</strong> {gradingWindowStatus.message}
+            </div>
+          </div>
+        )}
         {/* Apple Large Title & Navigation Toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
@@ -317,7 +381,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                 ) : (
                   grades.map((row: any, idx: number) => {
                     const edit = gradeEdits[String(row.user_id)] || {};
-                    const disabled = !!row.locked_at;
+                    const disabled = !!row.locked_at || gradingWindowStatus.status !== 'open';
                     const hasReport = !!row.report_status;
 
                     return (

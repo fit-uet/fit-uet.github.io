@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { CheckCircle2, Download, Search, Trash2 } from 'lucide-react';
+import { CheckCircle2, Download, Search, Trash2, Lock, Unlock, AlertCircle } from 'lucide-react';
 import { API_BASE, saveXlsx, paginationBounds, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
 
 export function GradeAdmin({ token }: { token: string }) {
@@ -10,6 +10,7 @@ export function GradeAdmin({ token }: { token: string }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [lockingBatch, setLockingBatch] = useState(false);
   const pageSize = 25;
 
   const statusLabel = (status?: string) => status === 'submitted' ? 'Đã nộp' : status === 'draft' ? 'Nháp' : 'Chưa có';
@@ -54,6 +55,41 @@ export function GradeAdmin({ token }: { token: string }) {
     });
     if (res.ok) fetchRows();
     else alert('Cập nhật khóa điểm thất bại.');
+  };
+
+  const handleLockAll = async (locked: boolean) => {
+    if (locked) {
+      const submittedCount = rows.filter(r => (r.grade_status === 'submitted' || r.final_score !== null) && !r.locked_at).length;
+      if (submittedCount === 0) {
+        alert('Không có sinh viên nào có điểm đã nộp đang ở trạng thái chưa khóa.');
+        return;
+      }
+      if (!confirm(`Bạn có chắc chắn muốn KHÓA ĐIỂM cho tất cả sinh viên đã có điểm (${submittedCount} sinh viên) không?\n\nSau khi khóa, giảng viên sẽ không thể chỉnh sửa điểm nếu chưa được Khoa mở khóa riêng.`)) return;
+    } else {
+      const lockedCount = rows.filter(r => r.locked_at).length;
+      if (lockedCount === 0) {
+        alert('Hiện tại không có sinh viên nào đang bị khóa điểm.');
+        return;
+      }
+      if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn MỞ KHÓA TOÀN BỘ ${lockedCount} sinh viên không?\n\nGiảng viên sẽ có thể chỉnh sửa lại điểm (nếu còn trong thời hạn chấm điểm).`)) return;
+    }
+
+    setLockingBatch(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/grades/lock-all`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ locked, onlySubmitted: locked }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Cập nhật khóa điểm thất bại.');
+      alert(locked ? 'Đã khóa điểm thành công cho toàn bộ sinh viên đã nộp!' : 'Đã mở khóa toàn bộ bảng điểm thành công!');
+      fetchRows();
+    } catch (e: any) {
+      alert(`Lỗi: ${e.message || 'Không thể cập nhật khóa điểm.'}`);
+    } finally {
+      setLockingBatch(false);
+    }
   };
 
   const filtered = rows.filter(row => {
@@ -132,6 +168,22 @@ export function GradeAdmin({ token }: { token: string }) {
           <option value="draft">Nháp</option>
           <option value="submitted">Đã nộp</option>
         </select>
+        <button
+          onClick={() => handleLockAll(true)}
+          disabled={lockingBatch}
+          title="Khóa toàn bộ điểm của các sinh viên đã nộp để niêm phong sổ điểm"
+          className="bg-[#fff2f1] text-[#d70015] border border-[#ffd8d6] hover:bg-[#ffd8d6] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
+        >
+          <Lock size={14} /> Khóa tất cả đã nộp
+        </button>
+        <button
+          onClick={() => handleLockAll(false)}
+          disabled={lockingBatch}
+          title="Mở khóa cho toàn bộ bảng điểm"
+          className="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
+        >
+          <Unlock size={14} /> Mở khóa tất cả
+        </button>
         <button
           onClick={exportXlsx}
           className="bg-white text-[#1d1d1f] border border-[#e5e5ea] hover:bg-[#f5f5f7] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"

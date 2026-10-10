@@ -49,6 +49,8 @@ interface Props {
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  windowClosed?: boolean;
+  windowMessage?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -87,6 +89,8 @@ export function ReportReviewPanel({
   onNext,
   hasPrev,
   hasNext,
+  windowClosed,
+  windowMessage,
 }: Props) {
   const uid = target.user_id ?? target.userId;
   const studentName = target.student_name ?? target.studentName ?? 'Sinh viên';
@@ -113,7 +117,7 @@ export function ReportReviewPanel({
 
   // Grade form
   const isPrimary = target.is_primary !== false;
-  const locked = !!target.locked_at;
+  const locked = !!target.locked_at || !!windowClosed;
   const [progress, setProgress] = useState(String(target.progress_score ?? ''));
   const [report, setReport] = useState(String(target.report_score ?? ''));
   const [company, setCompany] = useState(String(target.company_score ?? ''));
@@ -389,8 +393,8 @@ export function ReportReviewPanel({
               {reportStatusLabel(localReportStatus)}
             </span>
             {locked && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-red-50 border-red-200 text-red-700">
-                Đã khóa điểm
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${target.locked_at ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                {target.locked_at ? 'Đã khóa điểm' : 'Hết hạn chấm điểm'}
               </span>
             )}
           </div>
@@ -602,11 +606,15 @@ export function ReportReviewPanel({
                   )}
                 </div>
 
-                {locked && (
+                {target.locked_at ? (
                   <div className="rounded-lg bg-red-50 border border-red-200 p-2 text-xs text-red-700 font-medium">
                     Điểm đã bị Khoa khóa.
                   </div>
-                )}
+                ) : windowClosed ? (
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800 font-medium">
+                    {windowMessage || 'Đã hết thời hạn nhập điểm học phần của Khoa.'}
+                  </div>
+                ) : null}
 
                 {gradeSuccess && (
                   <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-xs text-emerald-700 font-medium">

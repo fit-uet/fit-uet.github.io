@@ -586,7 +586,7 @@ function calculateFinalScore(progressScore: number | null, reportScore: number |
 }
 
 async function getCampaignSettings(database: DatabaseClient) {
-  const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'faq_student_md', 'faq_lecturer_md')")).rows);
+  const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'grading_open_at', 'grading_close_at', 'faq_student_md', 'faq_lecturer_md')")).rows);
   return {
     year: settings.campaign_year || '2026',
     start: settings.campaign_start || '22/05/2026',
@@ -600,6 +600,8 @@ async function getCampaignSettings(database: DatabaseClient) {
     confirmation_close_at: settings.confirmation_close_at || '',
     final_report_open_at: settings.final_report_open_at || '',
     final_report_close_at: settings.final_report_close_at || '',
+    grading_open_at: settings.grading_open_at || '',
+    grading_close_at: settings.grading_close_at || '',
     faq_student_md: settings.faq_student_md || DEFAULT_STUDENT_FAQ,
     faq_lecturer_md: settings.faq_lecturer_md || DEFAULT_LECTURER_FAQ,
   };
@@ -1128,6 +1130,8 @@ async function initDb(env: Env, force = false) {
       INSERT OR IGNORE INTO settings (key, value) VALUES ('confirmation_close_at', '');
       INSERT OR IGNORE INTO settings (key, value) VALUES ('final_report_open_at', '');
       INSERT OR IGNORE INTO settings (key, value) VALUES ('final_report_close_at', '');
+      INSERT OR IGNORE INTO settings (key, value) VALUES ('grading_open_at', '');
+      INSERT OR IGNORE INTO settings (key, value) VALUES ('grading_close_at', '');
       INSERT OR IGNORE INTO settings (key, value) VALUES ('classes_list', '${DEFAULT_CLASSES}');
       INSERT OR IGNORE INTO settings (key, value) VALUES ('implementation_plan_md', '${DEFAULT_PLAN.replace(/'/g, "''")}');
       INSERT OR IGNORE INTO settings (key, value) VALUES ('registration_rules_md', '${DEFAULT_REGISTRATION_RULES.replace(/'/g, "''")}');
@@ -2377,9 +2381,21 @@ async function route(request: Request, env: Env) {
     return assignment ? Number(lecturer.id) : null;
   }
 
-  async function saveGradeForStudent(userId: number, lecturerId: number, body: any, submit = false) {
+  async function saveGradeForStudent(userId: number, lecturerId: number, body: any, submit = false, actorRole = 'lecturer') {
     const existing = (await database.execute({ sql: 'SELECT * FROM grades WHERE user_id = ?', args: [userId] })).rows[0] as any;
     if (existing?.locked_at) return { error: 'Điểm đã bị khóa. Vui lòng liên hệ Khoa nếu cần sửa.', status: 400 };
+    if (actorRole !== 'admin') {
+      const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('grading_open_at', 'grading_close_at')")).rows);
+      const windowStatus = isWithinLocalWindow(settings, 'grading_open_at', 'grading_close_at');
+      if (!windowStatus.ok) {
+        return {
+          error: windowStatus.error === 'Chưa đến thời gian cho phép.'
+            ? 'Chưa đến thời gian nhập điểm học phần.'
+            : 'Đã hết thời hạn nhập điểm học phần. Vui lòng liên hệ Khoa nếu cần hỗ trợ.',
+          status: 403,
+        };
+      }
+    }
     const progressScore = normalizeScore(body.progress_score);
     const reportScore = normalizeScore(body.report_score);
     const companyScore = normalizeScore(body.company_score);
@@ -2463,7 +2479,7 @@ async function route(request: Request, env: Env) {
     let lecturerId = await getPrimaryLecturerForUser(user, userId);
     if (user.role === 'admin' && body.lecturer_id) lecturerId = Number(body.lecturer_id);
     if (!lecturerId) return json({ error: 'Chỉ GVHD chính được nhập điểm cho sinh viên này.' }, 403);
-    const result = await saveGradeForStudent(userId, lecturerId, body, false);
+    const result = await saveGradeForStudent(userId, lecturerId, body, false, user.role);
     if (result.error) return json({ error: result.error }, result.status || 400);
     return json(result.row);
   }
@@ -2476,7 +2492,7 @@ async function route(request: Request, env: Env) {
     let lecturerId = await getPrimaryLecturerForUser(user, userId);
     if (user.role === 'admin' && body.lecturer_id) lecturerId = Number(body.lecturer_id);
     if (!lecturerId) return json({ error: 'Chỉ GVHD chính được nộp điểm cho sinh viên này.' }, 403);
-    const result = await saveGradeForStudent(userId, lecturerId, body, true);
+    const result = await saveGradeForStudent(userId, lecturerId, body, true, user.role);
     if (result.error) return json({ error: result.error }, result.status || 400);
     const student = (await database.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
     await notify({
@@ -3626,6 +3642,40 @@ async function route(request: Request, env: Env) {
     })));
   }
 
+  if (method === 'PUT' && path === '/api/admin/grades/lock-all') {
+    requireRole(user, ['admin']);
+    const body = await readBody(request);
+    const locked = body.locked !== false;
+    const onlySubmitted = body.onlySubmitted !== false;
+    if (locked) {
+      const condition = onlySubmitted ? "(status = 'submitted' OR final_score IS NOT NULL)" : '1=1';
+      const result = await database.execute(`
+        UPDATE grades
+        SET locked_at = datetime('now', '+7 hours'), updated_at = datetime('now', '+7 hours')
+        WHERE ${condition} AND locked_at IS NULL
+      `);
+      await database.execute(`
+        UPDATE final_internships
+        SET locked_at = datetime('now', '+7 hours')
+        WHERE user_id IN (SELECT user_id FROM grades WHERE locked_at IS NOT NULL)
+          AND locked_at IS NULL
+      `);
+      return json({ success: true, count: result.rowsAffected || 0 });
+    } else {
+      const result = await database.execute(`
+        UPDATE grades
+        SET locked_at = NULL, updated_at = datetime('now', '+7 hours')
+        WHERE locked_at IS NOT NULL
+      `);
+      await database.execute(`
+        UPDATE final_internships
+        SET locked_at = NULL
+        WHERE locked_at IS NOT NULL
+      `);
+      return json({ success: true, count: result.rowsAffected || 0 });
+    }
+  }
+
   const adminGradeLock = path.match(/^\/api\/admin\/grades\/(\d+)\/lock$/);
   if (adminGradeLock && method === 'PUT') {
     const body = await readBody(request);
@@ -4162,6 +4212,8 @@ async function route(request: Request, env: Env) {
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('confirmation_close_at', ?)", args: [body.confirmation_close_at || ''] },
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('final_report_open_at', ?)", args: [body.final_report_open_at || ''] },
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('final_report_close_at', ?)", args: [body.final_report_close_at || ''] },
+      { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('grading_open_at', ?)", args: [body.grading_open_at || ''] },
+      { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('grading_close_at', ?)", args: [body.grading_close_at || ''] },
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('classes_list', ?)", args: [body.classes_list || DEFAULT_CLASSES] },
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('allowed_registration_cohorts', ?)", args: [Array.isArray(body.allowed_registration_cohorts) ? body.allowed_registration_cohorts.join(',') : String(body.allowed_registration_cohorts || '')] },
     ]);

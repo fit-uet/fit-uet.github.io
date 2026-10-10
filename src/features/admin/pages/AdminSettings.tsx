@@ -123,6 +123,7 @@ export function AdminSettings({ token }: { token: string }) {
     { title: 'Đăng ký học phần', openKey: 'registration_open_at', closeKey: 'registration_close_at' },
     { title: 'Xác nhận nơi thực tập', openKey: 'confirmation_open_at', closeKey: 'confirmation_close_at' },
     { title: 'Nộp báo cáo', openKey: 'final_report_open_at', closeKey: 'final_report_close_at' },
+    { title: 'Chấm điểm báo cáo', openKey: 'grading_open_at', closeKey: 'grading_close_at' },
     { title: 'Đăng ký GV hướng dẫn', openKey: 'advisor_request_open_at', closeKey: 'advisor_request_close_at' }
   ];
 
@@ -279,6 +280,24 @@ export function AdminSettings({ token }: { token: string }) {
               type="datetime-local"
               value={(campaign as any).final_report_close_at || ''}
               onChange={e => setCampaign({ ...campaign, final_report_close_at: e.target.value } as any)}
+              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">⏰ Mở chấm điểm lúc <span className="text-slate-400 font-normal">(GMT+7)</span></label>
+            <input
+              type="datetime-local"
+              value={(campaign as any).grading_open_at || ''}
+              onChange={e => setCampaign({ ...campaign, grading_open_at: e.target.value } as any)}
+              className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">⏱️ Đóng chấm điểm lúc <span className="text-slate-400 font-normal">(GMT+7)</span></label>
+            <input
+              type="datetime-local"
+              value={(campaign as any).grading_close_at || ''}
+              onChange={e => setCampaign({ ...campaign, grading_close_at: e.target.value } as any)}
               className="w-full px-3.5 py-2.5 bg-[#f5f5f7]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none transition-all shadow-inner"
             />
           </div>

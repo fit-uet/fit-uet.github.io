@@ -975,7 +975,8 @@ Thiết kế API:
 - `PUT /api/lecturer/grades/:userId`: lưu điểm nháp.
 - `POST /api/lecturer/grades/:userId/submit`: nộp điểm.
 - `GET /api/admin/grades`: admin xem toàn bộ điểm.
-- `PUT /api/admin/grades/:userId/lock`: khóa điểm.
+- `PUT /api/admin/grades/:userId/lock`: khóa/mở khóa điểm từng sinh viên.
+- `PUT /api/admin/grades/lock-all`: khóa tất cả điểm đã nộp hoặc mở khóa toàn bộ bảng điểm (`{ locked: boolean, onlySubmitted?: boolean }`).
 - `GET /api/admin/grades`: UI dùng dữ liệu này để xuất XLSX.
 - `GET /api/admin/grades/export.csv`: endpoint tương thích cũ nếu cần tải CSV trực tiếp.
 
@@ -983,14 +984,17 @@ Thiết kế UI:
 
 - Giảng viên:
   - Bảng “Chấm điểm thực tập” trong trang giảng viên.
+  - Tự động kiểm tra thời hạn chấm điểm từ Cài đặt hệ thống (`grading_open_at` đến `grading_close_at`). Khi hết hạn, hiển thị banner cảnh báo và form chuyển sang read-only.
   - Chỉ GVHD chính nhập/sửa/nộp điểm.
   - **Nhấn vào tên sinh viên hoặc nút “Xem & Chấm” → mở inline review panel** (xem 9.5.1) tích hợp xem PDF và nhập điểm cùng màn hình. Luồng chấm điểm và duyệt báo cáo gộp vào một nơi.
-  - Chặn sửa khi điểm đã bị admin khoá (panel vẫn mở được để xem báo cáo, form chuyển read-only).
+  - Chặn sửa khi điểm đã bị admin khoá hoặc khi hết thời hạn chấm điểm (panel vẫn mở được để xem báo cáo, form chuyển read-only).
   - Tự tính điểm tổng kết realtime khi nhập.
   - Cảnh báo thiếu báo cáo final hoặc chưa xác nhận nơi thực tập ngay trong panel.
   - Nút “Nộp điểm cho Khoa” nằm trong panel.
 - Admin:
+  - Cài đặt hệ thống: cấu hình mốc “Mở chấm điểm lúc” (`grading_open_at`) và “Đóng chấm điểm lúc” (`grading_close_at`).
   - Site “Bảng điểm”.
+  - Nút “Khóa tất cả đã nộp” và “Mở khóa tất cả” để niêm phong nhanh bảng điểm trước khi nộp Phòng Đào tạo.
   - Lọc theo chưa có/nháp/đã nộp.
   - Dashboard tổng hợp: chưa có điểm, nháp, đã nộp, đã khoá.
   - Khoá/mở khoá điểm từng sinh viên.
