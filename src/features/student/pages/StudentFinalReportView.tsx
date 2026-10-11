@@ -40,7 +40,7 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
   };
 
   const reportStatusLabelLocal = (status?: string) => {
-    if (status === 'accepted') return 'Đã chấp nhận';
+    if (status === 'accepted') return 'Đã nộp điểm';
     if (status === 'needs_revision') return 'Cần nộp lại';
     if (status === 'submitted') return 'Đã nộp thành công';
     return 'Chưa nộp báo cáo';

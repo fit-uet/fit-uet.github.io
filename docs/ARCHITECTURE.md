@@ -206,7 +206,7 @@ To provide clear operational cues for faculty advisors, report assessment badges
 | :--- | :--- | :--- | :--- | :--- |
 | `NULL` / Chưa có | `missing` / Chưa có | **Chưa nộp** | `bg-slate-50 text-slate-500` | Sinh viên chưa nộp báo cáo. |
 | **`submitted`** | `draft` hoặc `missing` | **Chưa chấm điểm** | **`bg-blue-50 text-blue-700 border-blue-200`** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** |
-| **`submitted`** hoặc **`accepted`** | **`submitted`** (hoặc đã có điểm) | **Đã chấm điểm** / **Đã chấp nhận** | `bg-emerald-50 text-emerald-700 border-emerald-200` | GVHD đã hoàn tất nhập và nộp điểm về Khoa. |
+| **`submitted`** hoặc **`accepted`** | **`submitted`** (hoặc đã có điểm) | **Đã nộp điểm** | `bg-emerald-50 text-emerald-700 border-emerald-200` | GVHD đã hoàn tất nhập và nộp điểm về Khoa. |
 | **`needs_revision`** | Bất kỳ | **Cần nộp lại** | `bg-orange-50 text-orange-700 border-orange-200` | GVHD yêu cầu sinh viên chỉnh sửa, bổ sung báo cáo. |
 
 ### 3. Multi-Tier Caching Architecture

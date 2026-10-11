@@ -80,7 +80,7 @@ Tiêu chuẩn này áp dụng nhất quán trên **tất cả các màn hình** 
 | Ngữ nghĩa | Màu chính | Nền mềm (Soft Tint) | Viền mềm (Soft Border) | Ứng dụng thực tế |
 | :--- | :--- | :--- | :--- | :--- |
 | **Thông tin / Cần xử lý** | `#034ea1` | `#e8f1fb` | `#d4e5f7` | **Chưa chấm điểm** (báo cáo đã nộp chờ giảng viên chấm). |
-| **Thành công (Success)** | `#15803d` | `#dcfce7` | `#bbf7d0` | Đã duyệt đề cương, Nộp báo cáo thành công, Điểm đạt, Đã chấm điểm. |
+| **Thành công (Success)** | `#15803d` | `#dcfce7` | `#bbf7d0` | Đã duyệt đề cương, Nộp báo cáo thành công, Điểm đạt, Đã nộp điểm. |
 | **Cảnh báo (Warning)** | `#c2410c` | `#ffedd5` | `#fed7aa` | Cần nộp lại báo cáo, Chờ GV duyệt, Sắp hết hạn nộp đề cương/báo cáo. |
 | **Nguy hiểm (Danger)** | `#b91c1c` | `#fee2e2` | `#fecaca` | Bị từ chối, Quá hạn nộp bài, Xóa phân công. |
 | **Trung tính (Neutral)** | `#64748b` | `#f1f5f9` | `#e2e8f0` | Chưa nộp báo cáo, Bản nháp, Chưa phân công, Tài liệu đính kèm. |
@@ -147,7 +147,7 @@ Hệ thống sử dụng bộ font chính thức của UET: `"Inter Tight", "Int
 Quy chuẩn hóa nhãn trạng thái từ góc nhìn của Giảng viên đánh giá:
 - **Chưa nộp**: Nền `#f8fafc`, viền `#e2e8f0`, chữ `#64748b` (Neutral).
 - **Chưa chấm điểm**: Nền `#e8f1fb` (soft brand tint), viền `#d4e5f7`, chữ `#034ea1` (Brand Blue font-bold). Thay thế nhãn chung chung “Đã nộp” khi sinh viên đã nộp báo cáo (`status = 'submitted'`) nhưng giảng viên chưa nộp điểm (`grade_status != 'submitted'`), kích hoạt sự chú ý cần đánh giá bài nộp.
-- **Đã chấm điểm / Đã chấp nhận**: Nền `#dcfce7`, viền `#bbf7d0`, chữ `#15803d` (Success). Hiển thị ngay sau khi giảng viên hoàn tất nộp điểm hoặc chấp nhận báo cáo.
+- **Đã nộp điểm**: Nền `#dcfce7`, viền `#bbf7d0`, chữ `#15803d` (Success). Hiển thị ngay sau khi giảng viên hoàn tất nộp điểm cho Khoa.
 - **Cần nộp lại**: Nền `#ffedd5`, viền `#fed7aa`, chữ `#c2410c` (Warning). Hiển thị khi giảng viên yêu cầu sinh viên nộp lại báo cáo.
 
 ---

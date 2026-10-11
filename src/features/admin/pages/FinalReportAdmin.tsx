@@ -21,7 +21,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
 
   const statusLabel = (status?: string) =>
     status === 'accepted'
-      ? 'Đã chấp nhận'
+      ? 'Đã nộp điểm'
       : status === 'needs_revision'
       ? 'Cần nộp lại'
       : status === 'submitted'
@@ -209,14 +209,14 @@ export function FinalReportAdmin({ token }: { token: string }) {
 
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
-            <span>Đã chấp nhận</span>
+            <span>Đã nộp điểm</span>
             <FileCheck size={16} className="text-[#15803d]" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-[#15803d] tracking-tight">{reportStats.accepted}</span>
             <span className="text-xs text-[#64748b]">báo cáo</span>
           </div>
-          <span className="text-[11px] text-[#1d833f] mt-2 font-medium">Đạt điều kiện chấm điểm</span>
+          <span className="text-[11px] text-[#1d833f] mt-2 font-medium">Đã hoàn thiện chấm điểm</span>
         </div>
       </div>
 
@@ -242,7 +242,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
             <option value="missing">Chưa nộp</option>
             <option value="submitted">Đã nộp (Chờ duyệt)</option>
             <option value="needs_revision">Cần nộp lại</option>
-            <option value="accepted">Đã chấp nhận</option>
+            <option value="accepted">Đã nộp điểm</option>
           </select>
         </div>
       </div>

@@ -59,15 +59,15 @@ interface Props {
 const pdfBlobCache = new Map<number, { blob: Blob; url: string; filename?: string; timestamp: number }>();
 
 const reportStatusLabel = (s?: string, gradeStatus?: string) =>
-  s === 'accepted' ? 'Đã chấp nhận'
+  s === 'accepted' || gradeStatus === 'submitted' ? 'Đã nộp điểm'
   : s === 'needs_revision' ? 'Cần nộp lại'
-  : s === 'submitted' ? (gradeStatus === 'submitted' ? 'Đã chấm điểm' : 'Chưa chấm điểm')
+  : s === 'submitted' ? 'Chưa chấm điểm'
   : 'Chưa nộp';
 
 const reportStatusBadgeClass = (s?: string, gradeStatus?: string) =>
-  s === 'accepted' ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+  s === 'accepted' || gradeStatus === 'submitted' ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
   : s === 'needs_revision' ? 'bg-orange-50 border-orange-200 text-orange-700'
-  : s === 'submitted' ? (gradeStatus === 'submitted' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-blue-50 border-blue-200 text-blue-700')
+  : s === 'submitted' ? 'bg-blue-50 border-blue-200 text-blue-700'
   : 'bg-slate-50 border-slate-200 text-slate-500';
 
 const calcFinal = (p: string, r: string, c: string) => {
@@ -337,7 +337,7 @@ export function ReportReviewPanel({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { alert(data.error || 'Lưu điểm thất bại.'); return; }
       if (submit) {
-        setGradeSuccess('Đã nộp điểm và chấp nhận báo cáo!');
+        setGradeSuccess('Đã nộp điểm thành công!');
         setLocalReportStatus('accepted');
         onReportStatusChange?.();
       } else {
@@ -534,7 +534,7 @@ export function ReportReviewPanel({
                   {localReportStatus === 'accepted' && !showRevisionInput ? (
                     <div className="flex items-center justify-between text-xs text-emerald-700 bg-emerald-50/70 border border-emerald-200/80 rounded-lg px-3 py-2">
                       <span className="flex items-center gap-1.5 font-medium">
-                        <Check size={14} className="text-emerald-600" /> Báo cáo đã chấp nhận
+                        <Check size={14} className="text-emerald-600" /> Đã nộp điểm cho Khoa
                       </span>
                       {isPrimary && (
                         <button

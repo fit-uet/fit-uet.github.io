@@ -2364,7 +2364,7 @@ async function route(request: Request, env: Env) {
       recipient_email: student?.personal_email || student?.email,
       type: 'final_report_status_changed',
       subject: 'Cập nhật trạng thái báo cáo',
-      body: `Báo cáo của bạn đã được cập nhật trạng thái: ${status === 'accepted' ? 'Đã chấp nhận' : status === 'needs_revision' ? 'Cần nộp lại' : 'Đã nộp'}.${body.lecturer_comment ? `\nGhi chú: ${body.lecturer_comment}` : ''}`,
+      body: `Báo cáo của bạn đã được cập nhật trạng thái: ${status === 'accepted' ? 'Đã nộp điểm' : status === 'needs_revision' ? 'Cần nộp lại' : 'Đã nộp'}.${body.lecturer_comment ? `\nGhi chú: ${body.lecturer_comment}` : ''}`,
     });
     return json({ success: true });
   }

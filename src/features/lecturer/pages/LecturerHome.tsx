@@ -57,11 +57,9 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
   };
   const statusLabel = (student: any) => {
     const s = student?.report_status;
-    if (s === 'accepted') return 'Đã chấp nhận';
+    if (s === 'accepted' || isStudentGraded(student)) return 'Đã nộp điểm';
     if (s === 'needs_revision') return 'Cần nộp lại';
-    if (s === 'submitted') {
-      return isStudentGraded(student) ? 'Đã chấm điểm' : 'Chưa chấm điểm';
-    }
+    if (s === 'submitted') return 'Chưa chấm điểm';
     return 'Chưa nộp';
   };
   const uniqueStudents = Array.from(new Map(
@@ -393,7 +391,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
                   <td className="p-4">
                     <div className="flex flex-col gap-1.5 items-start">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
-                        student.report_status === 'accepted' || (student.report_status === 'submitted' && isStudentGraded(student)) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        student.report_status === 'accepted' || isStudentGraded(student) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                         student.report_status === 'needs_revision' ? 'bg-orange-50 text-orange-700 border-orange-200' :
                         student.report_status === 'submitted' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         'bg-slate-50 text-slate-500 border-slate-200'

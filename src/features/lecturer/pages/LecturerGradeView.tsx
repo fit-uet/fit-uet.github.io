@@ -55,12 +55,12 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
   }, [token]);
 
   const statusLabel = (status?: string, gradeStatus?: string) =>
-    status === 'accepted'
-      ? 'Đã chấp nhận'
+    status === 'accepted' || gradeStatus === 'submitted'
+      ? 'Đã nộp điểm'
       : status === 'needs_revision'
       ? 'Cần nộp lại'
       : status === 'submitted'
-      ? (gradeStatus === 'submitted' ? 'Đã chấm điểm' : 'Chưa chấm điểm')
+      ? 'Chưa chấm điểm'
       : 'Chưa nộp';
 
   const gradeStatusLabel = (status?: string) =>
@@ -410,7 +410,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                           <div className="flex flex-col gap-1 items-start">
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                                row.report_status === 'accepted' || (row.report_status === 'submitted' && row.grade_status === 'submitted')
+                                row.report_status === 'accepted' || row.grade_status === 'submitted'
                                   ? 'bg-[#dcfce7] text-[#1d833f] border-emerald-200/60'
                                   : row.report_status === 'needs_revision'
                                   ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
