@@ -981,7 +981,7 @@ Quy tắc điểm:
 - `progress_score`: 20%, giảng viên tự tổng hợp từ báo cáo định kỳ qua email.
 - `report_score`: 20%, điểm báo cáo final.
 - `company_score`: 60%, giảng viên nhập dựa trên trao đổi/bản cứng.
-- `final_score = progress_score * 0.2 + report_score * 0.2 + company_score * 0.6`.
+- `final_score = Math.round((progress_score * 0.2 + report_score * 0.2 + company_score * 0.6) * 10) / 10` (chỉ làm tròn đến một chữ số sau phần thập phân theo quy chế đào tạo).
 - Điểm hợp lệ từ 0 đến 10.
 - Giảng viên có thể lưu nháp.
 - Khi `submitted`, admin nhìn thấy để tổng hợp.

@@ -125,7 +125,7 @@ export function GradeAdmin({ token }: { token: string }) {
       row.progress_score ?? '',
       row.report_score ?? '',
       row.company_score ?? '',
-      row.final_score ?? '',
+      row.final_score !== null && row.final_score !== undefined && row.final_score !== '' ? Number(row.final_score).toFixed(1) : '',
       statusLabel(row.grade_status),
       formatGradingLecturer(row.grading_lecturer_name),
       row.grade_submitted_at || '',
@@ -224,7 +224,9 @@ export function GradeAdmin({ token }: { token: string }) {
                     <div>Định kỳ: <strong>{row.progress_score ?? '-'}</strong></div>
                     <div>Báo cáo: <strong>{row.report_score ?? '-'}</strong></div>
                     <div>Đánh giá: <strong>{row.company_score ?? '-'}</strong></div>
-                    <div className="text-sm text-[#1b7f37] font-bold mt-1">{row.final_score ?? '-'}</div>
+                    <div className="text-sm text-[#1b7f37] font-bold mt-1">
+                      {row.final_score !== null && row.final_score !== undefined && row.final_score !== '' ? Number(row.final_score).toFixed(1) : '-'}
+                    </div>
                   </td>
                   <td className="px-4 py-4">
                     <div className={`font-semibold ${row.grade_status === 'submitted' ? 'text-emerald-700' : row.grade_status === 'draft' ? 'text-orange-700' : 'text-slate-400'}`}>{statusLabel(row.grade_status)}</div>

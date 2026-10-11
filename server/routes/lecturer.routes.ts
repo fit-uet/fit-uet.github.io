@@ -299,7 +299,7 @@ lecturerRouter.post('/api/lecturer/grades/:userId/submit', requireAuth, async (r
     recipient_email: student?.personal_email || student?.email,
     type: 'grade_submitted',
     subject: 'GVHD đã nộp điểm thực tập',
-    body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết tạm tính: ${result.row?.final_score ?? '-'}.`,
+    body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết tạm tính: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
   });
   res.json(result.row);
 });

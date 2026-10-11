@@ -157,7 +157,8 @@ export function normalizeScore(value: any) {
 
 export function calculateFinalScore(progressScore: number | null, reportScore: number | null, companyScore: number | null) {
   if (progressScore === null || reportScore === null || companyScore === null) return null;
-  return Math.round((progressScore * 0.2 + reportScore * 0.2 + companyScore * 0.6) * 100) / 100;
+  // Điểm tổng kết thực tập chỉ làm tròn đến một chữ số sau phần thập phân theo quy chế đào tạo
+  return Math.round((progressScore * 0.2 + reportScore * 0.2 + companyScore * 0.6) * 10) / 10;
 }
 
 let cachedItCompanyNames: { mtimeMs: number; names: Set<string> } | null = null;

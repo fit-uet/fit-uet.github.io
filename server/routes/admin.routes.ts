@@ -1685,7 +1685,7 @@ adminRouter.put('/api/admin/grades/:userId/lock', requireAuth, requireAdmin, asy
         recipient_email: row?.personal_email || row?.email,
         type: 'grade_submitted',
         subject: 'Khoa đã khóa điểm thực tập',
-        body: `Khoa đã khóa điểm thực tập của bạn. Điểm tổng kết: ${row?.final_score ?? '-'}.`,
+        body: `Khoa đã khóa điểm thực tập của bạn. Điểm tổng kết: ${row?.final_score !== null && row?.final_score !== undefined ? Number(row.final_score).toFixed(1) : '-'}.`,
       });
     }
     res.json({ success: true });
@@ -1703,7 +1703,7 @@ adminRouter.get('/api/admin/grades/export.csv', requireAuth, requireAdmin, async
              g.progress_score as "Điểm báo cáo định kỳ",
              g.report_score as "Điểm báo cáo",
              g.company_score as "Điểm đánh giá công ty/GVHD",
-             g.final_score as "Điểm tổng kết",
+             ROUND(g.final_score, 1) as "Điểm tổng kết",
              COALESCE(g.status, 'missing') as "Trạng thái điểm",
              gl.name as "Người nhập",
              g.submitted_at as "Thời gian nộp điểm",

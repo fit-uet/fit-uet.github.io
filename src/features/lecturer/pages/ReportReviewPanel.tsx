@@ -75,7 +75,9 @@ const calcFinal = (p: string, r: string, c: string) => {
   const rv = r === '' ? null : Number(r);
   const cv = c === '' ? null : Number(c);
   if ([pv, rv, cv].some(v => v === null || !Number.isFinite(v) || (v as number) < 0 || (v as number) > 10)) return null;
-  return ((pv as number) * 0.2 + (rv as number) * 0.2 + (cv as number) * 0.6).toFixed(2);
+  // Làm tròn đến 1 chữ số sau phần thập phân theo quy chế đào tạo
+  const score = Math.round(((pv as number) * 0.2 + (rv as number) * 0.2 + (cv as number) * 0.6) * 10) / 10;
+  return score.toFixed(1);
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────

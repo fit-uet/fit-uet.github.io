@@ -582,7 +582,8 @@ function normalizeScore(value: any) {
 
 function calculateFinalScore(progressScore: number | null, reportScore: number | null, companyScore: number | null) {
   if (progressScore === null || reportScore === null || companyScore === null) return null;
-  return Math.round((progressScore * 0.2 + reportScore * 0.2 + companyScore * 0.6) * 100) / 100;
+  // Điểm tổng kết thực tập chỉ làm tròn đến một chữ số sau phần thập phân theo quy chế đào tạo
+  return Math.round((progressScore * 0.2 + reportScore * 0.2 + companyScore * 0.6) * 10) / 10;
 }
 
 async function getCampaignSettings(database: DatabaseClient) {
@@ -2500,7 +2501,7 @@ async function route(request: Request, env: Env) {
       recipient_email: student?.personal_email || student?.email,
       type: 'grade_submitted',
       subject: 'GVHD đã nộp điểm thực tập',
-      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết tạm tính: ${result.row?.final_score ?? '-'}.`,
+      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết tạm tính: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
     });
     return json(result.row);
   }
@@ -3695,7 +3696,7 @@ async function route(request: Request, env: Env) {
         recipient_email: row?.personal_email || row?.email,
         type: 'grade_submitted',
         subject: 'Khoa đã khóa điểm thực tập',
-        body: `Khoa đã khóa điểm thực tập của bạn. Điểm tổng kết: ${row?.final_score ?? '-'}.`,
+        body: `Khoa đã khóa điểm thực tập của bạn. Điểm tổng kết: ${row?.final_score !== null && row?.final_score !== undefined ? Number(row.final_score).toFixed(1) : '-'}.`,
       });
     }
     return json({ success: true });
@@ -3714,7 +3715,7 @@ async function route(request: Request, env: Env) {
              g.progress_score as "Điểm báo cáo định kỳ",
              g.report_score as "Điểm báo cáo",
              g.company_score as "Điểm đánh giá công ty/GVHD",
-             g.final_score as "Điểm tổng kết",
+             ROUND(g.final_score, 1) as "Điểm tổng kết",
              COALESCE(g.status, 'missing') as "Trạng thái điểm",
              gl.name as "Người nhập",
              g.submitted_at as "Thời gian nộp điểm",

@@ -98,7 +98,9 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
     const r = edit?.report_score === '' ? null : Number(edit?.report_score);
     const c = edit?.company_score === '' ? null : Number(edit?.company_score);
     if (![p, r, c].every((v) => v !== null && Number.isFinite(v) && v >= 0 && v <= 10)) return '-';
-    return ((p as number) * 0.2 + (r as number) * 0.2 + (c as number) * 0.6).toFixed(2);
+    // Làm tròn đến 1 chữ số sau phần thập phân theo quy chế đào tạo
+    const score = Math.round(((p as number) * 0.2 + (r as number) * 0.2 + (c as number) * 0.6) * 10) / 10;
+    return score.toFixed(1);
   };
 
   const updateGradeEdit = (userId: number, key: string, value: string) => {

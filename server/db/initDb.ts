@@ -814,6 +814,7 @@ Mỗi sinh viên cần viết **01 báo cáo thực tập** theo mẫu Khoa quy 
   } catch (e) { }
   try { await db.executeMultiple('CREATE INDEX IF NOT EXISTS idx_chat_group_messages_lecturer_created ON chat_group_messages(lecturer_id, created_at)'); } catch (e) { }
   try { await db.executeMultiple('CREATE INDEX IF NOT EXISTS idx_chat_group_reads_user ON chat_group_message_reads(user_id, message_id)'); } catch (e) { }
+  try { await db.executeMultiple('UPDATE grades SET final_score = ROUND(final_score, 1) WHERE final_score IS NOT NULL'); } catch (e) { }
 
   const force = process.env.FORCE_DB_INIT === 'true';
   await ensureDbIndexes(force);
