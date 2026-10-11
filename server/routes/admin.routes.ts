@@ -1732,14 +1732,78 @@ adminRouter.get('/api/admin/grades/export.csv', requireAuth, requireAdmin, async
     res.send('\uFEFF' + csv);
   });
 adminRouter.get('/api/admin/notifications', requireAuth, requireAdmin, async (req: any, res: any) => {
-    const rows = (await db.execute(`
-      SELECT n.*, u.name as user_name, u.student_id
-      FROM notifications n
-      LEFT JOIN users u ON u.id = n.user_id
-      ORDER BY n.created_at DESC
-      LIMIT 500
-    `)).rows;
-    res.json(rows);
+    try {
+      const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
+
+      if (!hasPagination) {
+        // Chế độ tương thích ngược: nạp tối đa 500 bản ghi mới nhất dưới dạng mảng
+        const rows = (await db.execute(`
+          SELECT n.*, u.name as user_name, u.student_id
+          FROM notifications n
+          LEFT JOIN users u ON u.id = n.user_id
+          ORDER BY n.created_at DESC
+          LIMIT 500
+        `)).rows;
+        return res.json(rows);
+      }
+
+      // Chế độ phân trang hỗ trợ Virtual Proxy & Cache Proxy
+      const page = Math.max(1, parseInt(String(req.query.page || 1), 10) || 1);
+      const limit = Math.max(1, Math.min(100, parseInt(String(req.query.limit || 25), 10) || 25));
+      const offset = (page - 1) * limit;
+
+      const search = String(req.query.search || '').trim();
+      const status = String(req.query.status || '').trim();
+      const type = String(req.query.type || '').trim();
+
+      const conditions: string[] = [];
+      const filterArgs: any[] = [];
+
+      if (status) {
+        conditions.push('n.status = ?');
+        filterArgs.push(status);
+      }
+      if (type) {
+        conditions.push('n.type = ?');
+        filterArgs.push(type);
+      }
+      if (search) {
+        conditions.push('(n.recipient_email LIKE ? OR n.subject LIKE ? OR n.body LIKE ? OR u.name LIKE ? OR u.student_id LIKE ?)');
+        const term = `%${search}%`;
+        filterArgs.push(term, term, term, term, term);
+      }
+
+      const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+      const countRes = await db.execute({
+        sql: `SELECT COUNT(*) as count FROM notifications n LEFT JOIN users u ON u.id = n.user_id ${whereSql}`,
+        args: filterArgs,
+      });
+      const total = Number(countRes.rows[0]?.count || 0);
+
+      const itemsRes = await db.execute({
+        sql: `SELECT n.*, u.name as user_name, u.student_id
+              FROM notifications n
+              LEFT JOIN users u ON u.id = n.user_id
+              ${whereSql}
+              ORDER BY n.created_at DESC
+              LIMIT ? OFFSET ?`,
+        args: [...filterArgs, limit, offset],
+      });
+
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+
+      return res.json({
+        items: itemsRes.rows,
+        total,
+        page,
+        limit,
+        totalPages,
+      });
+    } catch (e: any) {
+      console.error('[adminRouter] Error fetching paginated notifications:', e);
+      return res.status(500).json({ error: 'Không tải được danh sách thông báo.' });
+    }
   });
 adminRouter.get('/api/admin/notifications/stats', requireAuth, requireAdmin, async (req: any, res: any) => {
     const statusRows = (await db.execute(`

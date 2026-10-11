@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   CheckCircle2,
   Download,
@@ -16,12 +16,10 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { API_BASE, saveXlsx, paginationBounds, PaginationControls, PageDescriptionTooltip } from '../../../shared';
+import { API_BASE, saveXlsx, PaginationControls, PageDescriptionTooltip, usePaginatedProxy, PaginatedQuery, PaginatedResult } from '../../../shared';
 
 export function NotificationAdmin({ token }: { token: string }) {
   const navigate = useNavigate();
-  const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -43,30 +41,76 @@ export function NotificationAdmin({ token }: { token: string }) {
     body: '',
   });
   const [stats, setStats] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 25;
 
-  const fetchRows = async () => {
-    setLoading(true);
-    try {
-      const [res, statsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/notifications`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/admin/notifications/stats`, { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
+  // Định nghĩa RealSubject fetcher uỷ nhiệm qua HTTP API
+  const fetcher = useCallback(
+    async (query: PaginatedQuery): Promise<PaginatedResult<any>> => {
+      const params = new URLSearchParams();
+      params.set('page', String(query.page));
+      params.set('limit', String(query.limit));
+      if (query.search) params.set('search', query.search);
+      if (query.filter?.status) params.set('status', query.filter.status);
+      if (query.filter?.type) params.set('type', query.filter.type);
+
+      const res = await fetch(`${API_BASE}/api/admin/notifications?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        throw new Error('Không tải được lịch sử thông báo.');
+      }
       const data = await res.json();
-      setRows(Array.isArray(data) ? data : []);
-      setSelectedNotificationIds([]);
-      if (statsRes.ok) setStats(await statsRes.json());
+      if (data && Array.isArray(data.items)) {
+        return data;
+      }
+      const items = Array.isArray(data) ? data : [];
+      return {
+        items,
+        total: items.length,
+        page: query.page,
+        limit: query.limit,
+        totalPages: Math.ceil(items.length / query.limit) || 1,
+      };
+    },
+    [token]
+  );
+
+  // Áp dụng GoF Virtual Proxy & Cache Proxy Pattern
+  const {
+    items: rows,
+    total,
+    page: currentPage,
+    limit: pageSize,
+    loading,
+    setPage: setCurrentPage,
+    refresh: refreshNotifications,
+  } = usePaginatedProxy<any>({
+    fetcher,
+    initialPage: 1,
+    pageSize: 25,
+    search: searchTerm,
+    filter: { status: statusFilter, type: typeFilter },
+    enablePrefetch: true,
+  });
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/notifications/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setStats(await res.json());
     } catch (e) {
-      alert('Không tải được lịch sử thông báo.');
-    } finally {
-      setLoading(false);
+      console.error('[NotificationAdmin] Failed to fetch stats:', e);
     }
   };
 
   useEffect(() => {
-    fetchRows();
+    fetchStats();
   }, [token]);
+
+  const refreshAll = async () => {
+    await Promise.all([refreshNotifications(), fetchStats()]);
+    setSelectedNotificationIds([]);
+  };
 
   const markStatus = async (id: number, status: string) => {
     const error = status === 'failed' ? prompt('Ghi chú lỗi:', '') || '' : '';
@@ -75,7 +119,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status, error }),
     });
-    if (res.ok) fetchRows();
+    if (res.ok) refreshAll();
     else alert('Cập nhật trạng thái thông báo thất bại.');
   };
 
@@ -90,7 +134,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       const data = await res.json();
       if (!res.ok) return alert(data.error || 'Tạo nhắc hạn thất bại.');
       alert(`Đã tạo ${data.count || 0} thông báo nhắc hạn.`);
-      fetchRows();
+      refreshAll();
     } catch (e) {
       alert('Lỗi kết nối khi tạo nhắc hạn.');
     } finally {
@@ -109,7 +153,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       const data = await res.json();
       if (!res.ok) return alert(data.error || 'Tạo thông báo thất bại.');
       alert(`Đã tạo ${data.count || 0} thông báo mở xác nhận.`);
-      fetchRows();
+      refreshAll();
     } catch (e) {
       alert('Lỗi kết nối khi tạo thông báo.');
     } finally {
@@ -118,10 +162,10 @@ export function NotificationAdmin({ token }: { token: string }) {
   };
 
   const sendQueued = async (scope: 'all' | 'filtered' = 'all', mode: 'batch' | 'quota' = 'batch') => {
-    const filteredQueuedIds = filtered.filter((row) => row.status === 'queued').map((row) => Number(row.id)).filter(Boolean);
+    const queuedIds = rows.filter((row) => row.status === 'queued').map((row) => Number(row.id)).filter(Boolean);
     const label =
       scope === 'filtered'
-        ? `Gửi ${filteredQueuedIds.length} thông báo đang lọc (chế độ ${mode === 'quota' ? 'quota' : 'batch'})?`
+        ? `Gửi ${queuedIds.length} thông báo đang lọc (chế độ ${mode === 'quota' ? 'quota' : 'batch'})?`
         : `Gửi email hàng đợi (chế độ ${mode === 'quota' ? 'quota' : 'batch'})?`;
     if (!confirm(label)) return;
     setSendingQueue(true);
@@ -130,14 +174,14 @@ export function NotificationAdmin({ token }: { token: string }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          notification_ids: scope === 'filtered' ? filteredQueuedIds : undefined,
+          notification_ids: scope === 'filtered' ? queuedIds : undefined,
           mode,
         }),
       });
       const data = await res.json();
       if (!res.ok) return alert(data.error || 'Gửi email hàng đợi thất bại.');
       alert(`Kết quả gửi: Thành công ${data.sent || 0}, Thất bại ${data.failed || 0}.`);
-      fetchRows();
+      refreshAll();
     } catch (e) {
       alert('Lỗi kết nối khi gửi email hàng đợi.');
     } finally {
@@ -173,7 +217,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       alert(resultLines.join('\n'));
       setManualNotice((prev) => ({ ...prev, subject: '', body: '', recipient: '' }));
       setShowManualComposer(false);
-      fetchRows();
+      refreshAll();
     } catch (e) {
       alert('Lỗi kết nối khi tạo thông báo.');
     } finally {
@@ -186,7 +230,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       scope === 'selected'
         ? selectedNotificationIds
         : scope === 'filtered'
-        ? sortedFiltered.map((row) => Number(row.id)).filter(Boolean)
+        ? sortedRows.map((row) => Number(row.id)).filter(Boolean)
         : rows.filter((row) => row.status === 'queued').map((row) => Number(row.id)).filter(Boolean);
 
     if (ids.length === 0) return alert('Không có thông báo nào được chọn để xoá.');
@@ -194,7 +238,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       scope === 'selected'
         ? `Xoá ${ids.length} thông báo đã chọn?`
         : scope === 'filtered'
-        ? `Xoá ${ids.length} thông báo theo bộ lọc hiện tại?`
+        ? `Xoá ${ids.length} thông báo theo trang hiện tại?`
         : `Xoá ${ids.length} thông báo đang ở hàng đợi (queued)?`;
     if (!confirm(label)) return;
 
@@ -209,7 +253,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       if (!res.ok) return alert(data.error || 'Xoá thông báo thất bại.');
       alert(`Đã xoá ${data.deleted || ids.length} thông báo.`);
       setSelectedNotificationIds([]);
-      fetchRows();
+      refreshAll();
     } catch (e) {
       alert('Lỗi kết nối khi xoá thông báo.');
     } finally {
@@ -234,7 +278,21 @@ export function NotificationAdmin({ token }: { token: string }) {
     return labels[String(type || '')] || String(type || 'Thông báo');
   };
 
-  const types = Array.from(new Set<string>(rows.map((row) => String(row.type || '')).filter(Boolean))).sort();
+  const ALL_NOTIFICATION_TYPES = [
+    'advisor_assigned',
+    'final_confirmation_open',
+    'final_report_reminder',
+    'grade_locked',
+    'lecturer_students_mail_merge',
+    'manual_direct_notice',
+    'manual_lecturer_notice',
+    'manual_student_notice',
+    'registration_review_comment',
+    'registration_status_changed',
+    'system_announcement',
+  ];
+
+  const types = Array.from(new Set<string>([...ALL_NOTIFICATION_TYPES, ...rows.map((row) => String(row.type || '')).filter(Boolean)])).sort();
 
   const sortNotifications = (key: string) => {
     setSortConfig((prev) => ({
@@ -252,21 +310,7 @@ export function NotificationAdmin({ token }: { token: string }) {
 
   const sortLabel = (key: string) => (sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ▲' : ' ▼') : '');
 
-  const filtered = rows.filter((row) => {
-    const term = searchTerm.trim().toLowerCase();
-    const matchStatus = statusFilter ? row.status === statusFilter : true;
-    const matchType = typeFilter ? row.type === typeFilter : true;
-    const matchTerm =
-      !term ||
-      row.recipient_email?.toLowerCase().includes(term) ||
-      row.subject?.toLowerCase().includes(term) ||
-      row.body?.toLowerCase().includes(term) ||
-      row.user_name?.toLowerCase().includes(term) ||
-      row.student_id?.toLowerCase().includes(term);
-    return matchStatus && matchType && matchTerm;
-  });
-
-  const sortedFiltered = [...filtered].sort((a, b) => {
+  const sortedRows = [...rows].sort((a, b) => {
     const left = sortValue(a, sortConfig.key);
     const right = sortValue(b, sortConfig.key);
     if (left < right) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -274,14 +318,8 @@ export function NotificationAdmin({ token }: { token: string }) {
     return 0;
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, typeFilter, sortConfig.key, sortConfig.direction, rows.length]);
-
-  const pagination = paginationBounds(sortedFiltered.length, currentPage, pageSize);
-  const paginatedRows = sortedFiltered.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
-  const selectedCount = selectedNotificationIds.filter((id) => rows.some((row) => Number(row.id) === id)).length;
-  const paginatedIds = paginatedRows.map((row) => Number(row.id)).filter(Boolean);
+  const selectedCount = selectedNotificationIds.length;
+  const paginatedIds = sortedRows.map((row) => Number(row.id)).filter(Boolean);
   const pageSelected = paginatedIds.length > 0 && paginatedIds.every((id) => selectedNotificationIds.includes(id));
 
   const toggleNotificationSelection = (id: number, checked: boolean) => {
@@ -295,20 +333,35 @@ export function NotificationAdmin({ token }: { token: string }) {
     });
   };
 
-  const exportXlsx = () => {
-    const headers = ['STT', 'Người nhận', 'Loại', 'Tiêu đề', 'Nội dung', 'Trạng thái', 'Lỗi', 'Tạo lúc', 'Gửi lúc'];
-    const data = sortedFiltered.map((row, idx) => [
-      idx + 1,
-      row.recipient_email,
-      row.type,
-      row.subject,
-      row.body,
-      row.status,
-      row.error || '',
-      row.created_at || '',
-      row.sent_at || '',
-    ]);
-    saveXlsx('lich_su_thong_bao.xlsx', headers, data, 'Thông báo');
+  const exportXlsx = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (searchTerm) params.set('search', searchTerm);
+      if (statusFilter) params.set('status', statusFilter);
+      if (typeFilter) params.set('type', typeFilter);
+
+      const res = await fetch(`${API_BASE}/api/admin/notifications?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      const exportItems = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : sortedRows;
+
+      const headers = ['STT', 'Người nhận', 'Loại', 'Tiêu đề', 'Nội dung', 'Trạng thái', 'Lỗi', 'Tạo lúc', 'Gửi lúc'];
+      const sheetData = exportItems.map((row: any, idx: number) => [
+        idx + 1,
+        row.recipient_email,
+        row.type,
+        row.subject,
+        row.body,
+        row.status,
+        row.error || '',
+        row.created_at || '',
+        row.sent_at || '',
+      ]);
+      saveXlsx('lich_su_thong_bao.xlsx', headers, sheetData, 'Thông báo');
+    } catch (e) {
+      alert('Không thể xuất file Excel.');
+    }
   };
 
   if (loading) {
@@ -669,14 +722,14 @@ export function NotificationAdmin({ token }: { token: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
-              {sortedFiltered.length === 0 ? (
+              {sortedRows.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-16 text-center text-[#64748b]">
                     Không có thông báo phù hợp với bộ lọc hiện tại.
                   </td>
                 </tr>
               ) : (
-                paginatedRows.map((row) => (
+                sortedRows.map((row) => (
                   <tr key={row.id} className="hover:bg-[#f8fafc]/60 transition-colors align-top">
                     <td className="px-5 py-4 text-center">
                       <input
@@ -771,7 +824,7 @@ export function NotificationAdmin({ token }: { token: string }) {
         </div>
 
         <PaginationControls
-          total={sortedFiltered.length}
+          total={total}
           currentPage={currentPage}
           pageSize={pageSize}
           onPageChange={setCurrentPage}

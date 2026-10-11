@@ -250,3 +250,122 @@ sequenceDiagram
      - `ETag: "<id>-<file_size>-<timestamp>"`
      - `Cache-Control: private, max-age=3600, must-revalidate`
    - Responds with `304 Not Modified` on subsequent browser validations when content has not changed.
+
+---
+
+## GoF Proxy Pattern Architecture: Virtual Proxy & Cache Proxy for Paginated Data
+
+### 1. Problem Statement & Motivation
+
+Đối với các màn hình quản trị dữ liệu quy mô lớn (như Lịch sử thông báo & email `NotificationAdmin` với hàng trăm đến hàng nghìn bản ghi):
+1. **Payload Bloat & Initial Latency**: Cách tiếp cận cũ nạp toàn bộ danh sách 500 bản ghi ngay khi mở trang, gây lãng phí băng thông mạng (~500 KB - 1 MB JSON payload) và làm chậm thời gian hiển thị giao diện ban đầu (First Contentful Paint).
+2. **Redundant Network Round-trips**: Khi người dùng duyệt trang qua lại giữa trang 1, trang 2 rồi quay lại trang 1, hệ thống không tận dụng được dữ liệu đã nạp, hoặc phải duy trì state cồng kềnh thiếu kiểm soát.
+3. **Chuyển trang có độ trễ**: Mỗi lần sang trang mới, người dùng phải chờ đợi mạng phản hồi và nhìn thấy loading spinner.
+
+### 2. Design Pattern Specification (GoF Proxy Pattern)
+
+Hệ thống áp dụng chuẩn mực mẫu thiết kế **GoF Proxy Pattern** kết hợp giữa **Virtual Proxy** (Proxy ảo) và **Cache Proxy** (Proxy bộ đệm):
+
+```mermaid
+classDiagram
+    class IPaginatedSource~T~ {
+        <<interface>>
+        +fetchPage(query: PaginatedQuery, forceRefresh?: boolean): Promise~PaginatedResult~T~~
+    }
+
+    class RealPaginatedSource~T~ {
+        -fetcher: PageFetcher~T~
+        +fetchPage(query: PaginatedQuery): Promise~PaginatedResult~T~~
+    }
+
+    class PaginatedVirtualProxy~T~ {
+        -realSource: IPaginatedSource~T~
+        -cache: Map~string, ProxyCacheEntry~T~~
+        -pendingRequests: Map~string, Promise~PaginatedResult~T~~~
+        -ttlMs: number
+        -maxCacheEntries: number
+        +buildKey(query: PaginatedQuery): string
+        +hasCached(query: PaginatedQuery): boolean
+        +getCached(query: PaginatedQuery): PaginatedResult~T~ | null
+        +fetchPage(query: PaginatedQuery, forceRefresh?: boolean): Promise~PaginatedResult~T~~
+        +prefetch(query: PaginatedQuery): Promise~void~
+        +invalidate(): void
+        +invalidateMatching(predicate): void
+        +getStats(): Object
+    }
+
+    class usePaginatedProxy {
+        <<React Hook>>
+        +items: T[]
+        +total: number
+        +page: number
+        +limit: number
+        +totalPages: number
+        +loading: boolean
+        +setPage(newPage): void
+        +refresh(): Promise~void~
+        +prefetchPage(page): Promise~void~
+    }
+
+    IPaginatedSource <|.. RealPaginatedSource : implements
+    IPaginatedSource <|.. PaginatedVirtualProxy : implements
+    PaginatedVirtualProxy o--> IPaginatedSource : delegates to (RealSubject)
+    usePaginatedProxy --> PaginatedVirtualProxy : manages reactive state
+```
+
+### 3. Interaction & Prefetching Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as Admin UI (NotificationAdmin)
+    participant Hook as usePaginatedProxy Hook
+    participant Proxy as PaginatedVirtualProxy (Virtual & Cache)
+    participant Real as RealPaginatedSource (RealSubject)
+    participant Server as Backend API (/api/admin/notifications)
+
+    Note over UI,Server: Giai đoạn 1: Khởi tạo Virtual Proxy (Chỉ tải trang 1)
+    UI->>Hook: Mount với initialPage = 1, pageSize = 25
+    Hook->>Proxy: fetchPage({ page: 1, limit: 25 })
+    Proxy->>Real: Cache Miss -> Gọi RealSubject
+    Real->>Server: GET /api/admin/notifications?page=1&limit=25
+    Server-->>Real: { items: [25 rows], total: 320, page: 1, limit: 25, totalPages: 13 }
+    Real-->>Proxy: PaginatedResult
+    Proxy->>Proxy: Lưu vào pageCache("p:1_l:25_...")
+    Proxy-->>Hook: Trả về kết quả
+    Hook-->>UI: Cập nhật state (Hiển thị ngay lập tức)
+
+    Note over Proxy,Server: Giai đoạn 2: Tải trước thông minh (Background Prefetching)
+    Hook->>Proxy: prefetch({ page: 2, limit: 25 }) via requestIdleCallback
+    Proxy->>Real: Tải ngầm trang 2 (không chặn UI)
+    Real->>Server: GET /api/admin/notifications?page=2&limit=25
+    Server-->>Real: { items: [25 rows], total: 320, page: 2, ... }
+    Real-->>Proxy: Lưu trước vào pageCache("p:2_l:25_...")
+
+    Note over UI,Proxy: Giai đoạn 3: Người dùng bấm "Trang Sau" -> 0ms Latency!
+    UI->>Hook: setPage(2)
+    Hook->>Proxy: fetchPage({ page: 2, limit: 25 })
+    Proxy-->>Hook: Cache Hit! Trả về dữ liệu ngay lập tức (0ms, không nhấp nháy spinner)
+    Hook-->>UI: Render trang 2 mượt mà
+    Hook->>Proxy: Kích hoạt tiếp prefetch({ page: 3 }) ngầm
+```
+
+### 4. Technical Guarantees & Invariants
+
+1. **Virtual Deferred Loading**:
+   - Khi vào trang, client chỉ nạp đúng `pageSize = 25` bản ghi đầu tiên thay vì toàn bộ 500 bản ghi.
+   - Giảm tải đến **95% kích thước payload ban đầu** (từ ~450 KB xuống còn ~22 KB).
+2. **In-Memory Cache Proxy**:
+   - Các trang đã duyệt qua được cache trong `Map<string, ProxyCacheEntry<T>>` với TTL (mặc định 3 phút) và LRU eviction.
+   - Duyệt lui tới giữa các trang trước/sau phản hồi tức thì với 0ms network latency.
+3. **Request Deduplication**:
+   - Nếu có nhiều lời gọi trùng query đồng thời (ví dụ người dùng click nhanh hoặc trigger tự động), Proxy tái sử dụng cùng một Promise in-flight, triệt tiêu race conditions.
+4. **Autonomous Background Prefetching**:
+   - Sử dụng `window.requestIdleCallback` (hoặc microtask timer) để tải trước trang `page + 1` trong thời gian nhàn rỗi của trình duyệt, không gây giật khung hình giao diện.
+5. **Safe Cache Invalidation**:
+   - Khi thực hiện các tác vụ thay đổi trạng thái (Gửi email hàng đợi, Đổi trạng thái, Xóa thông báo, Tạo thông báo thủ công), Proxy kích hoạt `invalidate()` xoá sạch cache để đảm bảo tính nhất quán dữ liệu 100%.
+6. **100% Backward Compatibility**:
+   - Endpoint `GET /api/admin/notifications` trên backend hỗ trợ cả 2 chế độ:
+     - Nếu có query `page`/`limit`: Trả về chuẩn phân trang `{ items, total, page, limit, totalPages }`.
+     - Nếu không có query `page`/`limit`: Trả về mảng truyền thống `rows` (tối đa 500 bản ghi) để đảm bảo không làm gãy các caller cũ hoặc script xuất dữ liệu.
+

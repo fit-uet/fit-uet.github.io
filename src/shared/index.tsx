@@ -22,6 +22,9 @@ export * from './utils/googleDrive';
 // Caching and API fetch helper
 export * from './utils/cache';
 
+// GoF Virtual Proxy & Cache Proxy for paginated lists
+export * from './utils/paginatedProxy';
+
 // Shared Components
 export * from './components/RegistrationRulesMarkdown';
 export * from './components/PaginationControls';
