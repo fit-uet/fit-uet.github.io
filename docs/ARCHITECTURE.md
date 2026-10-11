@@ -204,8 +204,8 @@ To provide clear operational cues for faculty advisors, report assessment badges
 
 | Raw DB Status (`report_status`) | Grade Status (`grade_status`) | Hiển thị Giảng viên (UI Badge) | Màu sắc & Kiểu dáng | Ý nghĩa nghiệp vụ |
 | :--- | :--- | :--- | :--- | :--- |
-| `NULL` / Chưa có | `missing` / Chưa có | **Chưa nộp** | `bg-slate-50 text-slate-500` | Sinh viên chưa nộp báo cáo. |
-| **`submitted`** | `draft` hoặc `missing` | **Chưa chấm điểm** | **`bg-blue-50 text-blue-700 border-blue-200`** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** |
+| `NULL` / Chưa có | `missing` / Chưa có | **Chưa nộp** | `bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ) | Sinh viên chưa nộp báo cáo. |
+| **`submitted`** | `draft` hoặc `missing` | **Chưa chấm điểm** | **`bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ)** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** |
 | **`submitted`** hoặc **`accepted`** | **`submitted`** (hoặc đã có điểm) | **Đã nộp điểm** | `bg-emerald-50 text-emerald-700 border-emerald-200` | GVHD đã hoàn tất nhập và nộp điểm về Khoa. |
 | **`needs_revision`** | Bất kỳ | **Cần nộp lại** | `bg-orange-50 text-orange-700 border-orange-200` | GVHD yêu cầu sinh viên chỉnh sửa, bổ sung báo cáo. |
 

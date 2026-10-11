@@ -67,8 +67,7 @@ const reportStatusLabel = (s?: string, gradeStatus?: string) =>
 const reportStatusBadgeClass = (s?: string, gradeStatus?: string) =>
   s === 'accepted' || gradeStatus === 'submitted' ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
   : s === 'needs_revision' ? 'bg-orange-50 border-orange-200 text-orange-700'
-  : s === 'submitted' ? 'bg-blue-50 border-blue-200 text-blue-700'
-  : 'bg-slate-50 border-slate-200 text-slate-500';
+  : 'bg-rose-50 border-rose-200 text-rose-700';
 
 const calcFinal = (p: string, r: string, c: string) => {
   const pv = p === '' ? null : Number(p);

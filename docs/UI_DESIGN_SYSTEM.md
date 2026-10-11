@@ -145,8 +145,8 @@ Hệ thống sử dụng bộ font chính thức của UET: `"Inter Tight", "Int
 
 ### 3.5. Nhãn Trạng Thái Báo Cáo & Chấm Điểm Thực Tập (Report Assessment Badges)
 Quy chuẩn hóa nhãn trạng thái từ góc nhìn của Giảng viên đánh giá:
-- **Chưa nộp**: Nền `#f8fafc`, viền `#e2e8f0`, chữ `#64748b` (Neutral).
-- **Chưa chấm điểm**: Nền `#e8f1fb` (soft brand tint), viền `#d4e5f7`, chữ `#034ea1` (Brand Blue font-bold). Thay thế nhãn chung chung “Đã nộp” khi sinh viên đã nộp báo cáo (`status = 'submitted'`) nhưng giảng viên chưa nộp điểm (`grade_status != 'submitted'`), kích hoạt sự chú ý cần đánh giá bài nộp.
+- **Chưa nộp**: Nền `#fff1f2` (`rose-50`), viền `#fecdd3` (`rose-200`), chữ `#be123c` (`rose-700`) (Cảnh báo đỏ). Hiển thị khi sinh viên chưa nộp báo cáo thực tập cuối kỳ.
+- **Chưa chấm điểm**: Nền `#fff1f2` (`rose-50`), viền `#fecdd3` (`rose-200`), chữ `#be123c` (`rose-700`) (Cảnh báo đỏ). Kích hoạt sự chú ý đặc biệt của giảng viên cần chấm và hoàn thiện điểm cho bài nộp.
 - **Đã nộp điểm**: Nền `#dcfce7`, viền `#bbf7d0`, chữ `#15803d` (Success). Hiển thị ngay sau khi giảng viên hoàn tất nộp điểm cho Khoa.
 - **Cần nộp lại**: Nền `#ffedd5`, viền `#fed7aa`, chữ `#c2410c` (Warning). Hiển thị khi giảng viên yêu cầu sinh viên nộp lại báo cáo.
 

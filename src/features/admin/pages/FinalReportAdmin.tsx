@@ -293,7 +293,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
                             ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
                             : row.report_status === 'submitted'
                             ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
-                            : 'bg-[#f8fafc] text-[#64748b] border-black/[0.04]'
+                            : 'bg-[#fee2e2] text-[#b91c1c] border-red-200/60'
                         }`}
                       >
                         <span
@@ -304,7 +304,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
                               ? 'bg-[#c2410c]'
                               : row.report_status === 'submitted'
                               ? 'bg-[#034ea1]'
-                              : 'bg-[#64748b]'
+                              : 'bg-[#b91c1c]'
                           }`}
                         />
                         {statusLabel(row.report_status)}

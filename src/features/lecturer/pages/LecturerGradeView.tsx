@@ -414,9 +414,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                   ? 'bg-[#dcfce7] text-[#1d833f] border-emerald-200/60'
                                   : row.report_status === 'needs_revision'
                                   ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
-                                  : row.report_status === 'submitted'
-                                  ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
-                                  : 'bg-[#f8fafc] text-[#64748b] border-black/[0.04]'
+                                  : 'bg-[#fee2e2] text-[#b91c1c] border-red-200/60'
                               }`}
                             >
                               {statusLabel(row.report_status, row.grade_status)}
