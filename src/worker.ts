@@ -2427,7 +2427,7 @@ async function route(request: Request, env: Env) {
       await database.execute({
         sql: `UPDATE final_reports 
               SET status = 'accepted', updated_at = datetime('now', '+7 hours') 
-              WHERE user_id = ? AND (status IS NULL OR status != 'accepted')`,
+              WHERE user_id = ? AND object_key IS NOT NULL AND (status IS NULL OR status != 'accepted')`,
         args: [userId],
       });
     }

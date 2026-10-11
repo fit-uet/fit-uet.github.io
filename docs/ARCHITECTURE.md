@@ -251,6 +251,29 @@ sequenceDiagram
      - `Cache-Control: private, max-age=3600, must-revalidate`
    - Responds with `304 Not Modified` on subsequent browser validations when content has not changed.
 
+### 5. Policy Enforcement: Hoàn thiện 100% điểm & Xử lý Sinh viên Bỏ môn (0 Điểm)
+
+Theo quy chế đào tạo của Khoa CNTT - Trường Đại học Công nghệ (UET), Giảng viên hướng dẫn (GVHD) bắt buộc phải hoàn thiện bảng điểm cho **100% sinh viên được phân công** để Khoa tổng hợp và gửi Phòng Đào tạo chốt học phần.
+
+#### a. Kịch bản sinh viên không nộp báo cáo / bỏ môn
+- Khi sinh viên không liên hệ, không nộp báo cáo thực tập: Giảng viên **chủ động cho 0 điểm** (Tiến độ: `0`, Báo cáo: `0`, Doanh nghiệp: `0` $\rightarrow$ Điểm tổng kết: `0.0`) kèm ghi chú rõ lý do (ví dụ: *"Sinh viên không nộp báo cáo thực tập (Bỏ môn)."*).
+- Điểm tổng kết luôn được làm tròn chuẩn mực đến 1 chữ số sau phần thập phân (`toFixed(1)`).
+
+#### b. Tiện ích giao diện hỗ trợ GVHD (UX Optimizations)
+1. **Modal Xem & Chấm (`ReportReviewPanel`)**:
+   - Khi mở modal của sinh viên chưa nộp bài, hệ thống hiển thị khối thông báo quy định của Khoa kèm nút **"Điền nhanh 0 điểm"**.
+   - Bấm nút sẽ tự động điền `progress = 0, report = 0, company = 0` và gợi ý nội dung ghi chú mà không cần gõ thủ công.
+2. **Bảng điểm tổng thể (`LecturerGradeView`)**:
+   - **Banner hướng dẫn của Khoa**: Nhắc nhở quy định hoàn tất 100% sinh viên và cung cấp nút **"Điền 0đ cho X SV chưa nộp báo cáo"** (Bulk Action) cho toàn bộ danh sách sinh viên chưa nộp trong đợt chấm mở.
+   - **Nút Gán 0đ trên từng dòng**: Cung cấp nút `[Gán 0đ]` nhanh ngay tại từng dòng sinh viên chưa nộp báo cáo.
+3. **Danh sách sinh viên (`LecturerHome`)**:
+   - Sinh viên chưa nộp báo cáo vẫn có nút **"Chấm điểm (0đ nếu bỏ môn)"** trực quan, giúp GVHD truy cập thẳng vào quy trình cho điểm mà không bị cản trở bởi việc thiếu file PDF.
+
+#### c. Tính toàn vẹn dữ liệu Backend (`Data Integrity Invariants`)
+- Khi GVHD nộp điểm chính thức cho sinh viên chưa nộp bài:
+  - Bảng `grades` ghi nhận đầy đủ điểm 0 và `status = 'submitted'`, đưa tiến độ hoàn thiện của GVHD lên 100%.
+  - Bảng `final_reports`: Câu lệnh `UPDATE final_reports SET status = 'accepted'` chỉ thực thi khi sinh viên **thực sự đã nộp file** (`AND object_key IS NOT NULL`). Sinh viên chưa nộp bài sẽ **không bị gán nhầm thành đã chấp nhận**, bảo toàn trung thực lịch sử nộp bài của sinh viên.
+
 ---
 
 ## GoF Proxy Pattern Architecture: Virtual Proxy & Cache Proxy for Paginated Data

@@ -400,7 +400,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
                       }`}>
                         {statusLabel(student)}
                       </span>
-                      {student.report_filename && (
+                      {student.report_filename ? (
                         <>
                           <div className="text-[10px] text-slate-500 line-clamp-1 max-w-[170px]" title={student.report_filename}>
                             {student.report_filename} · {formatBytes(Number(student.report_file_size || 0))}
@@ -421,6 +421,16 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
                             </button>
                           </div>
                         </>
+                      ) : (
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          <button
+                            onClick={() => openReview(student)}
+                            title="Chấm điểm hoặc gán 0 điểm nếu sinh viên bỏ môn"
+                            className="inline-flex items-center gap-1 text-slate-600 hover:text-[#034ea1] hover:bg-[#e8f1fb] px-2 py-1 rounded-xl text-[11px] font-semibold transition-colors cursor-pointer border border-slate-200 bg-slate-50 shadow-xs active:scale-[0.98]"
+                          >
+                            <FileText size={12} /> Chấm điểm (0đ nếu bỏ môn)
+                          </button>
+                        </div>
                       )}
                     </div>
                   </td>
