@@ -174,45 +174,6 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
     saveAs(await res.blob(), row.original_filename || `bao-cao-${row.student_id || row.user_id}.pdf`);
   };
 
-  const fillZeroScore = (userId: number) => {
-    setGradeEdits((prev) => ({
-      ...prev,
-      [String(userId)]: {
-        ...(prev[String(userId)] || {}),
-        progress_score: '0',
-        report_score: '0',
-        company_score: '0',
-        comment: prev[String(userId)]?.comment || 'Sinh viên không nộp báo cáo thực tập (Bỏ môn).',
-      },
-    }));
-    clearScoreError(userId, 'progress_score');
-    clearScoreError(userId, 'report_score');
-    clearScoreError(userId, 'company_score');
-  };
-
-  const unsubmittedStudents = grades.filter((g: any) => !g.report_status && !g.locked_at && g.grade_status !== 'submitted');
-
-  const fillZeroForAllUnsubmitted = () => {
-    if (unsubmittedStudents.length === 0) return;
-    if (!confirm(`Tự động điền 0 điểm và ghi chú 'Sinh viên không nộp báo cáo thực tập (Bỏ môn)' cho ${unsubmittedStudents.length} sinh viên chưa nộp bài?`)) return;
-
-    setGradeEdits((prev) => {
-      const next = { ...prev };
-      unsubmittedStudents.forEach((row: any) => {
-        next[String(row.user_id)] = {
-          ...(next[String(row.user_id)] || {}),
-          progress_score: '0',
-          report_score: '0',
-          company_score: '0',
-          comment: next[String(row.user_id)]?.comment || 'Sinh viên không nộp báo cáo thực tập (Bỏ môn).',
-        };
-        clearScoreError(row.user_id, 'progress_score');
-        clearScoreError(row.user_id, 'report_score');
-        clearScoreError(row.user_id, 'company_score');
-      });
-      return next;
-    });
-  };
 
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
 
@@ -391,32 +352,6 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
           </div>
         </div>
 
-        {/* Banner quy định hoàn thiện điểm của Khoa */}
-        <div className="bg-gradient-to-r from-[#eff6ff] to-[#f8fafc] border border-[#bfdbfe] rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#034ea1]/10 text-[#034ea1] flex items-center justify-center shrink-0 mt-0.5">
-              <AlertCircle size={18} />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-[#0f172a]">
-                Yêu cầu của Khoa: Hoàn thiện điểm cho 100% sinh viên được phân công
-              </div>
-              <p className="text-[11px] text-[#475569] mt-0.5 leading-relaxed">
-                Giảng viên cần nộp điểm cho tất cả sinh viên phụ trách. Với sinh viên <strong>không nộp báo cáo hoặc bỏ môn</strong>, thầy/cô vui lòng <strong>cho 0 điểm</strong> kèm ghi chú lý do để Khoa chốt bảng điểm gửi Phòng Đào tạo.
-              </p>
-            </div>
-          </div>
-          {unsubmittedStudents.length > 0 && gradingWindowStatus.status === 'open' && (
-            <button
-              type="button"
-              onClick={fillZeroForAllUnsubmitted}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-[#b91c1c] bg-white border border-[#fecaca] hover:bg-[#fff1f2] shadow-xs active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap shrink-0"
-            >
-              Điền 0đ cho {unsubmittedStudents.length} SV chưa nộp báo cáo
-            </button>
-          )}
-        </div>
-
         {/* Apple Inset Grouped Table */}
         <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
@@ -506,23 +441,13 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                               )}
                             </div>
 
-                            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                            <div className="mt-1.5 flex items-center gap-1.5">
                               <button
                                 onClick={() => openReviewByIndex(idx)}
                                 className="inline-flex items-center gap-1 text-[#034ea1] hover:bg-[#034ea1]/15 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors cursor-pointer bg-[#034ea1]/10 shadow-xs"
                               >
-                                <FileText size={11} /> {hasReport ? 'Xem & Chấm' : 'Chấm điểm'}
+                                <FileText size={11} /> Xem & Chấm
                               </button>
-                              {!hasReport && !disabled && row.grade_status !== 'submitted' && (
-                                <button
-                                  type="button"
-                                  onClick={() => fillZeroScore(row.user_id)}
-                                  title="Gán nhanh 0 điểm cho sinh viên bỏ môn"
-                                  className="inline-flex items-center gap-0.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-full text-[10px] font-bold border border-rose-200 transition-colors cursor-pointer"
-                                >
-                                  Gán 0đ
-                                </button>
-                              )}
                               {hasReport && (
                                 <button
                                   onClick={() => downloadReport(row)}

@@ -259,15 +259,13 @@ Theo quy chế đào tạo của Khoa CNTT - Trường Đại học Công nghệ
 - Khi sinh viên không liên hệ, không nộp báo cáo thực tập: Giảng viên **chủ động cho 0 điểm** (Tiến độ: `0`, Báo cáo: `0`, Doanh nghiệp: `0` $\rightarrow$ Điểm tổng kết: `0.0`) kèm ghi chú rõ lý do (ví dụ: *"Sinh viên không nộp báo cáo thực tập (Bỏ môn)."*).
 - Điểm tổng kết luôn được làm tròn chuẩn mực đến 1 chữ số sau phần thập phân (`toFixed(1)`).
 
-#### b. Tiện ích giao diện hỗ trợ GVHD (UX Optimizations)
-1. **Modal Xem & Chấm (`ReportReviewPanel`)**:
-   - Khi mở modal của sinh viên chưa nộp bài, hệ thống hiển thị khối thông báo quy định của Khoa kèm nút **"Điền nhanh 0 điểm"**.
-   - Bấm nút sẽ tự động điền `progress = 0, report = 0, company = 0` và gợi ý nội dung ghi chú mà không cần gõ thủ công.
-2. **Bảng điểm tổng thể (`LecturerGradeView`)**:
-   - **Banner hướng dẫn của Khoa**: Nhắc nhở quy định hoàn tất 100% sinh viên và cung cấp nút **"Điền 0đ cho X SV chưa nộp báo cáo"** (Bulk Action) cho toàn bộ danh sách sinh viên chưa nộp trong đợt chấm mở.
-   - **Nút Gán 0đ trên từng dòng**: Cung cấp nút `[Gán 0đ]` nhanh ngay tại từng dòng sinh viên chưa nộp báo cáo.
-3. **Danh sách sinh viên (`LecturerHome`)**:
-   - Sinh viên chưa nộp báo cáo vẫn có nút **"Chấm điểm (0đ nếu bỏ môn)"** trực quan, giúp GVHD truy cập thẳng vào quy trình cho điểm mà không bị cản trở bởi việc thiếu file PDF.
+#### b. Trải nghiệm người dùng đồng bộ & tôn trọng quyền tự chủ của GVHD (UX Consistency)
+1. **Đồng bộ nhãn nút "Xem & Chấm" trên toàn hệ thống**:
+   - Cả trên danh sách sinh viên phụ trách (`LecturerHome`) và bảng điểm tổng thể (`LecturerGradeView`), mọi dòng sinh viên (dù đã nộp hay chưa nộp báo cáo) đều hiển thị nhất quán nút **"Xem & Chấm"**.
+   - Tránh việc đặt các nhãn rườm rà như *"Chấm điểm (0đ nếu bỏ môn)"* hay các nút *"Gán 0đ"*, giữ giao diện trang nhã, đồng nhất chuẩn Apple / UET ICD.
+2. **Quy trình cho điểm tự chủ của GVHD**:
+   - GVHD tự quyết định và nhập điểm vào 3 ô điểm (Tiến độ 20%, Báo cáo 20%, Doanh nghiệp 60%) và ghi chú. Khi sinh viên bỏ môn, GVHD chủ động nhập `0` vào các ô điểm và ghi rõ lý do.
+   - Không áp đặt các nút "Điền nhanh 0 điểm" gượng ép trên giao diện modal hay bảng tổng thể.
 
 #### c. Tính toàn vẹn dữ liệu Backend (`Data Integrity Invariants`)
 - Khi GVHD nộp điểm chính thức cho sinh viên chưa nộp bài:

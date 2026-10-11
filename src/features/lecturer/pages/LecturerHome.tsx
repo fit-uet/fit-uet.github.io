@@ -425,10 +425,9 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
                         <div className="flex items-center gap-1.5 pt-0.5">
                           <button
                             onClick={() => openReview(student)}
-                            title="Chấm điểm hoặc gán 0 điểm nếu sinh viên bỏ môn"
-                            className="inline-flex items-center gap-1 text-slate-600 hover:text-[#034ea1] hover:bg-[#e8f1fb] px-2 py-1 rounded-xl text-[11px] font-semibold transition-colors cursor-pointer border border-slate-200 bg-slate-50 shadow-xs active:scale-[0.98]"
+                            className="inline-flex items-center gap-1 text-[#034ea1] hover:bg-[#e8f1fb] px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-[#d4e5f7] bg-[#e8f1fb]/70 shadow-xs active:scale-[0.98]"
                           >
-                            <FileText size={12} /> Chấm điểm (0đ nếu bỏ môn)
+                            <FileText size={12} /> Xem & Chấm
                           </button>
                         </div>
                       )}

@@ -632,30 +632,6 @@ export function ReportReviewPanel({
                   </div>
                 )}
 
-                {/* Tiện ích gán 0 điểm cho sinh viên bỏ môn theo quy định của Khoa */}
-                {!locked && isPrimary && (
-                  <div className="flex items-center justify-between gap-2 bg-rose-50/80 border border-rose-200/80 rounded-xl p-2.5">
-                    <div className="text-[11px] text-rose-800 leading-tight">
-                      <span className="font-bold">Sinh viên bỏ môn / không nộp bài?</span>
-                      <p className="text-[10px] text-rose-600 mt-0.5">Khoa yêu cầu GVHD hoàn thiện 0 điểm kèm lý do.</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProgress('0');
-                        setReport('0');
-                        setCompany('0');
-                        setScoreErrors({});
-                        if (!noteText.trim()) {
-                          setNoteText('Sinh viên không nộp báo cáo thực tập (Bỏ môn).');
-                        }
-                      }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-700 bg-white border border-rose-200 hover:bg-rose-100/60 shadow-xs cursor-pointer transition-all active:scale-[0.98] whitespace-nowrap shrink-0"
-                    >
-                      Điền nhanh 0 điểm
-                    </button>
-                  </div>
-                )}
 
                 {/* 3 ô điểm */}
                 <div className="grid grid-cols-3 gap-2">
