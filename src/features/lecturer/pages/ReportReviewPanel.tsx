@@ -55,16 +55,19 @@ interface Props {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const reportStatusLabel = (s?: string) =>
+// In-memory module cache for report PDF blobs to prevent redundant downloads across review sessions
+const pdfBlobCache = new Map<number, { blob: Blob; url: string; filename?: string; timestamp: number }>();
+
+const reportStatusLabel = (s?: string, gradeStatus?: string) =>
   s === 'accepted' ? 'Đã chấp nhận'
   : s === 'needs_revision' ? 'Cần nộp lại'
-  : s === 'submitted' ? 'Đã nộp'
+  : s === 'submitted' ? (gradeStatus === 'submitted' ? 'Đã chấm điểm' : 'Chưa chấm điểm')
   : 'Chưa nộp';
 
-const reportStatusBadgeClass = (s?: string) =>
+const reportStatusBadgeClass = (s?: string, gradeStatus?: string) =>
   s === 'accepted' ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
   : s === 'needs_revision' ? 'bg-orange-50 border-orange-200 text-orange-700'
-  : s === 'submitted' ? 'bg-blue-50 border-blue-200 text-blue-700'
+  : s === 'submitted' ? (gradeStatus === 'submitted' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-blue-50 border-blue-200 text-blue-700')
   : 'bg-slate-50 border-slate-200 text-slate-500';
 
 const calcFinal = (p: string, r: string, c: string) => {
@@ -190,6 +193,15 @@ export function ReportReviewPanel({
       return;
     }
 
+    // Check memory cache first to avoid re-fetching across review clicks
+    const cached = pdfBlobCache.get(uid);
+    if (cached && (!target.report_filename || cached.filename === target.report_filename)) {
+      setPdfUrl(cached.url);
+      setPdfLoading(false);
+      setPdfError(null);
+      return;
+    }
+
     setPdfLoading(true);
     setPdfError(null);
 
@@ -205,7 +217,7 @@ export function ReportReviewPanel({
         const blob = await res.blob();
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
-        blobUrlRef.current = url;
+        pdfBlobCache.set(uid, { blob, url, filename: target.report_filename, timestamp: Date.now() });
         setPdfUrl(url);
       } catch (e: any) {
         if (!cancelled) setPdfError(e.message || 'Không tải được file báo cáo.');
@@ -216,12 +228,8 @@ export function ReportReviewPanel({
 
     return () => {
       cancelled = true;
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-        blobUrlRef.current = null;
-      }
     };
-  }, [uid, localReportStatus, target.report_filename, token]);
+  }, [uid, target.report_filename, token]);
 
   // ── Keyboard shortcuts (Escape to close, [ and ] / Alt+Arrows to switch student) ──
   useEffect(() => {
@@ -389,8 +397,8 @@ export function ReportReviewPanel({
             {className && (
               <span className="text-xs text-slate-400">({className})</span>
             )}
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${reportStatusBadgeClass(localReportStatus)}`}>
-              {reportStatusLabel(localReportStatus)}
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${reportStatusBadgeClass(localReportStatus, target.grade_status)}`}>
+              {reportStatusLabel(localReportStatus, target.grade_status)}
             </span>
             {locked && (
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${target.locked_at ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>

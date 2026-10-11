@@ -180,6 +180,14 @@ lecturerRouter.get('/api/reports/final/:userId/view', requireAuth, async (req: a
   if (!(await canAccessStudentReport(req.user, userId))) return res.status(403).json({ error: 'Forbidden' });
   const report = (await db.execute({ sql: 'SELECT * FROM final_reports WHERE user_id = ?', args: [userId] })).rows[0] as any;
   if (!report) return res.status(404).json({ error: 'Chưa có báo cáo.' });
+  const etag = `"${report.id}-${report.file_size}-${new Date(report.submitted_at || report.updated_at || Date.now()).getTime()}"`;
+  res.setHeader('ETag', etag);
+  res.setHeader('Cache-Control', 'private, max-age=3600, must-revalidate');
+
+  if (req.header('if-none-match') === etag) {
+    return res.status(304).end();
+  }
+
   res.setHeader('content-type', 'application/pdf');
   res.setHeader('content-disposition', `inline; filename="${encodeURIComponent(report.original_filename)}"`);
   res.setHeader('x-frame-options', 'SAMEORIGIN');

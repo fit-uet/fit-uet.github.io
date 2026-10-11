@@ -186,3 +186,67 @@ The exported XLSX file (`danh_sach_sinh_vien_chua_xac_nhan_thuc_tap.xlsx`) inclu
 
 1. **Primary Route**: Requests `GET /api/admin/unconfirmed-internships` (available in both Express `server.ts` and Cloudflare Worker `src/worker.ts`).
 2. **Client-side Fallback**: If the server endpoint is momentarily unreachable (e.g. during a deployment restart), the client-side component automatically correlates the in-memory `registrations` state with `GET /api/admin/final-internships` to build and download the complete XLSX file seamlessly.
+
+---
+
+## PDF Review Caching & Report Assessment State Architecture
+
+### 1. Problem Statement & Performance Bottleneck
+
+During the final internship grading phase, faculty advisors review 10–30 student reports in succession. Under the naive implementation:
+1. **Redundant Egress & Latency**: Each PDF file ranges from 2 MB to 10 MB. Every time an advisor opened a student's submission, closed the panel, or revisited an already-graded student, the system initiated a full network `fetch` for the binary blob. This caused 1–3s latency per review and wasted network bandwidth.
+2. **State Thrashing on Grade Submission**: Tying the PDF loading hook (`useEffect`) to the report status (`localReportStatus`) caused the PDF viewer to tear down, re-fetch over the network, and re-mount whenever the advisor pressed **“Nộp điểm cho Khoa”** or **“Lưu nháp”**.
+3. **Ambiguous Status Taxonomy**: Displaying a generic `Đã nộp` badge for all submitted reports failed to distinguish between reports awaiting evaluation and those already completed.
+
+### 2. Status Taxonomy: "Chưa chấm điểm" Paradigm
+
+To provide clear operational cues for faculty advisors, report assessment badges are decoupled from raw database status codes and presented through an action-oriented taxonomy:
+
+| Raw DB Status (`report_status`) | Grade Status (`grade_status`) | Hiển thị Giảng viên (UI Badge) | Màu sắc & Kiểu dáng | Ý nghĩa nghiệp vụ |
+| :--- | :--- | :--- | :--- | :--- |
+| `NULL` / Chưa có | `missing` / Chưa có | **Chưa nộp** | `bg-slate-50 text-slate-500` | Sinh viên chưa nộp báo cáo. |
+| **`submitted`** | `draft` hoặc `missing` | **Chưa chấm điểm** | **`bg-blue-50 text-blue-700 border-blue-200`** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** |
+| **`submitted`** hoặc **`accepted`** | **`submitted`** (hoặc đã có điểm) | **Đã chấm điểm** / **Đã chấp nhận** | `bg-emerald-50 text-emerald-700 border-emerald-200` | GVHD đã hoàn tất nhập và nộp điểm về Khoa. |
+| **`needs_revision`** | Bất kỳ | **Cần nộp lại** | `bg-orange-50 text-orange-700 border-orange-200` | GVHD yêu cầu sinh viên chỉnh sửa, bổ sung báo cáo. |
+
+### 3. Multi-Tier Caching Architecture
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Advisor as Lecturer UI (ReportReviewPanel)
+    participant Cache as Module-level Cache (pdfBlobCache)
+    participant API as Backend Server (/api/reports/final/:userId/view)
+    participant Storage as Cloud Storage / S3 / Local
+
+    Advisor->>Cache: Request PDF for student userId
+    alt Cache Hit (Blob & Object URL already in memory)
+        Cache-->>Advisor: Return Object URL immediately (0ms, Instant Render)
+    else Cache Miss (First review in session)
+        Advisor->>API: GET /view (with Auth & If-None-Match)
+        alt 304 Not Modified
+            API-->>Advisor: HTTP 304 (Reuse local buffer)
+        else 200 OK
+            API->>Storage: Stream file bytes with ETag & Cache-Control
+            Storage-->>API: Binary stream
+            API-->>Advisor: HTTP 200 + Binary Blob
+            Advisor->>Advisor: Create Object URL via URL.createObjectURL(blob)
+            Advisor->>Cache: Save into pdfBlobCache.set(userId, { blob, url })
+        end
+    end
+    Note over Advisor: Advisor grades & submits -> Form state updates without re-fetching PDF!
+```
+
+### 4. Technical Invariants & Guarantees
+
+1. **Singleton Client Memory Cache**:
+   - `pdfBlobCache = Map<number, { blob: Blob, url: string, filename?: string, timestamp: number }>` persists throughout the active browser tab session.
+   - When closing and re-opening a student's review panel, or toggling between students with keyboard shortcuts (`[` / `]`), rendering is instantaneous (0 ms), without visual flicker or network traffic.
+2. **Decoupled Form & Viewer Lifecycles**:
+   - The PDF fetch hook strictly depends on `[uid, target.report_filename, token]`.
+   - Modifying grading inputs (`progress_score`, `report_score`, `company_score`, `comment`) or changing report status (`accepted`, `needs_revision`) updates form state only and NEVER revokes or re-fetches the PDF.
+3. **Backend HTTP Validation (ETag + Cache-Control)**:
+   - Endpoint `GET /api/reports/final/:userId/view` includes:
+     - `ETag: "<id>-<file_size>-<timestamp>"`
+     - `Cache-Control: private, max-age=3600, must-revalidate`
+   - Responds with `304 Not Modified` on subsequent browser validations when content has not changed.

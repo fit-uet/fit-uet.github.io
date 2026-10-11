@@ -864,13 +864,17 @@ Thiết kế UI:
   - Tải lại PDF đã nộp.
   - Nếu file > 10 MB, báo rõ “Vui lòng nén PDF xuống tối đa 10 MB”.
 - Giảng viên:
-  - Cột trạng thái báo cáo trong danh sách sinh viên phụ trách.
+  - Cột trạng thái báo cáo trong danh sách sinh viên phụ trách và bảng nhập điểm:
+    - Nếu sinh viên đã nộp báo cáo nhưng chưa có điểm chính thức: hiển thị nhãn **“Chưa chấm điểm”** (Badge xanh dương `#034ea1` / soft tint) để giảng viên nhận biết rõ bài cần chấm, thay vì nhãn chung chung “Đã nộp”.
+    - Sau khi giảng viên đã chấm và nộp điểm về Khoa: tự động chuyển thành **“Đã chấm điểm”** / **“Đã chấp nhận”** (Badge xanh lá cây).
+    - Nếu giảng viên yêu cầu nộp lại: nhãn **“Cần nộp lại”** (Badge màu cam).
+    - Nếu chưa có báo cáo: nhãn **“Chưa nộp”** (Badge màu xám).
   - **Xem PDF inline trực tiếp trên hệ thống** (xem mục 9.5.1 — Inline PDF Viewer).
   - Nút tải PDF về máy vẫn giữ nguyên như tuỳ chọn phụ.
   - Ghi chú “cần nộp lại” từ panel chấm điểm tích hợp.
 - Admin:
   - Bảng tổng hợp trạng thái nộp báo cáo.
-  - Bộ lọc chưa nộp/đã nộp/cần nộp lại/đã chấp nhận.
+  - Bộ lọc chưa nộp / chưa chấm điểm / đã chấm điểm / cần nộp lại / đã chấp nhận.
   - Xuất XLSX và tải PDF từng sinh viên.
   - Admin cũng có thể mở inline viewer để xem báo cáo.
 
@@ -881,16 +885,17 @@ Tiêu chí nghiệm thu:
 - Giảng viên chỉ xem/tải được báo cáo của sinh viên mình phụ trách.
 - Admin xem/tải được tất cả.
 - Giảng viên có thể xem PDF và chấm điểm cùng lúc mà không cần rời trang.
+- **Không tải lại file PDF khi chấm điểm hoặc khi bấm lại vào bài đã nộp**: Toàn bộ thao tác lưu điểm, chuyển đổi sinh viên và mở lại báo cáo đã nộp được tối ưu qua bộ nhớ đệm (Client-side Blob Cache & Backend ETag), đạt thời gian phản hồi tức thì 0ms.
 
 ### 9.5.1. Inline PDF Viewer — Xem và chấm báo cáo cùng lúc
 
 **Bối cảnh và vấn đề:**
 
-Hiện tại, giảng viên phải nhấn “Tải” để tải file PDF về máy, mở bằng ứng dụng ngoài, xem nội dung, rồi quay lại hệ thống để nhập điểm. Quy trình này gây gián đoạn và tốn thời gian, đặc biệt khi phụ trách nhiều sinh viên.
+Hiện tại, giảng viên phải nhấn “Tải” để tải file PDF về máy, mở bằng ứng dụng ngoài, xem nội dung, rồi quay lại hệ thống để nhập điểm. Quy trình này gây gián đoạn và tốn thời gian, đặc biệt khi phụ trách nhiều sinh viên. Đồng thời, nếu không có cơ chế lưu đệm, mỗi lần mở bài hoặc sau khi bấm nộp điểm, hệ thống lại phải tải lại toàn bộ file PDF 5–10 MB qua mạng, gây trễ và tốn băng thông.
 
 **Yêu cầu:**
 
-- Giảng viên nhấn vào tên báo cáo của một sinh viên → mở **review panel** (full-screen overlay).
+- Giảng viên nhấn vào tên báo cáo hoặc nút “Xem & Chấm” của một sinh viên → mở **review panel** (full-screen overlay).
 - Panel chia đôi màn hình theo chiều ngang:
   - **Bên trái (60–65%)**: iframe nhúng PDF qua blob URL, scroll được, hỗ trợ zoom của trình duyệt.
   - **Bên phải (35–40%)**: thông tin sinh viên (read-only) + form chấm điểm.
@@ -901,7 +906,7 @@ Hiện tại, giảng viên phải nhấn “Tải” để tải file PDF về 
 **Thiết kế UI chi tiết — Review Panel (Chuẩn Apple HIG Floating Sheet):**
 
 Header (mỏng, đơn dòng ~48px, cố định trên đỉnh):
-- Tên sinh viên (Bold 14px) · MSSV (Badge xám bo góc) · Lớp sinh viên · Badge trạng thái báo cáo (Đã duyệt / Cần nộp lại / Đã nộp).
+- Tên sinh viên (Bold 14px) · MSSV (Badge xám bo góc) · Lớp sinh viên · Badge trạng thái báo cáo (**Chưa chấm điểm** khi chưa có điểm, **Đã chấm điểm** / **Đã duyệt** sau khi hoàn thành, hoặc **Cần nộp lại**).
 - Phía bên phải: Nút "Mở tab mới" (ExternalLink), nút "Tải PDF", nút "Đóng (×)".
 - Tuyệt đối không lặp lại tên trường/khoa hay lồng biểu tượng cồng kềnh.
 
@@ -922,6 +927,19 @@ Bên phải — Grading Panel (35–38% chiều rộng, chuẩn Apple Inset Grou
   - Ghi chú/Nhận xét: Textarea tối giản, không chiếm diện tích cuộn.
   - Cụm nút bấm chuẩn Apple: **Lưu nháp** (Secondary) và **Nộp điểm cho Khoa** (Primary SF Blue).
 - Toàn bộ nội dung cột phải vừa vặn trong 1 màn hình chuẩn, không cần cuộn trang.
+
+**Cơ chế Tối ưu Hiệu năng & Cache PDF (Tránh tải lại file qua mạng):**
+
+1. **Client-side In-memory Blob Cache (Singleton Map)**:
+   - Hệ thống duy trì một bộ nhớ đệm `pdfBlobCache = Map<userId, { blob, url, filename, timestamp }>` ở cấp module.
+   - Khi giảng viên ấn xem báo cáo lần đầu, file PDF được tải và tạo `Blob URL` lưu vào cache.
+   - Khi giảng viên đóng panel và **ấn lại vào bài đã nộp của sinh viên đó** (hoặc chuyển qua lại giữa các sinh viên bằng phím tắt `[` / `]`), panel lấy ngay `Blob URL` từ bộ nhớ đệm: **hiển thị tức thì 0ms, không tốn thêm băng thông mạng và không có màn hình chờ xoay loading**.
+2. **Tách biệt vòng đời Form Chấm điểm và PDF Viewer**:
+   - Thao tác chấm bài, lưu nháp hay nộp điểm chỉ cập nhật trạng thái dữ liệu điểm và nhãn báo cáo (`localReportStatus`).
+   - Tuyệt đối không gắn trạng thái chấm điểm vào dependency của PDF loader. Do đó, sau khi chấm xong, file PDF vẫn giữ nguyên trên màn hình, không bị giật hay kích hoạt tải lại.
+3. **Backend HTTP Caching & ETag Validation**:
+   - Endpoint `GET /api/reports/final/:userId/view` trả kèm `ETag: "<id>-<file_size>-<timestamp>"` và `Cache-Control: private, max-age=3600, must-revalidate`.
+   - Nếu trình duyệt gửi lại request với header `If-None-Match`, máy chủ phản hồi ngay `304 Not Modified` chỉ trong vài mili-giây mà không phải đọc hay truyền lại dữ liệu file nhị phân.
 
 **Thiết kế API bổ sung:**
 

@@ -54,13 +54,13 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
     });
   }, [token]);
 
-  const statusLabel = (status?: string) =>
+  const statusLabel = (status?: string, gradeStatus?: string) =>
     status === 'accepted'
       ? 'Đã chấp nhận'
       : status === 'needs_revision'
       ? 'Cần nộp lại'
       : status === 'submitted'
-      ? 'Đã nộp'
+      ? (gradeStatus === 'submitted' ? 'Đã chấm điểm' : 'Chưa chấm điểm')
       : 'Chưa nộp';
 
   const gradeStatusLabel = (status?: string) =>
@@ -407,16 +407,16 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                           <div className="flex flex-col gap-1 items-start">
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                                row.report_status === 'accepted'
+                                row.report_status === 'accepted' || (row.report_status === 'submitted' && row.grade_status === 'submitted')
                                   ? 'bg-[#dcfce7] text-[#1d833f] border-emerald-200/60'
                                   : row.report_status === 'needs_revision'
                                   ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
-                                  : row.report_status
+                                  : row.report_status === 'submitted'
                                   ? 'bg-[#034ea1]/10 text-[#034ea1] border-[#034ea1]/20'
                                   : 'bg-[#f8fafc] text-[#64748b] border-black/[0.04]'
                               }`}
                             >
-                              {statusLabel(row.report_status)}
+                              {statusLabel(row.report_status, row.grade_status)}
                             </span>
 
                             <div className="flex items-center gap-1 mt-0.5">

@@ -50,7 +50,20 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
     if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
-  const statusLabel = (status?: string) => status === 'accepted' ? 'Đã chấp nhận' : status === 'needs_revision' ? 'Cần nộp lại' : status === 'submitted' ? 'Đã nộp' : 'Chưa nộp';
+  const isStudentGraded = (student: any) => {
+    return student.grade_status === 'submitted' ||
+      (student.final_score !== null && student.final_score !== undefined && student.final_score !== '') ||
+      grades.some((g: any) => Number(g.user_id) === Number(student.user_id) && (g.grade_status === 'submitted' || (g.final_score !== null && g.final_score !== undefined && g.final_score !== '')));
+  };
+  const statusLabel = (student: any) => {
+    const s = student?.report_status;
+    if (s === 'accepted') return 'Đã chấp nhận';
+    if (s === 'needs_revision') return 'Cần nộp lại';
+    if (s === 'submitted') {
+      return isStudentGraded(student) ? 'Đã chấm điểm' : 'Chưa chấm điểm';
+    }
+    return 'Chưa nộp';
+  };
   const uniqueStudents = Array.from(new Map(
     students
       .filter((student: any) => student.user_id)
@@ -184,7 +197,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
       student.contacted_at ? 'Đã liên hệ' : 'Chưa liên hệ',
       student.contacted_at ? new Date(student.contacted_at).toLocaleString('vi-VN') : '',
       student.contact_note || '',
-      statusLabel(student.report_status),
+      statusLabel(student),
       student.report_filename || '',
       student.report_file_size ? formatBytes(Number(student.report_file_size || 0)) : '',
       student.report_submitted_at ? new Date(student.report_submitted_at).toLocaleString('vi-VN') : '',
@@ -380,12 +393,12 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
                   <td className="p-4">
                     <div className="flex flex-col gap-1.5 items-start">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
-                        student.report_status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        student.report_status === 'accepted' || (student.report_status === 'submitted' && isStudentGraded(student)) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                         student.report_status === 'needs_revision' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                        student.report_status ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        student.report_status === 'submitted' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         'bg-slate-50 text-slate-500 border-slate-200'
                       }`}>
-                        {statusLabel(student.report_status)}
+                        {statusLabel(student)}
                       </span>
                       {student.report_filename && (
                         <>
