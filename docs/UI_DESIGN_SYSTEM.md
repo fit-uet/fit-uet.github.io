@@ -157,6 +157,9 @@ Quy chuẩn hóa nhãn trạng thái từ góc nhìn của Giảng viên đánh 
 1. **Thanh Header Hiện Tại**:
    - Vẫn duy trì thanh Header xanh chuyển sắc đặc trưng (`#064889` → `#075fc7` → `#1473e6`).
    - Cung cấp đầy đủ icon Chat trao đổi GVHD-SV, chuông thông báo, menu tài khoản, và nhận diện Khoa CNTT.
+   - **Nút Chuyển Đổi Nhanh Vai Trò (Contextual Role Switcher Pill)**:
+     - Dành riêng cho tài khoản Quản trị viên đồng thời là Giảng viên (`user.role === 'admin' && user.is_lecturer`).
+     - Đặt ngay trên Header bên trái Avatar: khi ở trang Quản trị hiển thị `[ 🎓 Trang Giảng viên ]`, khi ở trang Giảng viên tự động đổi thành `[ 🛡️ Trang Quản trị ]`, cho phép chuyển đổi 1-click tức thì.
 2. **Khu Vực Thân Trang & Footer**:
    - Nền toàn trang chuyển sang Slate Canvas `#f8fafc`.
    - Bảng biểu, nút bấm, ô input, modal chấm điểm và các khối chức năng đều đồng bộ 100% theo các biến UET ICD Design Tokens.

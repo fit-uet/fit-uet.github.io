@@ -1,9 +1,44 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { HashRouter, Link } from 'react-router-dom';
+import { HashRouter, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { LogOut, User as UserIcon, CheckCircle2, LogIn, LayoutDashboard, AlertTriangle, FileText, Bell, CircleHelp, MessageCircle } from 'lucide-react';
+import { LogOut, User as UserIcon, CheckCircle2, LogIn, LayoutDashboard, AlertTriangle, FileText, Bell, CircleHelp, MessageCircle, GraduationCap } from 'lucide-react';
 import { API_BASE, clearJsonCache, GOOGLE_CLIENT_ID, isAuthExpiredResponse, jwtExpiresAtMs, MyNotifications } from './shared';
 import { AppRoutes } from './app/AppRoutes';
+
+function RoleSwitchButton({ user, onNavigate }: { user: any; onNavigate?: () => void }) {
+  const location = useLocation();
+  if (!user || user.role !== 'admin' || !user.is_lecturer) return null;
+
+  const isLecturerView = location.pathname.startsWith('/lecturer');
+
+  if (isLecturerView) {
+    return (
+      <Link
+        to="/admin"
+        onClick={onNavigate}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/15 hover:bg-white/25 border border-white/25 shadow-xs transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer backdrop-blur-sm"
+        title="Chuyển sang Trang Quản trị (Admin Dashboard)"
+      >
+        <LayoutDashboard size={14} className="text-blue-100" />
+        <span className="hidden sm:inline">Trang Quản trị</span>
+        <span className="sm:hidden text-[11px]">Admin</span>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      to="/lecturer"
+      onClick={onNavigate}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/15 hover:bg-white/25 border border-white/25 shadow-xs transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer backdrop-blur-sm"
+      title="Chuyển sang Trang Giảng viên (xem SV hướng dẫn & chấm điểm)"
+    >
+      <GraduationCap size={15} className="text-amber-200" />
+      <span className="hidden sm:inline">Trang Giảng viên</span>
+      <span className="sm:hidden text-[11px]">Giảng viên</span>
+    </Link>
+  );
+}
 
 function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
@@ -196,6 +231,15 @@ function App() {
                       </>
                     )}
                   </div>
+
+                  <RoleSwitchButton
+                    user={user}
+                    onNavigate={() => {
+                      setIsMenuOpen(false);
+                      setIsNotificationOpen(false);
+                    }}
+                  />
+
                   <div className="relative">
                     <button onClick={() => { setIsMenuOpen(!isMenuOpen); setIsNotificationOpen(false); }} className="flex items-center gap-2 hover:bg-white/10 text-white p-1 pr-2 rounded-xl transition-all cursor-pointer group focus:outline-none">
                       <div className="text-right hidden sm:block">
@@ -229,7 +273,7 @@ function App() {
                           {user.role === 'lecturer' && (
                             <>
                               <Link to="/lecturer" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
-                                <UserIcon size={15} className="text-blue-600" /> Trang giảng viên
+                                <GraduationCap size={15} className="text-blue-600" /> Trang giảng viên
                               </Link>
                               <Link to="/lecturer-guide" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <CircleHelp size={15} className="text-slate-500" /> Hướng dẫn sử dụng
@@ -247,7 +291,7 @@ function App() {
                               {user.is_lecturer && (
                                 <>
                                   <Link to="/lecturer" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
-                                    <UserIcon size={15} className="text-blue-600" /> Trang giảng viên
+                                    <GraduationCap size={15} className="text-blue-600" /> Trang giảng viên
                                   </Link>
                                   <Link to="/lecturer-guide" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                     <CircleHelp size={15} className="text-slate-500" /> Hướng dẫn sử dụng
