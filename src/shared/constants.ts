@@ -127,7 +127,7 @@ Tài liệu này mô tả các chức năng chính dành cho giảng viên hư�
 
 - Giảng viên đăng nhập bằng tài khoản email VNU đã có trong danh sách giảng viên của hệ thống.
 - Sau khi đăng nhập, chọn **Trang giảng viên** từ avatar hoặc truy cập trang chủ dành cho giảng viên.
-- Nếu tài khoản là quản trị viên đồng thời là giảng viên, trong menu avatar vẫn có lối vào **Trang giảng viên** và **Chấm điểm thực tập**.
+- Nếu tài khoản là quản trị viên đồng thời là giảng viên, hệ thống cung cấp nút chuyển đổi nhanh **Trang giảng viên** ngay trên thanh Header (cạnh avatar) và lối vào **Chấm điểm thực tập** trong menu avatar.
 
 ## 2. Xem danh sách sinh viên phụ trách
 

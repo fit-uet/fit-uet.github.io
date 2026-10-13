@@ -290,9 +290,6 @@ function App() {
                               </Link>
                               {user.is_lecturer && (
                                 <>
-                                  <Link to="/lecturer" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
-                                    <GraduationCap size={15} className="text-blue-600" /> Trang giảng viên
-                                  </Link>
                                   <Link to="/lecturer-guide" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                     <CircleHelp size={15} className="text-slate-500" /> Hướng dẫn sử dụng
                                   </Link>
