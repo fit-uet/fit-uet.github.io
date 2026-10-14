@@ -363,7 +363,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                   <th className="px-5 py-3.5">Báo cáo & Trạng thái</th>
                   <th className="px-5 py-3.5 text-center">20% Định kỳ</th>
                   <th className="px-5 py-3.5 text-center">20% Báo cáo</th>
-                  <th className="px-5 py-3.5 text-center">60% Doanh nghiệp</th>
+                  <th className="px-5 py-3.5 text-center" title="Đánh giá của DN/GVHD (nếu thực tập ở Trường)">60% Doanh nghiệp</th>
                   <th className="px-5 py-3.5 text-center">Tổng</th>
                   <th className="px-5 py-3.5 text-right">Nhận xét & Thao tác</th>
                 </tr>

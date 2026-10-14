@@ -637,12 +637,12 @@ export function ReportReviewPanel({
                   {[
                     { label: 'Định kỳ', weight: '20%', value: progress, set: setProgress, field: 'progress' },
                     { label: 'Báo cáo', weight: '20%', value: report, set: setReport, field: 'report' },
-                    { label: 'Đánh giá của DN/GVHD', weight: '60%', value: company, set: setCompany, field: 'company' },
+                    { label: 'Đánh giá của DN/GVHD (nếu thực tập ở Trường)', weight: '60%', value: company, set: setCompany, field: 'company' },
                   ].map(({ label, weight, value, set, field }) => (
-                    <div key={field} className="space-y-1">
-                      <div className="min-h-[28px] flex items-end justify-between text-[11px] gap-1">
+                    <div key={field} className="flex flex-col justify-end space-y-1">
+                      <div className="flex-1 flex items-end justify-between text-[11px] gap-1 min-h-[44px]">
                         <span className="font-semibold text-slate-600 leading-tight" title={label}>{label}</span>
-                        <span className="text-slate-400 text-[10px] shrink-0">{weight}</span>
+                        <span className="text-slate-400 text-[10px] shrink-0 self-end">{weight}</span>
                       </div>
                       <input
                         type="number"
@@ -674,7 +674,7 @@ export function ReportReviewPanel({
                 </div>
 
                 <p className="text-[10px] text-slate-400 text-center leading-tight">
-                  Điểm Đánh giá của DN căn cứ theo Phiếu đánh giá có dấu công ty được scan gộp trong file PDF báo cáo của sinh viên.
+                  Điểm Đánh giá của DN căn cứ theo Phiếu đánh giá có dấu công ty được scan gộp trong file PDF báo cáo của sinh viên (hoặc do GVHD đánh giá nếu thực tập tại Trường).
                 </p>
 
 
