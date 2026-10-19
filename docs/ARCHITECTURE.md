@@ -205,8 +205,8 @@ To provide clear operational cues for faculty advisors, report assessment badges
 | Raw DB Status (`report_status`) | Grade Status (`grade_status`) | Hiển thị Giảng viên (UI Badge) | Màu sắc & Kiểu dáng | Ý nghĩa nghiệp vụ |
 | :--- | :--- | :--- | :--- | :--- |
 | `NULL` / Chưa có | `missing` / Chưa có | **Chưa nộp** | `bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ) | Sinh viên chưa nộp báo cáo. |
-| **`submitted`** | `draft` hoặc `missing` | **Chưa chấm điểm** | **`bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ)** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** |
-| **`submitted`** hoặc **`accepted`** | **`submitted`** (hoặc đã có điểm) | **Đã nộp điểm** | `bg-emerald-50 text-emerald-700 border-emerald-200` | GVHD đã hoàn tất nhập và nộp điểm về Khoa. |
+| **`submitted`** | `draft` hoặc `missing` | **Chưa chấm điểm** | **`bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ)** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** Mặc định báo cáo được coi là hợp lệ để chấm; GVHD chỉ nhấn "Yêu cầu sửa" khi phát hiện lỗi, không cần thao tác duyệt thủ công trước. |
+| **`submitted`** hoặc **`accepted`** | **`submitted`** (hoặc đã có điểm) | **Đã nộp điểm** | `bg-emerald-50 text-emerald-700 border-emerald-200` | GVHD đã hoàn tất nhập và nộp điểm về Khoa (hệ thống tự động chuyển trạng thái báo cáo sang `accepted`). |
 | **`needs_revision`** | Bất kỳ | **Cần nộp lại** | `bg-orange-50 text-orange-700 border-orange-200` | GVHD yêu cầu sinh viên chỉnh sửa, bổ sung báo cáo. |
 
 ### 3. Multi-Tier Caching Architecture
@@ -244,7 +244,7 @@ sequenceDiagram
    - When closing and re-opening a student's review panel, or toggling between students with keyboard shortcuts (`[` / `]`), rendering is instantaneous (0 ms), without visual flicker or network traffic.
 2. **Decoupled Form & Viewer Lifecycles**:
    - The PDF fetch hook strictly depends on `[uid, target.report_filename, token]`.
-   - Modifying grading inputs (`progress_score`, `report_score`, `company_score`, `comment`) or changing report status (`accepted`, `needs_revision`) updates form state only and NEVER revokes or re-fetches the PDF.
+   - Modifying grading inputs (`progress_score`, `report_score`, `company_score`, `comment`) or changing report status (`needs_revision`, `submitted`) updates form state only and NEVER revokes or re-fetches the PDF.
 3. **Backend HTTP Validation (ETag + Cache-Control)**:
    - Endpoint `GET /api/reports/final/:userId/view` includes:
      - `ETag: "<id>-<file_size>-<timestamp>"`
@@ -268,9 +268,18 @@ Theo quy chế đào tạo của Khoa CNTT - Trường Đại học Công nghệ
    - Không áp đặt các nút "Điền nhanh 0 điểm" gượng ép trên giao diện modal hay bảng tổng thể.
 
 #### c. Tính toàn vẹn dữ liệu Backend (`Data Integrity Invariants`)
-- Khi GVHD nộp điểm chính thức cho sinh viên chưa nộp bài:
-  - Bảng `grades` ghi nhận đầy đủ điểm 0 và `status = 'submitted'`, đưa tiến độ hoàn thiện của GVHD lên 100%.
+- Khi GVHD nộp điểm chính thức cho sinh viên:
+  - Bảng `grades` ghi nhận đầy đủ điểm và `status = 'submitted'`, đưa tiến độ hoàn thiện của GVHD lên 100%.
   - Bảng `final_reports`: Câu lệnh `UPDATE final_reports SET status = 'accepted'` chỉ thực thi khi sinh viên **thực sự đã nộp file** (`AND object_key IS NOT NULL`). Sinh viên chưa nộp bài sẽ **không bị gán nhầm thành đã chấp nhận**, bảo toàn trung thực lịch sử nộp bài của sinh viên.
+
+#### d. Tối giản hóa luồng duyệt báo cáo (Loại bỏ nút "Chấp nhận báo cáo" độc lập)
+- **Bản chất nghiệp vụ**: Báo cáo sinh viên nộp lên mặc định được xem là hợp lệ để GVHD tiến hành chấm điểm. Khi GVHD hoàn thành và nhấn **"Nộp điểm cho Khoa"**, backend tự động cập nhật `final_reports.status = 'accepted'`.
+- **Giải quyết xung đột & ngộ nhận**: Việc tồn tại nút "Chấp nhận báo cáo" riêng biệt trước đây khiến một số giảng viên ấn nút vì tưởng là xem trước/xác nhận file, dẫn tới báo cáo nhảy sang `accepted` ("Đã nộp điểm") dù giảng viên chưa hề nhập điểm hay chưa có đánh giá của doanh nghiệp.
+- **Thiết kế mới tinh gọn**:
+  - **Loại bỏ hoàn toàn nút độc lập "Chấp nhận báo cáo"**: Tránh thao tác thừa và triệt tiêu khả năng nhảy trạng thái ảo.
+  - **Báo cáo đã nộp (`submitted`)**: Hiển thị thẻ thông báo tinh giản *"Báo cáo đã nộp · Sẵn sàng chấm điểm. Nộp điểm sẽ tự động duyệt báo cáo"* và chỉ duy nhất nút hành động **[Yêu cầu sửa]** (nếu phát hiện sai quy cách/nội dung).
+  - **Trạng thái yêu cầu sửa (`needs_revision`)**: Hiển thị rõ nội dung yêu cầu gửi cho sinh viên, hỗ trợ **Sửa lý do** và **Hủy yêu cầu** (tự phục hồi về `submitted` nếu ấn nhầm mà không cần can thiệp database).
+  - **Nộp điểm chính thức**: Kích hoạt đồng thời chốt điểm và hoàn tất duyệt báo cáo (`status = 'accepted'`).
 
 ---
 

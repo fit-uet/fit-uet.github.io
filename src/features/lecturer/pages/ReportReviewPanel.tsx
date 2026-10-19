@@ -102,8 +102,9 @@ export function ReportReviewPanel({
   const className = target.class_name ?? target.className;
   const initialReportStatus = target.report_status ?? target.reportStatus;
 
-  // Local report status (updates immediately when submitted)
+  // Local report & grade status (updates immediately when submitted)
   const [localReportStatus, setLocalReportStatus] = useState<string | undefined>(initialReportStatus);
+  const [localGradeStatus, setLocalGradeStatus] = useState<string | undefined>(target.grade_status);
 
   // PDF state
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -143,6 +144,7 @@ export function ReportReviewPanel({
     setShowRevisionInput(false);
     setRevisionNote('');
     setLocalReportStatus(target.report_status ?? target.reportStatus);
+    setLocalGradeStatus(target.grade_status);
   }, [
     uid,
     target.progress_score,
@@ -151,6 +153,7 @@ export function ReportReviewPanel({
     target.comment,
     target.report_status,
     target.reportStatus,
+    target.grade_status,
   ]);
 
   // ── Fetch freshest grade for student from server ────────────────────────
@@ -271,14 +274,14 @@ export function ReportReviewPanel({
   }, [uid, studentId, target.report_filename, token]);
 
   // ── Report status actions ─────────────────────────────────────────────────
-  const updateReportStatus = async (status: 'accepted' | 'needs_revision') => {
+  const updateReportStatus = async (status: 'submitted' | 'needs_revision', note = revisionNote) => {
     if (!uid) return;
     setReportSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/reports/final/${uid}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status, lecturer_comment: status === 'needs_revision' ? revisionNote : '' }),
+        body: JSON.stringify({ status, lecturer_comment: status === 'needs_revision' ? note : '' }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -286,8 +289,13 @@ export function ReportReviewPanel({
         return;
       }
       setShowRevisionInput(false);
-      setRevisionNote('');
+      setRevisionNote(status === 'needs_revision' ? note : '');
       setLocalReportStatus(status);
+      if (status === 'submitted') {
+        target.lecturer_comment = undefined;
+      } else if (status === 'needs_revision') {
+        target.lecturer_comment = note;
+      }
       onReportStatusChange?.();
     } finally {
       setReportSaving(false);
@@ -338,6 +346,8 @@ export function ReportReviewPanel({
       if (submit) {
         setGradeSuccess('Đã nộp điểm thành công!');
         setLocalReportStatus('accepted');
+        setLocalGradeStatus('submitted');
+        target.grade_status = 'submitted';
         onReportStatusChange?.();
       } else {
         setGradeSuccess('Đã lưu nháp điểm.');
@@ -398,8 +408,8 @@ export function ReportReviewPanel({
             {className && (
               <span className="text-xs text-slate-400">({className})</span>
             )}
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${reportStatusBadgeClass(localReportStatus, target.grade_status)}`}>
-              {reportStatusLabel(localReportStatus, target.grade_status)}
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${reportStatusBadgeClass(localReportStatus, localGradeStatus)}`}>
+              {reportStatusLabel(localReportStatus, localGradeStatus)}
             </span>
             {locked && (
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${target.locked_at ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
@@ -530,21 +540,7 @@ export function ReportReviewPanel({
               {/* 1. Duyệt báo cáo (chỉ khi có báo cáo) */}
               {localReportStatus && (
                 <div>
-                  {localReportStatus === 'accepted' && !showRevisionInput ? (
-                    <div className="flex items-center justify-between text-xs text-emerald-700 bg-emerald-50/70 border border-emerald-200/80 rounded-lg px-3 py-2">
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <Check size={14} className="text-emerald-600" /> Đã nộp điểm cho Khoa
-                      </span>
-                      {isPrimary && (
-                        <button
-                          onClick={() => setShowRevisionInput(true)}
-                          className="text-[11px] text-slate-500 hover:text-orange-700 underline cursor-pointer"
-                        >
-                          Yêu cầu sửa
-                        </button>
-                      )}
-                    </div>
-                  ) : showRevisionInput ? (
+                  {showRevisionInput ? (
                     <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3 space-y-2">
                       <div className="text-xs font-semibold text-orange-800">Lý do yêu cầu nộp lại</div>
                       <textarea
@@ -572,32 +568,86 @@ export function ReportReviewPanel({
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 space-y-2">
-                      {target.lecturer_comment && (
-                        <div className="text-xs text-orange-800 bg-orange-50 p-2 rounded border border-orange-200">
-                          <span className="font-semibold">Lý do cũ:</span> {target.lecturer_comment}
+                  ) : localReportStatus === 'needs_revision' ? (
+                    <div className="rounded-lg border border-orange-200 bg-orange-50/70 p-2.5 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-orange-800">
+                          <AlertCircle size={14} className="text-orange-600 shrink-0" />
+                          <span>Đang yêu cầu sinh viên nộp lại</span>
+                        </div>
+                        {isPrimary && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setRevisionNote(target.lecturer_comment || '');
+                                setShowRevisionInput(true);
+                              }}
+                              className="text-[11px] text-orange-700 hover:text-orange-900 underline font-medium cursor-pointer"
+                            >
+                              Sửa lý do
+                            </button>
+                            <span className="text-slate-300">|</span>
+                            <button
+                              disabled={reportSaving}
+                              onClick={() => {
+                                if (confirm('Thu hồi yêu cầu sửa? Báo cáo sẽ trở về trạng thái đã nộp và sẵn sàng chấm điểm.')) {
+                                  updateReportStatus('submitted');
+                                }
+                              }}
+                              className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer disabled:opacity-50"
+                            >
+                              {reportSaving ? 'Đang hủy...' : 'Hủy yêu cầu'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {(target.lecturer_comment || revisionNote) && (
+                        <div className="text-xs text-orange-900 bg-white/80 rounded p-2 border border-orange-200/60 leading-relaxed">
+                          <span className="font-semibold text-orange-800">Ghi chú cho SV:</span> {target.lecturer_comment || revisionNote}
                         </div>
                       )}
+                    </div>
+                  ) : localReportStatus === 'accepted' || localGradeStatus === 'submitted' ? (
+                    <div className="flex items-center justify-between text-xs text-emerald-700 bg-emerald-50/70 border border-emerald-200/80 rounded-lg px-3 py-2">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Check size={14} className="text-emerald-600" />
+                        {localGradeStatus === 'submitted' ? 'Đã nộp điểm cho Khoa' : 'Báo cáo hợp lệ · Đã duyệt'}
+                      </span>
+                      {isPrimary && !target.locked_at && (
+                        <button
+                          onClick={() => {
+                            setRevisionNote('');
+                            setShowRevisionInput(true);
+                          }}
+                          className="text-[11px] text-slate-500 hover:text-orange-700 underline cursor-pointer"
+                        >
+                          Yêu cầu sửa
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    /* localReportStatus === 'submitted' */
+                    <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50/80 border border-slate-200 rounded-lg p-2.5">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                          <FileText size={13} className="text-blue-600" /> Báo cáo đã nộp
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          Sẵn sàng chấm điểm. Nộp điểm sẽ tự động duyệt báo cáo.
+                        </span>
+                      </div>
                       {isPrimary && (
-                        <div className="flex gap-2">
-                          <button
-                            disabled={reportSaving}
-                            onClick={() => updateReportStatus('accepted')}
-                            className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
-                          >
-                            {reportSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={13} />}
-                            Chấp nhận báo cáo
-                          </button>
-                          <button
-                            disabled={reportSaving}
-                            onClick={() => setShowRevisionInput(true)}
-                            className="inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded-lg border border-orange-200 bg-white hover:bg-orange-50 text-orange-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
-                          >
-                            <AlertCircle size={13} />
-                            Yêu cầu sửa
-                          </button>
-                        </div>
+                        <button
+                          disabled={reportSaving}
+                          onClick={() => {
+                            setRevisionNote('');
+                            setShowRevisionInput(true);
+                          }}
+                          className="inline-flex items-center gap-1 py-1.5 px-3 rounded-lg border border-orange-200 bg-white hover:bg-orange-50 text-orange-700 text-xs font-semibold transition-colors cursor-pointer shrink-0 shadow-2xs active:scale-[0.98]"
+                        >
+                          <AlertCircle size={13} />
+                          Yêu cầu sửa
+                        </button>
                       )}
                     </div>
                   )}

@@ -108,7 +108,7 @@ Giảng viên đăng nhập hệ thống bằng email VNU, trang chủ giảng v
 Giảng viên nhập điểm quá trình, điểm báo cáo, điểm doanh nghiệp và nhận xét nếu có. Hệ thống tự tính điểm tổng kết theo cấu hình hiện tại.
 
 ### 3. Báo cáo của sinh viên được xử lý thế nào?
-Sinh viên nộp file PDF trên hệ thống. Giảng viên có thể tải báo cáo, đánh dấu đã chấp nhận hoặc yêu cầu nộp lại kèm ghi chú.
+Sinh viên nộp file PDF trên hệ thống. Giảng viên xem trực tiếp báo cáo và chấm điểm (hệ thống tự động duyệt báo cáo khi nộp điểm) hoặc yêu cầu sinh viên nộp lại nếu cần chỉnh sửa.
 
 ### 4. Giảng viên có nhận thông báo trên website không?
 Có. Các thông báo liên quan đến phân công hướng dẫn, báo cáo và thông báo chung từ Khoa được hiển thị ở biểu tượng chuông và trang Thông báo.
@@ -185,9 +185,8 @@ Sinh viên nộp báo cáo PDF trên hệ thống trong thời gian Khoa mở n�
 Giảng viên có thể:
 
 - Xem trạng thái nộp báo cáo của từng sinh viên trong trang giảng viên.
-- Tải báo cáo để đọc và đánh giá.
-- Đánh dấu báo cáo đã chấp nhận hoặc yêu cầu sinh viên nộp lại nếu cần.
-- Ghi nhận xét khi yêu cầu nộp lại để sinh viên biết nội dung cần sửa.
+- Báo cáo mặc định được xem là hợp lệ để chấm điểm. Khi giảng viên nộp điểm về Khoa, hệ thống tự động hoàn tất duyệt báo cáo.
+- Yêu cầu sinh viên nộp lại nếu cần chỉnh sửa kèm ghi chú chi tiết (hoặc chủ động hủy yêu cầu nếu cần).
 
 ## 7. Chấm điểm thực tập
 
