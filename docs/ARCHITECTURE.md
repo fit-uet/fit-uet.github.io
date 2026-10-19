@@ -275,11 +275,13 @@ Theo quy chế đào tạo của Khoa CNTT - Trường Đại học Công nghệ
 #### d. Tối giản hóa luồng duyệt báo cáo (Loại bỏ nút "Chấp nhận báo cáo" độc lập)
 - **Bản chất nghiệp vụ**: Báo cáo sinh viên nộp lên mặc định được xem là hợp lệ để GVHD tiến hành chấm điểm. Khi GVHD hoàn thành và nhấn **"Nộp điểm cho Khoa"**, backend tự động cập nhật `final_reports.status = 'accepted'`.
 - **Giải quyết xung đột & ngộ nhận**: Việc tồn tại nút "Chấp nhận báo cáo" riêng biệt trước đây khiến một số giảng viên ấn nút vì tưởng là xem trước/xác nhận file, dẫn tới báo cáo nhảy sang `accepted` ("Đã nộp điểm") dù giảng viên chưa hề nhập điểm hay chưa có đánh giá của doanh nghiệp.
-- **Thiết kế mới tinh gọn**:
+- **Thiết kế mới tinh gọn & Chuẩn UI System**:
   - **Loại bỏ hoàn toàn nút độc lập "Chấp nhận báo cáo"**: Tránh thao tác thừa và triệt tiêu khả năng nhảy trạng thái ảo.
-  - **Báo cáo đã nộp (`submitted`)**: Hiển thị thẻ thông báo tinh giản *"Báo cáo đã nộp · Sẵn sàng chấm điểm. Nộp điểm sẽ tự động duyệt báo cáo"* và chỉ duy nhất nút hành động **[Yêu cầu sửa]** (nếu phát hiện sai quy cách/nội dung).
+  - **Loại bỏ các thẻ trạng thái trùng lặp ("thừa nhãn") trong cột chấm điểm**: Trạng thái của sinh viên (như *"Đã nộp điểm"*, *"Chưa chấm điểm"*) đã được hiển thị duy nhất và rõ ràng tại huy hiệu header (`modal header`). Cột bên phải bắt đầu trực tiếp bằng form **Điểm thực tập**, không chèn thêm các banner chiếm diện tích và lặp nhãn.
+  - **Nút "Yêu cầu sửa" tinh gọn**: Đặt kín đáo, trang nhã tại tiêu đề khu vực chấm điểm, chỉ kích hoạt khi GVHD cần trả lại bài cho sinh viên sửa.
   - **Trạng thái yêu cầu sửa (`needs_revision`)**: Hiển thị rõ nội dung yêu cầu gửi cho sinh viên, hỗ trợ **Sửa lý do** và **Hủy yêu cầu** (tự phục hồi về `submitted` nếu ấn nhầm mà không cần can thiệp database).
   - **Nộp điểm chính thức**: Kích hoạt đồng thời chốt điểm và hoàn tất duyệt báo cáo (`status = 'accepted'`).
+  - **Quy chuẩn mã màu UET UI System**: Sử dụng bảng màu chuẩn (`#15803d` / `#dcfce7`, `#b25e00` / `#ffedd5`, `#b91c1c` / `#fee2e2`, và `--ui-brand` `#034ea1`).
 
 ---
 

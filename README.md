@@ -919,11 +919,12 @@ Bên trái — PDF Viewer (Tràn viền, tối đa diện tích hiển thị):
 - Fallback: Nếu trình duyệt không render được iframe, hiển thị nút “Tải file PDF về máy”.
 
 Bên phải — Grading Panel (35–38% chiều rộng, chuẩn Apple Inset Group):
-- **Duyệt báo cáo (Luồng tinh gọn - Tự động chấp nhận khi nộp điểm)**:
+- **Duyệt báo cáo & Chấm điểm (Luồng tinh gọn - Tự động chấp nhận khi nộp điểm)**:
   - Bỏ nút độc lập "Chấp nhận báo cáo" để loại bỏ thao tác dư thừa và tránh tình trạng nhảy trạng thái "Đã nộp điểm" ảo trước khi chấm.
-  - Báo cáo đã nộp (`submitted`): Mặc định hợp lệ và sẵn sàng chấm điểm; hiển thị thẻ trạng thái tinh giản kèm nút duy nhất **"Yêu cầu sửa"** (nếu phát hiện sai sót).
-  - Khi đang yêu cầu nộp lại (`needs_revision`): Hiển thị thẻ cảnh báo cam với lý do chi tiết kèm tùy chọn **"Sửa lý do"** và **"Hủy yêu cầu"** (tự khôi phục về trạng thái chờ chấm).
-  - Khi đã nộp điểm (`accepted` hoặc `grade_status = submitted`): Tự động đánh dấu đã duyệt báo cáo, hiển thị nhãn xanh **"Đã nộp điểm cho Khoa"** kèm liên kết "Yêu cầu sửa" nếu cần sinh viên nộp lại bản đính chính.
+  - Loại bỏ các thẻ trạng thái trùng lặp ("thừa nhãn") trong cột chấm điểm; trạng thái của sinh viên được hiển thị duy nhất và chuẩn mực tại huy hiệu header. Cột bên phải bắt đầu trực tiếp bằng form chấm điểm.
+  - Nút **"Yêu cầu sửa"** được tích hợp tinh gọn tại tiêu đề form điểm (chỉ hiển thị khi GVHD chính cần yêu cầu sinh viên sửa báo cáo).
+  - Khi đang yêu cầu nộp lại (`needs_revision`): Hiển thị thẻ cảnh báo với lý do chi tiết kèm tùy chọn **"Sửa lý do"** và **"Hủy yêu cầu"** (tự khôi phục về trạng thái chờ chấm).
+  - Khi nộp điểm (`accepted` hoặc `grade_status = submitted`): Tự động đánh dấu đã duyệt báo cáo và cập nhật huy hiệu header sang nhãn xanh chuẩn mực **"Đã nộp điểm"**.
 - **Form điểm thực tập** (GVHD chính nhập điểm):
   - Lưới 3 cột ngang nhỏ gọn: Định kỳ (20%), Báo cáo (20%), Đơn vị/GV (60%).
   - Điểm tổng kết: Hiển thị 1 dòng sạch sẽ, điểm số nổi bật tính tự động realtime.
