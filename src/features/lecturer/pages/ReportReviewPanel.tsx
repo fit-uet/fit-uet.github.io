@@ -4,7 +4,7 @@ import {
   ExternalLink, Check, ChevronLeft, ChevronRight, FileText
 } from 'lucide-react';
 import { saveAs } from 'file-saver';
-import { API_BASE } from '../../../shared';
+import { API_BASE, cleanStudentName } from '../../../shared';
 
 export interface ReviewTarget {
   user_id?: number;
@@ -99,8 +99,9 @@ export function ReportReviewPanel({
   windowMessage,
 }: Props) {
   const uid = target.user_id ?? target.userId;
-  const studentName = target.student_name ?? target.studentName ?? 'Sinh viên';
   const studentId = target.student_id ?? target.studentId;
+  const rawStudentName = target.student_name ?? target.studentName ?? 'Sinh viên';
+  const studentName = cleanStudentName(rawStudentName, studentId);
   const className = target.class_name ?? target.className;
   const initialReportStatus = target.report_status ?? target.reportStatus;
 
@@ -369,12 +370,12 @@ export function ReportReviewPanel({
     >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full h-[95vh] max-w-7xl flex flex-col overflow-hidden animate-in fade-in duration-100">
 
-        {/* ── Single-line Minimal Header ── */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-white flex-shrink-0 gap-3">
-          <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
-            {/* Student Navigation Pill */}
+        {/* ── Modal Header ── */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-white flex-shrink-0 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Student Navigation Pager */}
             {typeof currentIndex === 'number' && typeof totalCount === 'number' && totalCount > 1 && (
-              <div className="inline-flex items-center bg-slate-100 border border-slate-200/90 rounded-lg p-0.5 gap-0.5 text-xs text-slate-700 shadow-2xs mr-1">
+              <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-lg p-0.5 text-xs text-slate-600 shrink-0">
                 <button
                   type="button"
                   onClick={onPrev}
@@ -383,9 +384,9 @@ export function ReportReviewPanel({
                   aria-label="Sinh viên trước"
                   className="p-1 rounded hover:bg-white text-slate-600 hover:text-slate-900 disabled:opacity-25 disabled:cursor-not-allowed transition-all cursor-pointer"
                 >
-                  <ChevronLeft size={15} />
+                  <ChevronLeft size={14} />
                 </button>
-                <span className="font-mono font-semibold px-1.5 text-slate-600 select-none text-[11px] min-w-[42px] text-center">
+                <span className="font-mono font-medium px-2 text-[11px] text-slate-600 select-none min-w-[44px] text-center">
                   {currentIndex + 1} / {totalCount}
                 </span>
                 <button
@@ -396,28 +397,38 @@ export function ReportReviewPanel({
                   aria-label="Sinh viên tiếp theo"
                   className="p-1 rounded hover:bg-white text-slate-600 hover:text-slate-900 disabled:opacity-25 disabled:cursor-not-allowed transition-all cursor-pointer"
                 >
-                  <ChevronRight size={15} />
+                  <ChevronRight size={14} />
                 </button>
               </div>
             )}
 
-            <span className="text-sm font-bold text-slate-800 truncate">{studentName}</span>
-            {studentId && (
-              <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                {studentId}
-              </span>
+            {typeof currentIndex === 'number' && typeof totalCount === 'number' && totalCount > 1 && (
+              <div className="h-6 w-px bg-slate-200 shrink-0" />
             )}
-            {className && (
-              <span className="text-xs text-slate-400">({className})</span>
-            )}
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${reportStatusBadgeClass(localReportStatus, localGradeStatus)}`}>
-              {reportStatusLabel(localReportStatus, localGradeStatus)}
-            </span>
-            {locked && (
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${target.locked_at ? 'bg-[#fee2e2] text-[#b91c1c] border-red-200/60' : 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'}`}>
-                {target.locked_at ? 'Đã khóa điểm' : 'Hết hạn chấm điểm'}
-              </span>
-            )}
+
+            {/* Student Identity & Metadata */}
+            <div className="flex flex-col min-w-0 justify-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-slate-900 truncate">
+                  {studentName}
+                </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${reportStatusBadgeClass(localReportStatus, localGradeStatus)}`}>
+                  {reportStatusLabel(localReportStatus, localGradeStatus)}
+                </span>
+                {locked && (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${target.locked_at ? 'bg-[#fee2e2] text-[#b91c1c] border-red-200/60' : 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'}`}>
+                    {target.locked_at ? 'Đã khóa' : 'Hết hạn'}
+                  </span>
+                )}
+              </div>
+              {(studentId || className) && (
+                <div className="text-[11px] text-slate-500 font-normal flex items-center gap-1.5 truncate mt-0.5">
+                  {studentId && <span className="font-mono text-slate-600">{studentId}</span>}
+                  {studentId && className && <span className="text-slate-300">·</span>}
+                  {className && <span className="truncate">{className}</span>}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
