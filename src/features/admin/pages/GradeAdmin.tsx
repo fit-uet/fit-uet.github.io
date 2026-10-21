@@ -20,6 +20,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Eye,
 } from 'lucide-react';
 import {
   API_BASE,
@@ -54,6 +55,17 @@ export function GradeAdmin({ token }: { token: string }) {
   const [selectedLecturerIds, setSelectedLecturerIds] = useState<number[]>([]);
   const [expandedLecturerId, setExpandedLecturerId] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [modalTab, setModalTab] = useState<'recipients' | 'preview'>('recipients');
+  const [previewLecturerId, setPreviewLecturerId] = useState<number | null>(null);
+
+  const currentPreviewGv = useMemo(() => {
+    if (!pendingLecturers || pendingLecturers.length === 0) return null;
+    if (previewLecturerId) {
+      const match = pendingLecturers.find((l) => Number(l.lecturer_id) === Number(previewLecturerId));
+      if (match) return match;
+    }
+    return pendingLecturers[0];
+  }, [pendingLecturers, previewLecturerId]);
 
   const statusLabel = (status?: string) => (status === 'submitted' || status === 'draft' ? 'Đã nộp' : 'Chưa có');
 
@@ -510,7 +522,10 @@ export function GradeAdmin({ token }: { token: string }) {
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button
             onClick={() => {
-              setSelectedLecturerIds(pendingLecturers.map((l) => Number(l.lecturer_id)));
+              const allIds = pendingLecturers.map((l) => Number(l.lecturer_id));
+              setSelectedLecturerIds(allIds);
+              setPreviewLecturerId(allIds[0] || null);
+              setModalTab('recipients');
               setShowRemindModal(true);
             }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#b45309] bg-amber-50 border border-amber-200 hover:bg-amber-100 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap shadow-xs"
@@ -805,7 +820,7 @@ export function GradeAdmin({ token }: { token: string }) {
             if (e.target === e.currentTarget) setShowRemindModal(false);
           }}
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
               <div className="flex items-center gap-3">
@@ -829,6 +844,41 @@ export function GradeAdmin({ token }: { token: string }) {
               </button>
             </div>
 
+            {/* Tab Switcher */}
+            <div className="flex border-b border-slate-200 bg-slate-50/70 px-6 gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setModalTab('recipients')}
+                className={`py-2.5 px-3.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+                  modalTab === 'recipients'
+                    ? 'border-[#034ea1] text-[#034ea1] bg-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Users size={14} />
+                Danh sách người nhận ({selectedLecturerIds.length} GV)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalTab('preview');
+                  if (!previewLecturerId && selectedLecturerIds.length > 0) {
+                    setPreviewLecturerId(selectedLecturerIds[0]);
+                  } else if (!previewLecturerId && pendingLecturers.length > 0) {
+                    setPreviewLecturerId(Number(pendingLecturers[0].lecturer_id));
+                  }
+                }}
+                className={`py-2.5 px-3.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+                  modalTab === 'preview'
+                    ? 'border-[#034ea1] text-[#034ea1] bg-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Eye size={14} />
+                Xem trước nội dung thư gửi đi (Live Preview)
+              </button>
+            </div>
+
             {/* Body */}
             <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
               {remindSuccess && (
@@ -838,175 +888,371 @@ export function GradeAdmin({ token }: { token: string }) {
                 </div>
               )}
 
-              {/* Status Alert Banner */}
-              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-1.5">
-                <div className="font-bold text-amber-900 flex items-center justify-between text-xs">
-                  <span>Đối tượng nhận email:</span>
-                  <span className="text-amber-800 font-extrabold text-sm">
-                    {selectedLecturerIds.length} / {pendingLecturers.length} giảng viên
-                  </span>
-                </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  Bao gồm các Giảng viên hướng dẫn chính có sinh viên chưa có điểm nộp chính thức về Khoa.
-                  {deadline && (
-                    <span className="block mt-1 font-semibold text-amber-900">
-                      Hạn chót nhập điểm dự kiến: {deadline.replace('T', ' ')} (GMT+7)
-                    </span>
-                  )}
-                </p>
-              </div>
+              {modalTab === 'recipients' ? (
+                <>
+                  {/* Status Alert Banner */}
+                  <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-1.5">
+                    <div className="font-bold text-amber-900 flex items-center justify-between text-xs">
+                      <span>Đối tượng nhận email:</span>
+                      <span className="text-amber-800 font-extrabold text-sm">
+                        {selectedLecturerIds.length} / {pendingLecturers.length} giảng viên
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      Bao gồm các Giảng viên hướng dẫn chính có sinh viên chưa có điểm nộp chính thức về Khoa.
+                      {deadline && (
+                        <span className="block mt-1 font-semibold text-amber-900">
+                          Hạn chót nhập điểm dự kiến: {deadline.replace('T', ' ')} (GMT+7)
+                        </span>
+                      )}
+                    </p>
+                  </div>
 
-              {/* Danh sách giảng viên */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
-                    Danh sách giảng viên ({selectedLecturerIds.length}):
-                  </label>
-                  <div className="flex gap-2 text-[11px]">
+                  {/* Danh sách giảng viên */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                        Danh sách giảng viên ({selectedLecturerIds.length}):
+                      </label>
+                      <div className="flex gap-2 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLecturerIds(pendingLecturers.map((l) => Number(l.lecturer_id)))}
+                          className="text-[#034ea1] hover:underline font-semibold cursor-pointer"
+                        >
+                          Chọn tất cả
+                        </button>
+                        <span>|</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLecturerIds([])}
+                          className="text-slate-500 hover:underline cursor-pointer"
+                        >
+                          Bỏ chọn
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-[#f8fafc]">
+                      {pendingLecturers.length === 0 ? (
+                        <div className="p-4 text-center text-slate-400 italic">
+                          Tất cả giảng viên đã hoàn thành chấm điểm!
+                        </div>
+                      ) : (
+                        pendingLecturers.map((gv) => {
+                          const isSelected = selectedLecturerIds.includes(Number(gv.lecturer_id));
+                          const isExpanded = expandedLecturerId === Number(gv.lecturer_id);
+                          return (
+                            <div key={gv.lecturer_id} className="p-3 hover:bg-white transition-colors">
+                              <div className="flex items-center justify-between gap-3">
+                                <label className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedLecturerIds((prev) => [...prev, Number(gv.lecturer_id)]);
+                                      } else {
+                                        setSelectedLecturerIds((prev) => prev.filter((id) => id !== Number(gv.lecturer_id)));
+                                      }
+                                    }}
+                                    className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1]"
+                                  />
+                                  <div className="truncate">
+                                    <span className="font-bold text-slate-900">{gv.lecturer_name}</span>
+                                    <span className="text-[11px] text-slate-500 ml-2 font-mono">
+                                      {gv.lecturer_email || '(Chưa có email)'}
+                                    </span>
+                                    {gv.work_unit && (
+                                      <span className="text-[10px] text-slate-400 ml-2">· {gv.work_unit}</span>
+                                    )}
+                                  </div>
+                                </label>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                    {gv.missing_count} SV thiếu
+                                  </span>
+                                  {gv.waiting_for_lecturer > 0 && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">
+                                      {gv.waiting_for_lecturer} chờ chấm
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedLecturerId(isExpanded ? null : Number(gv.lecturer_id))}
+                                    className="p-1 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                                    title="Xem chi tiết danh sách sinh viên"
+                                  >
+                                    {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Chi tiết sinh viên khi bấm mở rộng */}
+                              {isExpanded && gv.students && gv.students.length > 0 && (
+                                <div className="mt-3 pl-7 pr-1 pt-2 border-t border-slate-200/60">
+                                  <div className="text-[11px] font-semibold text-slate-600 mb-1.5">
+                                    Danh sách {gv.students.length} sinh viên phụ trách chưa có điểm:
+                                  </div>
+                                  <div className="space-y-1">
+                                    {gv.students.map((s: any, idx: number) => (
+                                      <div
+                                        key={s.user_id}
+                                        className="flex items-center justify-between text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100"
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <span className="text-slate-400 font-mono w-4">{idx + 1}.</span>
+                                          <span className="font-bold text-slate-800">{s.student_id}</span>
+                                          <span className="text-slate-900 truncate">{s.student_name}</span>
+                                          <span className="text-slate-500 font-mono text-[10px]">
+                                            ({formatCourseCode(s.course_code)})
+                                          </span>
+                                        </div>
+                                        <span
+                                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                                            s.waiting_for_grade
+                                              ? 'bg-blue-100 text-blue-800'
+                                              : 'bg-amber-100 text-amber-800'
+                                          }`}
+                                        >
+                                          {s.waiting_for_grade ? 'Đã nộp BC (Chờ chấm)' : 'Chưa có báo cáo'}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ghi chú thêm từ giáo vụ */}
+                  <div>
+                    <label className="block font-bold text-slate-800 text-[11px] uppercase tracking-wider mb-1">
+                      Ghi chú bổ sung từ Giáo vụ Khoa (Tùy chọn):
+                    </label>
+                    <textarea
+                      value={customRemindNote}
+                      onChange={(e) => setCustomRemindNote(e.target.value)}
+                      placeholder="Ví dụ: Kính đề nghị Thầy/Cô hoàn thành nhập điểm trước 17h00 ngày 28/06/2026 để Khoa kịp tổng kết điểm và xét tốt nghiệp..."
+                      rows={2}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-[#f8fafc] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none"
+                    />
+                  </div>
+
+                  {/* CTA to Preview */}
+                  <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                    <div className="text-[11px] text-blue-900 leading-snug">
+                      <strong>💡 Xem trước thư thực tế:</strong> Bạn có thể xem trước chính xác lá thư gửi đến Thầy/Cô gồm đầy đủ bảng sinh viên và ghi chú bổ sung.
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setSelectedLecturerIds(pendingLecturers.map((l) => Number(l.lecturer_id)))}
-                      className="text-[#034ea1] hover:underline font-semibold cursor-pointer"
+                      onClick={() => {
+                        setModalTab('preview');
+                        if (!previewLecturerId && selectedLecturerIds.length > 0) {
+                          setPreviewLecturerId(selectedLecturerIds[0]);
+                        } else if (!previewLecturerId && pendingLecturers.length > 0) {
+                          setPreviewLecturerId(Number(pendingLecturers[0].lecturer_id));
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-[#034ea1] hover:bg-[#023a7a] text-white rounded-lg text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 transition-colors shadow-xs"
                     >
-                      Chọn tất cả
-                    </button>
-                    <span>|</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLecturerIds([])}
-                      className="text-slate-500 hover:underline cursor-pointer"
-                    >
-                      Bỏ chọn
+                      <Eye size={13} />
+                      Xem trước ngay
                     </button>
                   </div>
-                </div>
-
-                <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-[#f8fafc]">
-                  {pendingLecturers.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 italic">
-                      Tất cả giảng viên đã hoàn thành chấm điểm!
+                </>
+              ) : (
+                /* LIVE PREVIEW TAB */
+                <div className="space-y-4">
+                  {/* Selector bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-700 whitespace-nowrap">Xem thư gửi đến:</span>
+                      <select
+                        value={previewLecturerId || ''}
+                        onChange={(e) => setPreviewLecturerId(Number(e.target.value))}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] max-w-xs"
+                      >
+                        {pendingLecturers.map((gv) => (
+                          <option key={gv.lecturer_id} value={gv.lecturer_id}>
+                            {gv.lecturer_name} ({gv.missing_count} SV thiếu{gv.waiting_for_lecturer > 0 ? ` · ${gv.waiting_for_lecturer} chờ chấm` : ''})
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  ) : (
-                    pendingLecturers.map((gv) => {
-                      const isSelected = selectedLecturerIds.includes(Number(gv.lecturer_id));
-                      const isExpanded = expandedLecturerId === Number(gv.lecturer_id);
-                      return (
-                        <div key={gv.lecturer_id} className="p-3 hover:bg-white transition-colors">
-                          <div className="flex items-center justify-between gap-3">
-                            <label className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedLecturerIds((prev) => [...prev, Number(gv.lecturer_id)]);
-                                  } else {
-                                    setSelectedLecturerIds((prev) => prev.filter((id) => id !== Number(gv.lecturer_id)));
-                                  }
-                                }}
-                                className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1]"
-                              />
-                              <div className="truncate">
-                                <span className="font-bold text-slate-900">{gv.lecturer_name}</span>
-                                <span className="text-[11px] text-slate-500 ml-2 font-mono">
-                                  {gv.lecturer_email || '(Chưa có email)'}
-                                </span>
-                                {gv.work_unit && (
-                                  <span className="text-[10px] text-slate-400 ml-2">· {gv.work_unit}</span>
-                                )}
-                              </div>
-                            </label>
+                    <span className="text-[11px] text-slate-500">
+                      Gửi đến: <strong className="text-slate-800 font-mono">{currentPreviewGv?.lecturer_email || '(Chưa có email)'}</strong>
+                    </span>
+                  </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                                {gv.missing_count} SV thiếu
-                              </span>
-                              {gv.waiting_for_lecturer > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">
-                                  {gv.waiting_for_lecturer} chờ chấm
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => setExpandedLecturerId(isExpanded ? null : Number(gv.lecturer_id))}
-                                className="p-1 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                                title="Xem chi tiết danh sách sinh viên"
-                              >
-                                {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                              </button>
-                            </div>
-                          </div>
+                  {/* Simulated Email Envelope & Content */}
+                  <div className="border border-slate-300 rounded-xl overflow-hidden shadow-xs bg-white">
+                    {/* Simulated Email Header */}
+                    <div className="bg-slate-100/90 px-4 py-2.5 border-b border-slate-200 text-[11px] space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 w-16 text-right font-medium">Người gửi:</span>
+                        <span className="font-semibold text-slate-800">Khoa Công nghệ Thông tin - Trường ĐH Công nghệ &lt;fit@vnu.edu.vn&gt;</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 w-16 text-right font-medium">Người nhận:</span>
+                        <span className="font-semibold text-slate-800">
+                          {currentPreviewGv?.lecturer_name} &lt;{currentPreviewGv?.lecturer_email || 'email-gv@vnu.edu.vn'}&gt;
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 w-16 text-right font-medium">Tiêu đề:</span>
+                        <span className="font-bold text-[#034ea1]">
+                          [FIT-UET] Danh sách sinh viên chưa hoàn thành điểm thực tập - GVHD: {currentPreviewGv?.lecturer_name || '...'}
+                        </span>
+                      </div>
+                    </div>
 
-                          {/* Chi tiết sinh viên khi bấm mở rộng */}
-                          {isExpanded && gv.students && gv.students.length > 0 && (
-                            <div className="mt-3 pl-7 pr-1 pt-2 border-t border-slate-200/60">
-                              <div className="text-[11px] font-semibold text-slate-600 mb-1.5">
-                                Danh sách {gv.students.length} sinh viên phụ trách chưa có điểm:
-                              </div>
-                              <div className="space-y-1">
-                                {gv.students.map((s: any, idx: number) => (
-                                  <div
-                                    key={s.user_id}
-                                    className="flex items-center justify-between text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100"
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <span className="text-slate-400 font-mono w-4">{idx + 1}.</span>
-                                      <span className="font-bold text-slate-800">{s.student_id}</span>
-                                      <span className="text-slate-900 truncate">{s.student_name}</span>
-                                      <span className="text-slate-500 font-mono text-[10px]">
-                                        ({formatCourseCode(s.course_code)})
-                                      </span>
-                                    </div>
-                                    <span
-                                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                                        s.waiting_for_grade
-                                          ? 'bg-blue-100 text-blue-800'
-                                          : 'bg-amber-100 text-amber-800'
-                                      }`}
-                                    >
-                                      {s.waiting_for_grade ? 'Đã nộp BC (Chờ chấm)' : 'Chưa có báo cáo'}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
+                    {/* Email HTML Body Render */}
+                    <div className="p-3 sm:p-5 bg-slate-50/60">
+                      <div className="max-w-[720px] mx-auto bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                        {/* Header Banner */}
+                        <div className="bg-[#034ea1] text-white p-4 sm:p-5 text-center">
+                          <h2 className="m-0 text-sm sm:text-base font-bold tracking-tight">KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CÔNG NGHỆ</h2>
+                          <p className="m-0 mt-1 text-[11px] opacity-90">Danh sách sinh viên chưa hoàn thành điểm thực tập</p>
+                        </div>
+
+                        {/* Letter Content */}
+                        <div className="p-4 sm:p-6 text-xs text-slate-800 space-y-3.5 leading-relaxed">
+                          <p className="m-0">
+                            Kính gửi: <strong>Thầy/Cô {currentPreviewGv?.lecturer_name}</strong>,
+                          </p>
+                          <p className="m-0 text-slate-600">
+                            Đơn vị công tác: <em>{currentPreviewGv?.work_unit || 'Khoa Công nghệ Thông tin'}</em>,
+                          </p>
+                          <p className="m-0">
+                            Khoa CNTT kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện{' '}
+                            <strong>chưa được hoàn thiện điểm</strong> trên hệ thống:
+                          </p>
+
+                          <ul className="bg-slate-50 border-l-4 border-[#034ea1] p-3 pl-6 rounded-md text-xs space-y-1 list-disc">
+                            <li>
+                              Tổng số sinh viên chưa có điểm: <strong>{currentPreviewGv?.students?.length || 0} sinh viên</strong>
+                            </li>
+                            <li>
+                              Đã có báo cáo (chờ Thầy/Cô chấm):{' '}
+                              <strong className="text-[#034ea1]">
+                                {currentPreviewGv?.students?.filter((s: any) => s.waiting_for_grade).length || 0} sinh viên
+                              </strong>
+                            </li>
+                            <li>
+                              Sinh viên chưa nộp báo cáo:{' '}
+                              <strong className="text-amber-800">
+                                {currentPreviewGv?.students?.filter((s: any) => !s.waiting_for_grade).length || 0} sinh viên
+                              </strong>
+                            </li>
+                            <li>
+                              Thời hạn nhập điểm của Khoa:{' '}
+                              <strong>{deadline ? `trước ${deadline.replace('T', ' ')} (GMT+7)` : 'Theo kế hoạch đào tạo'}</strong>
+                            </li>
+                          </ul>
+
+                          {/* Live note preview */}
+                          {customRemindNote.trim() && (
+                            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-xs text-amber-900 leading-relaxed">
+                              <strong>Ghi chú từ Giáo vụ Khoa:</strong> {customRemindNote}
                             </div>
                           )}
+
+                          {/* Student Table */}
+                          <div className="overflow-x-auto my-3 border border-slate-200 rounded-lg">
+                            <table className="w-full text-[11px] border-collapse">
+                              <thead>
+                                <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                                  <th className="p-2 border-r border-slate-200 text-center">STT</th>
+                                  <th className="p-2 border-r border-slate-200">Mã SV</th>
+                                  <th className="p-2 border-r border-slate-200">Họ và tên</th>
+                                  <th className="p-2 border-r border-slate-200">Lớp</th>
+                                  <th className="p-2 border-r border-slate-200">Môn</th>
+                                  <th className="p-2 border-r border-slate-200">Nơi thực tập</th>
+                                  <th className="p-2 border-r border-slate-200 text-center">Báo cáo</th>
+                                  <th className="p-2 text-center">Tình trạng</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200">
+                                {currentPreviewGv?.students?.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={8} className="p-4 text-center text-slate-400 italic">Không có sinh viên thiếu</td>
+                                  </tr>
+                                ) : (
+                                  currentPreviewGv?.students?.map((s: any, idx: number) => {
+                                    const bc =
+                                      s.report_status === 'submitted'
+                                        ? 'Đã nộp'
+                                        : s.report_status === 'accepted'
+                                        ? 'Đã duyệt'
+                                        : 'Chưa nộp';
+                                    return (
+                                      <tr key={s.user_id} className="hover:bg-slate-50/80">
+                                        <td className="p-2 border-r border-slate-200 text-center text-slate-500">{idx + 1}</td>
+                                        <td className="p-2 border-r border-slate-200 font-bold text-slate-900">{s.student_id}</td>
+                                        <td className="p-2 border-r border-slate-200 font-medium text-slate-800">{s.student_name}</td>
+                                        <td className="p-2 border-r border-slate-200 text-slate-600">{s.class_name || '-'}</td>
+                                        <td className="p-2 border-r border-slate-200 text-slate-600">{formatCourseCode(s.course_code)}</td>
+                                        <td className="p-2 border-r border-slate-200 text-slate-600">{s.internship_place || '-'}</td>
+                                        <td className="p-2 border-r border-slate-200 text-center">
+                                          <span
+                                            className={`font-semibold ${
+                                              bc === 'Chưa nộp' ? 'text-slate-400' : 'text-emerald-700'
+                                            }`}
+                                          >
+                                            {bc}
+                                          </span>
+                                        </td>
+                                        <td className="p-2 text-center">
+                                          {s.waiting_for_grade ? (
+                                            <span className="text-[#034ea1] font-bold">⏳ Chờ Thầy/Cô chấm</span>
+                                          ) : (
+                                            <span className="text-amber-800 font-bold">⚠️ Chờ SV nộp báo cáo</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* CTA Button */}
+                          <div className="text-center py-2">
+                            <span className="inline-block bg-[#034ea1] text-white px-6 py-2.5 rounded-lg font-bold text-xs shadow-xs pointer-events-none">
+                              Vào Bảng Chấm Điểm Của Thầy/Cô
+                            </span>
+                          </div>
+
+                          <p className="text-[11px] text-slate-500 m-0 pt-2 border-t border-slate-100">
+                            Khoa CNTT xin trân trọng cảm ơn Thầy/Cô!
+                          </p>
                         </div>
-                      );
-                    })
-                  )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Edit Ghi chú ngay tại tab Preview */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+                    <label className="block font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                      Chỉnh sửa nhanh Ghi chú bổ sung (sẽ cập nhật ngay vào mẫu thư ở trên):
+                    </label>
+                    <textarea
+                      value={customRemindNote}
+                      onChange={(e) => setCustomRemindNote(e.target.value)}
+                      placeholder="Nhập ghi chú thêm nếu cần thông báo thêm hạn chót cụ thể hoặc lưu ý cho Giảng viên..."
+                      rows={2}
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              {/* Ghi chú thêm từ giáo vụ */}
-              <div>
-                <label className="block font-bold text-slate-800 text-[11px] uppercase tracking-wider mb-1">
-                  Ghi chú bổ sung từ Giáo vụ Khoa (Tùy chọn):
-                </label>
-                <textarea
-                  value={customRemindNote}
-                  onChange={(e) => setCustomRemindNote(e.target.value)}
-                  placeholder="Ví dụ: Kính đề nghị Thầy/Cô hoàn thành nhập điểm trước 17h00 ngày 28/06/2026 để Khoa kịp tổng kết điểm và xét tốt nghiệp..."
-                  rows={2}
-                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-[#f8fafc] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none"
-                />
-              </div>
-
-              {/* Mẫu email preview */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11px] text-slate-600 space-y-1">
-                <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wider">
-                  Mẫu thư tự động gửi đi:
-                </span>
-                <p>
-                  <strong>Tiêu đề:</strong> [FIT-UET] Danh sách sinh viên chưa hoàn thành điểm thực tập - GVHD: [Tên
-                  Thầy/Cô]
-                </p>
-                <p>
-                  <strong>Nội dung:</strong> Gửi đích danh từng Thầy/Cô kèm bảng danh sách sinh viên cụ thể (phân loại rõ
-                  sinh viên đã nộp báo cáo chờ chấm vs sinh viên chưa nộp báo cáo) và đường dẫn truy cập trực tiếp vào hệ
-                  thống.
-                </p>
-              </div>
+              )}
             </div>
 
             {/* Footer */}
