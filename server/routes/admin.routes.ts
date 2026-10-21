@@ -30,7 +30,7 @@ import {
 } from '../services/advisorSync';
 import { cleanupChatAttachments, deleteReportObject } from '../services/storage';
 import { createNotification, insertNotification } from '../services/notifications';
-import { sendQueuedNotificationBatch, emailSentTodayCount, emailDailySendCap, emailBatchSize } from '../services/email';
+import { sendQueuedNotificationBatch, emailSentTodayCount, emailDailySendCap, emailBatchSize, sendNotificationEmail } from '../services/email';
 import {
   addApprovedCompanyFromRegistration,
   approveMatchingOtherCompanyRegistrations,
@@ -1945,79 +1945,111 @@ adminRouter.post('/api/admin/notifications/final-report-reminders', requireAuth,
   });
 
   adminRouter.post('/api/admin/notifications/remind-pending-students', requireAuth, requireAdmin, async (req: any, res: any) => {
-    const settings = rowsToSettings((await db.execute("SELECT key, value FROM settings WHERE key IN ('final_report_close_at')")).rows);
-    const selectedUserIds = Array.isArray(req.body.userIds) ? req.body.userIds.map(Number) : null;
-    const customSubject = req.body.subject?.trim();
-    const customNote = req.body.customNote?.trim();
+    try {
+      const settings = rowsToSettings((await db.execute("SELECT key, value FROM settings WHERE key IN ('final_report_close_at')")).rows);
+      const selectedUserIds = Array.isArray(req.body.userIds) ? req.body.userIds.map(Number) : null;
+      const customSubject = req.body.subject?.trim();
+      const customNote = req.body.customNote?.trim();
 
-    const rows = (await db.execute(`
-      SELECT u.id, u.student_id, u.name as student_name, u.email, u.personal_email, u.class_name, u.course_code,
-             CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
-             fr.status as report_status,
-             GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as primary_advisors
-      FROM final_internships f
-      JOIN users u ON u.id = f.user_id
-      LEFT JOIN companies c ON c.id = f.company_id
-      LEFT JOIN registrations r ON r.id = f.registration_id
-      LEFT JOIN final_reports fr ON fr.user_id = f.user_id
-      LEFT JOIN advisor_assignments aa ON aa.user_id = f.user_id
-      LEFT JOIN lecturers l ON l.id = aa.lecturer_id
-      WHERE fr.id IS NULL OR fr.status = 'needs_revision' OR fr.status = 'missing'
-      GROUP BY f.user_id
-      ORDER BY u.student_id ASC
-    `)).rows as any[];
+      const rows = (await db.execute(`
+        SELECT u.id, u.student_id, u.name as student_name, u.email, u.personal_email, u.class_name, u.course_code,
+               CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+               fr.status as report_status,
+               GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as primary_advisors
+        FROM final_internships f
+        JOIN users u ON u.id = f.user_id
+        LEFT JOIN companies c ON c.id = f.company_id
+        LEFT JOIN registrations r ON r.id = f.registration_id
+        LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+        LEFT JOIN advisor_assignments aa ON aa.user_id = f.user_id
+        LEFT JOIN lecturers l ON l.id = aa.lecturer_id
+        WHERE fr.id IS NULL OR fr.status = 'needs_revision' OR fr.status = 'missing'
+        GROUP BY f.user_id
+        ORDER BY u.student_id ASC
+      `)).rows as any[];
 
-    const targetStudents = selectedUserIds && selectedUserIds.length > 0
-      ? rows.filter(r => selectedUserIds.includes(Number(r.id)))
-      : rows;
+      const targetStudents = selectedUserIds && selectedUserIds.length > 0
+        ? rows.filter(r => selectedUserIds.includes(Number(r.id)))
+        : rows;
 
-    const deadlineStr = settings.final_report_close_at ? ` trước ${settings.final_report_close_at.replace('T', ' ')} (GMT+7)` : '';
-    let count = 0;
+      const deadlineStr = settings.final_report_close_at ? ` trước ${settings.final_report_close_at.replace('T', ' ')} (GMT+7)` : '';
+      const tasks: { notificationId: number; data: any }[] = [];
+      let count = 0;
 
-    for (const r of targetStudents) {
-      const displayName = cleanStudentName(r.student_name, r.student_id, r.email);
-      const isRevision = r.report_status === 'needs_revision';
-      const subject = customSubject || `[FIT-UET] Nhắc nộp Báo cáo Thực tập tốt nghiệp${deadlineStr ? ` - Hạn: ${settings.final_report_close_at.replace('T', ' ')}` : ''}`;
-      
-      const body = `Kính gửi em ${displayName} (${r.student_id || '-'}), Lớp ${r.class_name || '-'},\n\nKhoa Công nghệ Thông tin - Trường ĐH Công nghệ nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:\n- Học phần: ${r.course_code || 'Thực tập'}\n- Nơi thực tập: ${r.internship_place || '-'}\n- Giảng viên hướng dẫn chính: ${r.primary_advisors || 'Khoa phân công'}\n- Tình trạng hiện tại: ${isRevision ? 'Cần nộp lại theo góp ý của GVHD' : 'Chưa nộp báo cáo'}\n- Thời hạn nộp cuối cùng:${deadlineStr || ' theo thông báo của Khoa'}.\n\nLƯU Ý QUAN TRỌNG:\n1. Báo cáo định dạng file PDF, dung lượng tối đa 10 MB.\n2. Sinh viên không nộp báo cáo đúng hạn sẽ không có căn cứ để Giảng viên hướng dẫn đánh giá và cho điểm học phần.${customNote ? `\n\nLưu ý từ Giáo vụ Khoa:\n${customNote}` : ''}\n\nĐường dẫn nộp báo cáo trực tuyến:\nhttps://fit-uet.github.io/internship-registration-system/#/student/report\n\nTrân trọng,\nVăn phòng Khoa Công nghệ Thông tin - Trường Đại học Công nghệ, ĐHQGHN.`;
+      for (const r of targetStudents) {
+        const recipientEmail = r.email || r.personal_email;
+        if (!recipientEmail) continue;
 
-      const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-        <div style="background-color: #034ea1; color: white; padding: 20px; text-align: center;">
-          <h2 style="margin: 0; font-size: 18px; font-weight: bold;">KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CÔNG NGHỆ</h2>
-          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Nhắc nộp Báo cáo Thực tập tốt nghiệp</p>
-        </div>
-        <div style="padding: 24px; background-color: #ffffff;">
-          <p>Kính gửi em <strong>${displayName}</strong> (${r.student_id || '-'}), Lớp <strong>${r.class_name || '-'}</strong>,</p>
-          <p>Khoa Công nghệ Thông tin nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:</p>
-          <ul style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 12px 16px 12px 28px; border-radius: 4px; font-size: 13px;">
-            <li><strong>Học phần:</strong> ${r.course_code || 'Thực tập'}</li>
-            <li><strong>Nơi thực tập:</strong> ${r.internship_place || '-'}</li>
-            <li><strong>GVHD chính:</strong> ${r.primary_advisors || 'Khoa phân công'}</li>
-            <li><strong>Tình trạng hiện tại:</strong> <span style="color: ${isRevision ? '#c2410c' : '#b91c1c'}; font-weight: bold;">${isRevision ? 'Cần nộp lại theo góp ý' : 'Chưa nộp báo cáo'}</span></li>
-            <li><strong>Thời hạn cuối:</strong> <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
-          </ul>
-          ${customNote ? `<div style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1e293b; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
-          <div style="text-align: center; margin: 24px 0;">
-            <a href="https://fit-uet.github.io/internship-registration-system/#/student/report" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Nộp Báo Cáo Ngay</a>
+        const displayName = cleanStudentName(r.student_name, r.student_id, r.email);
+        const isRevision = r.report_status === 'needs_revision';
+        const subject = customSubject || `[FIT-UET] Nhắc nộp Báo cáo Thực tập tốt nghiệp${deadlineStr ? ` - Hạn: ${settings.final_report_close_at.replace('T', ' ')}` : ''}`;
+        
+        const body = `Kính gửi em ${displayName} (${r.student_id || '-'}), Lớp ${r.class_name || '-'},\n\nKhoa Công nghệ Thông tin - Trường ĐH Công nghệ nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:\n- Học phần: ${r.course_code || 'Thực tập'}\n- Nơi thực tập: ${r.internship_place || '-'}\n- Giảng viên hướng dẫn chính: ${r.primary_advisors || 'Khoa phân công'}\n- Tình trạng hiện tại: ${isRevision ? 'Cần nộp lại theo góp ý của GVHD' : 'Chưa nộp báo cáo'}\n- Thời hạn nộp cuối cùng:${deadlineStr || ' theo thông báo của Khoa'}.\n\nLƯU Ý QUAN TRỌNG:\n1. Báo cáo định dạng file PDF, dung lượng tối đa 10 MB.\n2. Sinh viên không nộp báo cáo đúng hạn sẽ không có căn cứ để Giảng viên hướng dẫn đánh giá và cho điểm học phần.${customNote ? `\n\nLưu ý từ Giáo vụ Khoa:\n${customNote}` : ''}\n\nĐường dẫn nộp báo cáo trực tuyến:\nhttps://fit-uet.github.io/internship-registration-system/#/student/report\n\nTrân trọng,\nVăn phòng Khoa Công nghệ Thông tin - Trường Đại học Công nghệ, ĐHQGHN.`;
+
+        const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+          <div style="background-color: #034ea1; color: white; padding: 20px; text-align: center;">
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CÔNG NGHỆ</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Nhắc nộp Báo cáo Thực tập tốt nghiệp</p>
           </div>
-          <p style="font-size: 12px; color: #64748b; margin-top: 20px;">* Lưu ý: File PDF tối đa 10 MB. Sinh viên không nộp báo cáo đúng hạn sẽ không thể được đánh giá và hoàn thành học phần.</p>
-        </div>
-      </div>`;
+          <div style="padding: 24px; background-color: #ffffff;">
+            <p>Kính gửi em <strong>${displayName}</strong> (${r.student_id || '-'}), Lớp <strong>${r.class_name || '-'}</strong>,</p>
+            <p>Khoa Công nghệ Thông tin nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:</p>
+            <ul style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 12px 16px 12px 28px; border-radius: 4px; font-size: 13px;">
+              <li><strong>Học phần:</strong> ${r.course_code || 'Thực tập'}</li>
+              <li><strong>Nơi thực tập:</strong> ${r.internship_place || '-'}</li>
+              <li><strong>GVHD chính:</strong> ${r.primary_advisors || 'Khoa phân công'}</li>
+              <li><strong>Tình trạng hiện tại:</strong> <span style="color: ${isRevision ? '#c2410c' : '#b91c1c'}; font-weight: bold;">${isRevision ? 'Cần nộp lại theo góp ý' : 'Chưa nộp báo cáo'}</span></li>
+              <li><strong>Thời hạn cuối:</strong> <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
+            </ul>
+            ${customNote ? `<div style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1e293b; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="https://fit-uet.github.io/internship-registration-system/#/student/report" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Nộp Báo Cáo Ngay</a>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-top: 20px;">* Lưu ý: File PDF tối đa 10 MB. Sinh viên không nộp báo cáo đúng hạn sẽ không thể được đánh giá và hoàn thành học phần.</p>
+          </div>
+        </div>`;
 
-      await createNotification({
-        user_id: Number(r.id),
-        recipient_email: r.email || r.personal_email,
-        cc_emails: r.personal_email && r.email && r.personal_email !== r.email ? [r.personal_email] : undefined,
-        type: 'final_report_due_reminder',
-        subject,
-        body,
-        html,
-        send_now: true,
-      });
-      count++;
+        const inserted = await insertNotification({
+          user_id: Number(r.id),
+          recipient_email: recipientEmail,
+          type: 'final_report_due_reminder',
+          subject,
+          body,
+          status: 'queued',
+        });
+
+        if (inserted) {
+          tasks.push({
+            notificationId: inserted.id,
+            data: {
+              recipient_email: recipientEmail,
+              cc_emails: r.personal_email && r.email && r.personal_email !== r.email ? [r.personal_email] : undefined,
+              subject,
+              body,
+              html,
+            },
+          });
+          count++;
+        }
+      }
+
+      // Phản hồi ngay cho client để tránh timeout HTTP và lỗi CORS từ reverse proxy
+      res.json({ success: true, count, total: targetStudents.length });
+
+      // Gửi email nền không chặn request HTTP
+      setTimeout(async () => {
+        for (const task of tasks) {
+          try {
+            await sendNotificationEmail(task.notificationId, task.data);
+          } catch (e: any) {
+            console.error(`[BackgroundEmail] Lỗi gửi nhắc nhở SV tới ${task.data.recipient_email}:`, e?.message || e);
+          }
+        }
+      }, 50);
+    } catch (err: any) {
+      console.error('Error in remind-pending-students:', err);
+      res.status(500).json({ error: err?.message || 'Có lỗi xảy ra khi xử lý nhắc nhở sinh viên' });
     }
-
-    res.json({ success: true, count, total: targetStudents.length });
   });
 
   adminRouter.get('/api/admin/notifications/preview-pending-lecturers', requireAuth, requireAdmin, async (req: any, res: any) => {
@@ -2080,164 +2112,205 @@ adminRouter.post('/api/admin/notifications/final-report-reminders', requireAuth,
   });
 
   adminRouter.post('/api/admin/notifications/remind-pending-lecturers', requireAuth, requireAdmin, async (req: any, res: any) => {
-    const settings = rowsToSettings((await db.execute("SELECT key, value FROM settings WHERE key IN ('grading_close_at')")).rows);
-    const selectedLecturerIds = Array.isArray(req.body.lecturerIds) ? req.body.lecturerIds.map(Number) : null;
-    const customNote = req.body.customNote?.trim();
+    try {
+      const settings = rowsToSettings((await db.execute("SELECT key, value FROM settings WHERE key IN ('grading_close_at')")).rows);
+      const selectedLecturerIds = Array.isArray(req.body.lecturerIds) ? req.body.lecturerIds.map(Number) : null;
+      const customNote = req.body.customNote?.trim();
 
-    const rows = (await db.execute(`
-      SELECT f.user_id,
-             u.student_id, u.name as student_name, u.email as student_email, u.class_name, u.course_code,
-             CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
-             fr.status as report_status, fr.submitted_at as report_submitted_at,
-             g.status as grade_status,
-             l.id as lecturer_id, l.name as lecturer_name, l.email as lecturer_email, l.work_unit
-      FROM final_internships f
-      JOIN users u ON u.id = f.user_id
-      LEFT JOIN companies c ON c.id = f.company_id
-      LEFT JOIN registrations r ON r.id = f.registration_id
-      LEFT JOIN final_reports fr ON fr.user_id = f.user_id
-      LEFT JOIN grades g ON g.user_id = f.user_id
-      JOIN advisor_assignments aa ON aa.user_id = f.user_id AND aa.role = 'primary'
-      JOIN lecturers l ON l.id = aa.lecturer_id
-      WHERE g.id IS NULL OR g.status != 'submitted'
-      ORDER BY l.name ASC, u.student_id ASC
-    `)).rows as any[];
+      const rows = (await db.execute(`
+        SELECT f.user_id,
+               u.student_id, u.name as student_name, u.email as student_email, u.class_name, u.course_code,
+               CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+               fr.status as report_status, fr.submitted_at as report_submitted_at,
+               g.status as grade_status,
+               l.id as lecturer_id, l.name as lecturer_name, l.email as lecturer_email, l.work_unit
+        FROM final_internships f
+        JOIN users u ON u.id = f.user_id
+        LEFT JOIN companies c ON c.id = f.company_id
+        LEFT JOIN registrations r ON r.id = f.registration_id
+        LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+        LEFT JOIN grades g ON g.user_id = f.user_id
+        JOIN advisor_assignments aa ON aa.user_id = f.user_id AND aa.role = 'primary'
+        JOIN lecturers l ON l.id = aa.lecturer_id
+        WHERE g.id IS NULL OR g.status != 'submitted'
+        ORDER BY l.name ASC, u.student_id ASC
+      `)).rows as any[];
 
-    const lecturerMap = new Map<number, any>();
-    for (const r of rows) {
-      if (!lecturerMap.has(r.lecturer_id)) {
-        lecturerMap.set(r.lecturer_id, {
-          lecturer_id: r.lecturer_id,
-          lecturer_name: r.lecturer_name,
-          lecturer_email: r.lecturer_email,
-          work_unit: r.work_unit,
-          students: [],
+      const lecturerMap = new Map<number, any>();
+      for (const r of rows) {
+        if (!lecturerMap.has(r.lecturer_id)) {
+          lecturerMap.set(r.lecturer_id, {
+            lecturer_id: r.lecturer_id,
+            lecturer_name: r.lecturer_name,
+            lecturer_email: r.lecturer_email,
+            work_unit: r.work_unit,
+            students: [],
+          });
+        }
+        lecturerMap.get(r.lecturer_id).students.push({
+          user_id: r.user_id,
+          student_id: r.student_id,
+          student_name: cleanStudentName(r.student_name, r.student_id, r.student_email),
+          class_name: r.class_name,
+          course_code: r.course_code,
+          internship_place: r.internship_place,
+          report_status: r.report_status || 'missing',
+          waiting_for_grade: r.report_status === 'submitted' || r.report_status === 'accepted',
         });
       }
-      lecturerMap.get(r.lecturer_id).students.push({
-        user_id: r.user_id,
-        student_id: r.student_id,
-        student_name: cleanStudentName(r.student_name, r.student_id, r.student_email),
-        class_name: r.class_name,
-        course_code: r.course_code,
-        internship_place: r.internship_place,
-        report_status: r.report_status || 'missing',
-        waiting_for_grade: r.report_status === 'submitted' || r.report_status === 'accepted',
-      });
+
+      const targetLecturers = Array.from(lecturerMap.values()).filter(l =>
+        !selectedLecturerIds || selectedLecturerIds.includes(l.lecturer_id)
+      );
+
+      const deadlineStr = settings.grading_close_at ? ` trước ${settings.grading_close_at.replace('T', ' ')} (GMT+7)` : '';
+
+      // Tối ưu hóa: Truy vấn hàng loạt id tài khoản giảng viên trong một lệnh duy nhất
+      const lecturerEmails = Array.from(new Set(targetLecturers.map(l => l.lecturer_email).filter(Boolean)));
+      const userMap = new Map<string, number>();
+      if (lecturerEmails.length > 0) {
+        const placeholders = lecturerEmails.map(() => '?').join(',');
+        const userRows = (await db.execute({
+          sql: `SELECT id, email FROM users WHERE email IN (${placeholders})`,
+          args: lecturerEmails,
+        })).rows as any[];
+        for (const u of userRows) {
+          if (u.email) userMap.set(u.email.toLowerCase(), Number(u.id));
+        }
+      }
+
+      const tasks: { notificationId: number; data: any }[] = [];
+      let count = 0;
+
+      for (const gv of targetLecturers) {
+        if (!gv.lecturer_email) continue;
+        const waitingLecturerCount = gv.students.filter((s: any) => s.waiting_for_grade).length;
+        const waitingStudentCount = gv.students.filter((s: any) => !s.waiting_for_grade).length;
+
+        let tableText = 'STT | Mã SV | Họ tên | Lớp | Học phần | Nơi TT | Trạng thái BC | Tình trạng\n';
+        tableText += '-----------------------------------------------------------------------------------\n';
+        gv.students.forEach((s: any, idx: number) => {
+          const condition = s.waiting_for_grade ? 'Chờ Thầy/Cô chấm' : 'Chờ SV nộp báo cáo';
+          const bc = s.report_status === 'submitted' ? 'Đã nộp' : s.report_status === 'accepted' ? 'Đã duyệt' : 'Chưa nộp';
+          tableText += `${idx + 1} | ${s.student_id} | ${s.student_name} | ${s.class_name || '-'} | ${s.course_code || '-'} | ${s.internship_place || '-'} | ${bc} | ${condition}\n`;
+        });
+
+        const subject = `[FIT-UET] Danh sách sinh viên chưa hoàn thành điểm thực tập - GVHD: ${gv.lecturer_name}`;
+        const body = `Kính gửi: Thầy/Cô ${gv.lecturer_name},\nĐơn vị: ${gv.work_unit || 'Khoa CNTT'},\n\nKhoa Công nghệ Thông tin kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện CHƯA ĐƯỢC HOÀN THIỆN ĐIỂM trên hệ thống:\n- Tổng số sinh viên chưa có điểm: ${gv.students.length} sinh viên\n  + Trong đó đã nộp báo cáo (chờ Thầy/Cô chấm): ${waitingLecturerCount} sinh viên\n  + Trong đó sinh viên chưa nộp báo cáo: ${waitingStudentCount} sinh viên\n- Thời hạn nhập điểm của Khoa:${deadlineStr || ' theo thông báo của Khoa'}.\n\nCHI TIẾT DANH SÁCH SINH VIÊN:\n${tableText}\n\nKÍNH ĐỀ NGHỊ THẦY/CÔ:\n1. Đối với sinh viên ĐÃ nộp báo cáo: Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.\n2. Đối với sinh viên CHƯA nộp báo cáo: Kính nhờ Thầy/Cô đôn đốc sinh viên khẩn trương nộp báo cáo hoặc cho ĐIỂM 0 nếu không tương tác và nộp đúng thời hạn theo quy định.${customNote ? `\n\nGhi chú từ Giáo vụ Khoa:\n${customNote}` : ''}\n\nĐường dẫn vào trang Chấm điểm của Thầy/Cô:\nhttps://fit-uet.github.io/internship-registration-system/#/lecturer/grades\n\nKhoa CNTT xin trân trọng cảm ơn Thầy/Cô!`;
+
+        let rowsHtml = '';
+        gv.students.forEach((s: any, idx: number) => {
+          const condition = s.waiting_for_grade
+            ? '<span style="color: #034ea1; font-weight: bold;">Chờ Thầy/Cô chấm</span>'
+            : '<span style="color: #c2410c; font-weight: bold;">Chờ SV nộp báo cáo</span>';
+          const bc = s.report_status === 'submitted'
+            ? '<span style="color: #15803d; font-weight: bold;">Đã nộp</span>'
+            : s.report_status === 'accepted'
+            ? '<span style="color: #15803d; font-weight: bold;">Đã duyệt</span>'
+            : '<span style="color: #64748b;">Chưa nộp</span>';
+          rowsHtml += `<tr style="border-bottom: 1px solid #e2e8f0; font-size: 12px;">
+            <td style="padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0;">${idx + 1}</td>
+            <td style="padding: 8px 10px; font-weight: bold; border: 1px solid #e2e8f0;">${s.student_id}</td>
+            <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.student_name}</td>
+            <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.class_name || '-'}</td>
+            <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.course_code || '-'}</td>
+            <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.internship_place || '-'}</td>
+            <td style="padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0;">${bc}</td>
+            <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${condition}</td>
+          </tr>`;
+        });
+
+        const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+          <div style="background-color: #034ea1; color: white; padding: 20px; text-align: center;">
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CÔNG NGHỆ</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Danh sách sinh viên chưa hoàn thành điểm thực tập</p>
+          </div>
+          <div style="padding: 24px; background-color: #ffffff;">
+            <p>Kính gửi: <strong>Thầy/Cô ${gv.lecturer_name}</strong>,</p>
+            <p>Đơn vị công tác: <em>${gv.work_unit || 'Khoa Công nghệ Thông tin'}</em>,</p>
+            <p>Khoa CNTT kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện <strong>chưa được hoàn thiện điểm</strong> trên hệ thống:</p>
+            <ul style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 12px 16px 12px 28px; border-radius: 4px; font-size: 13px; margin: 16px 0;">
+              <li>Tổng số sinh viên chưa có điểm: <strong>${gv.students.length} sinh viên</strong></li>
+              <li>Đã có báo cáo (chờ Thầy/Cô chấm): <strong style="color: #034ea1;">${waitingLecturerCount} sinh viên</strong></li>
+              <li>Sinh viên chưa nộp báo cáo: <strong style="color: #c2410c;">${waitingStudentCount} sinh viên</strong></li>
+              <li>Thời hạn nhập điểm của Khoa: <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
+            </ul>
+            ${customNote ? `<div style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1e293b; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
+            <div style="overflow-x: auto; margin: 20px 0;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #cbd5e1;">
+                <thead>
+                  <tr style="background-color: #f1f5f9; text-align: left; color: #475569;">
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">STT</th>
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Mã SV</th>
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Họ và tên</th>
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Lớp</th>
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Môn</th>
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Nơi thực tập</th>
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">Báo cáo</th>
+                    <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Tình trạng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+            <div style="margin: 18px 0; font-size: 13px; line-height: 1.6;">
+              <p style="margin: 0 0 6px 0; font-weight: bold; color: #1e293b;">Kính đề nghị Thầy/Cô:</p>
+              <ol style="margin: 0; padding-left: 20px; color: #334155;">
+                <li style="margin-bottom: 6px;"><strong>Đối với sinh viên ĐÃ nộp báo cáo:</strong> Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.</li>
+                <li><strong>Đối với sinh viên CHƯA nộp báo cáo:</strong> Kính nhờ Thầy/Cô đôn đốc sinh viên khẩn trương nộp báo cáo hoặc cho ĐIỂM 0 nếu không tương tác và nộp đúng thời hạn theo quy định.</li>
+              </ol>
+            </div>
+            <div style="text-align: center; margin: 28px 0 20px 0;">
+              <a href="https://fit-uet.github.io/internship-registration-system/#/lecturer/grades" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Vào Bảng Chấm Điểm Của Thầy/Cô</a>
+            </div>
+            <p style="font-size: 12px; color: #64748b;">Khoa CNTT xin trân trọng cảm ơn Thầy/Cô!</p>
+          </div>
+        </div>`;
+
+        const userId = userMap.get(gv.lecturer_email.toLowerCase()) || null;
+
+        const inserted = await insertNotification({
+          user_id: userId,
+          recipient_email: gv.lecturer_email,
+          type: 'lecturer_grade_pending_reminder',
+          subject,
+          body,
+          status: 'queued',
+        });
+
+        if (inserted) {
+          tasks.push({
+            notificationId: inserted.id,
+            data: {
+              recipient_email: gv.lecturer_email,
+              subject,
+              body,
+              html,
+            },
+          });
+          count++;
+        }
+      }
+
+      // Phản hồi ngay cho client để tránh timeout HTTP và lỗi CORS từ reverse proxy
+      res.json({ success: true, count, total: targetLecturers.length });
+
+      // Gửi email nền không chặn request HTTP
+      setTimeout(async () => {
+        for (const task of tasks) {
+          try {
+            await sendNotificationEmail(task.notificationId, task.data);
+          } catch (e: any) {
+            console.error(`[BackgroundEmail] Lỗi gửi nhắc nhở tới ${task.data.recipient_email}:`, e?.message || e);
+          }
+        }
+      }, 50);
+    } catch (err: any) {
+      console.error('Error in remind-pending-lecturers:', err);
+      res.status(500).json({ error: err?.message || 'Có lỗi xảy ra khi xử lý nhắc nhở giảng viên' });
     }
-
-    const targetLecturers = Array.from(lecturerMap.values()).filter(l =>
-      !selectedLecturerIds || selectedLecturerIds.includes(l.lecturer_id)
-    );
-
-    const deadlineStr = settings.grading_close_at ? ` trước ${settings.grading_close_at.replace('T', ' ')} (GMT+7)` : '';
-    let count = 0;
-
-    for (const gv of targetLecturers) {
-      if (!gv.lecturer_email) continue;
-      const waitingLecturerCount = gv.students.filter((s: any) => s.waiting_for_grade).length;
-      const waitingStudentCount = gv.students.filter((s: any) => !s.waiting_for_grade).length;
-
-      let tableText = 'STT | Mã SV | Họ tên | Lớp | Học phần | Nơi TT | Trạng thái BC | Tình trạng\n';
-      tableText += '-----------------------------------------------------------------------------------\n';
-      gv.students.forEach((s: any, idx: number) => {
-        const condition = s.waiting_for_grade ? 'Chờ Thầy/Cô chấm' : 'Chờ SV nộp báo cáo';
-        const bc = s.report_status === 'submitted' ? 'Đã nộp' : s.report_status === 'accepted' ? 'Đã duyệt' : 'Chưa nộp';
-        tableText += `${idx + 1} | ${s.student_id} | ${s.student_name} | ${s.class_name || '-'} | ${s.course_code || '-'} | ${s.internship_place || '-'} | ${bc} | ${condition}\n`;
-      });
-
-      const subject = `[FIT-UET] Danh sách sinh viên chưa hoàn thành điểm thực tập - GVHD: ${gv.lecturer_name}`;
-      const body = `Kính gửi: Thầy/Cô ${gv.lecturer_name},\nĐơn vị: ${gv.work_unit || 'Khoa CNTT'},\n\nKhoa Công nghệ Thông tin kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện CHƯA ĐƯỢC HOÀN THIỆN ĐIỂM trên hệ thống:\n- Tổng số sinh viên chưa có điểm: ${gv.students.length} sinh viên\n  + Trong đó đã nộp báo cáo (chờ Thầy/Cô chấm): ${waitingLecturerCount} sinh viên\n  + Trong đó sinh viên chưa nộp báo cáo: ${waitingStudentCount} sinh viên\n- Thời hạn nhập điểm của Khoa:${deadlineStr || ' theo thông báo của Khoa'}.\n\nCHI TIẾT DANH SÁCH SINH VIÊN:\n${tableText}\n\nKÍNH ĐỀ NGHỊ THẦY/CÔ:\n1. Đối với sinh viên ĐÃ nộp báo cáo: Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.\n2. Đối với sinh viên CHƯA nộp báo cáo: Kính nhờ Thầy/Cô đôn đốc sinh viên khẩn trương nộp báo cáo hoặc cho ĐIỂM 0 nếu không tương tác và nộp đúng thời hạn theo quy định.${customNote ? `\n\nGhi chú từ Giáo vụ Khoa:\n${customNote}` : ''}\n\nĐường dẫn vào trang Chấm điểm của Thầy/Cô:\nhttps://fit-uet.github.io/internship-registration-system/#/lecturer/grades\n\nKhoa CNTT xin trân trọng cảm ơn Thầy/Cô!`;
-
-      let rowsHtml = '';
-      gv.students.forEach((s: any, idx: number) => {
-        const condition = s.waiting_for_grade
-          ? '<span style="color: #034ea1; font-weight: bold;">Chờ Thầy/Cô chấm</span>'
-          : '<span style="color: #c2410c; font-weight: bold;">Chờ SV nộp báo cáo</span>';
-        const bc = s.report_status === 'submitted'
-          ? '<span style="color: #15803d; font-weight: bold;">Đã nộp</span>'
-          : s.report_status === 'accepted'
-          ? '<span style="color: #15803d; font-weight: bold;">Đã duyệt</span>'
-          : '<span style="color: #64748b;">Chưa nộp</span>';
-        rowsHtml += `<tr style="border-bottom: 1px solid #e2e8f0; font-size: 12px;">
-          <td style="padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0;">${idx + 1}</td>
-          <td style="padding: 8px 10px; font-weight: bold; border: 1px solid #e2e8f0;">${s.student_id}</td>
-          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.student_name}</td>
-          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.class_name || '-'}</td>
-          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.course_code || '-'}</td>
-          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.internship_place || '-'}</td>
-          <td style="padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0;">${bc}</td>
-          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${condition}</td>
-        </tr>`;
-      });
-
-      const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-        <div style="background-color: #034ea1; color: white; padding: 20px; text-align: center;">
-          <h2 style="margin: 0; font-size: 18px; font-weight: bold;">KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CÔNG NGHỆ</h2>
-          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Danh sách sinh viên chưa hoàn thành điểm thực tập</p>
-        </div>
-        <div style="padding: 24px; background-color: #ffffff;">
-          <p>Kính gửi: <strong>Thầy/Cô ${gv.lecturer_name}</strong>,</p>
-          <p>Đơn vị công tác: <em>${gv.work_unit || 'Khoa Công nghệ Thông tin'}</em>,</p>
-          <p>Khoa CNTT kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện <strong>chưa được hoàn thiện điểm</strong> trên hệ thống:</p>
-          <ul style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 12px 16px 12px 28px; border-radius: 4px; font-size: 13px; margin: 16px 0;">
-            <li>Tổng số sinh viên chưa có điểm: <strong>${gv.students.length} sinh viên</strong></li>
-            <li>Đã có báo cáo (chờ Thầy/Cô chấm): <strong style="color: #034ea1;">${waitingLecturerCount} sinh viên</strong></li>
-            <li>Sinh viên chưa nộp báo cáo: <strong style="color: #c2410c;">${waitingStudentCount} sinh viên</strong></li>
-            <li>Thời hạn nhập điểm của Khoa: <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
-          </ul>
-          ${customNote ? `<div style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1e293b; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
-          <div style="overflow-x: auto; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #cbd5e1;">
-              <thead>
-                <tr style="background-color: #f1f5f9; text-align: left; color: #475569;">
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">STT</th>
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Mã SV</th>
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Họ và tên</th>
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Lớp</th>
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Môn</th>
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Nơi thực tập</th>
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">Báo cáo</th>
-                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Tình trạng</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-            </table>
-          </div>
-          <div style="margin: 18px 0; font-size: 13px; line-height: 1.6;">
-            <p style="margin: 0 0 6px 0; font-weight: bold; color: #1e293b;">Kính đề nghị Thầy/Cô:</p>
-            <ol style="margin: 0; padding-left: 20px; color: #334155;">
-              <li style="margin-bottom: 6px;"><strong>Đối với sinh viên ĐÃ nộp báo cáo:</strong> Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.</li>
-              <li><strong>Đối với sinh viên CHƯA nộp báo cáo:</strong> Kính nhờ Thầy/Cô đôn đốc sinh viên khẩn trương nộp báo cáo hoặc cho ĐIỂM 0 nếu không tương tác và nộp đúng thời hạn theo quy định.</li>
-            </ol>
-          </div>
-          <div style="text-align: center; margin: 28px 0 20px 0;">
-            <a href="https://fit-uet.github.io/internship-registration-system/#/lecturer/grades" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Vào Bảng Chấm Điểm Của Thầy/Cô</a>
-          </div>
-          <p style="font-size: 12px; color: #64748b;">Khoa CNTT xin trân trọng cảm ơn Thầy/Cô!</p>
-        </div>
-      </div>`;
-
-      const userMatch = (await db.execute({
-        sql: 'SELECT id FROM users WHERE email = ? LIMIT 1',
-        args: [gv.lecturer_email],
-      })).rows[0] as any;
-
-      await createNotification({
-        user_id: userMatch ? Number(userMatch.id) : null,
-        recipient_email: gv.lecturer_email,
-        type: 'lecturer_grade_pending_reminder',
-        subject,
-        body,
-        html,
-        send_now: true,
-      });
-      count++;
-    }
-
-    res.json({ success: true, count, total: targetLecturers.length });
   });
 adminRouter.post('/api/admin/notifications/final-confirmation-open', requireAuth, requireAdmin, async (req: any, res: any) => {
     const settings = rowsToSettings((await db.execute("SELECT key, value FROM settings WHERE key IN ('confirmation_open_at', 'confirmation_close_at')")).rows);
