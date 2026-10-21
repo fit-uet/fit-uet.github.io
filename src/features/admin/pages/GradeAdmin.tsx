@@ -1047,7 +1047,7 @@ export function GradeAdmin({ token }: { token: string }) {
                   {/* CTA to Preview */}
                   <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
                     <div className="text-[11px] text-blue-900 leading-snug">
-                      <strong>💡 Xem trước thư thực tế:</strong> Bạn có thể xem trước chính xác lá thư gửi đến Thầy/Cô gồm đầy đủ bảng sinh viên và ghi chú bổ sung.
+                      <strong>Xem trước thư gửi đi:</strong> Bạn có thể xem trước chính xác lá thư gửi đến Thầy/Cô gồm đầy đủ bảng sinh viên và ghi chú bổ sung.
                     </div>
                     <button
                       type="button"
@@ -1158,7 +1158,7 @@ export function GradeAdmin({ token }: { token: string }) {
 
                           {/* Live note preview */}
                           {customRemindNote.trim() && (
-                            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-xs text-amber-900 leading-relaxed">
+                            <div className="bg-slate-50 border-l-4 border-[#034ea1] p-3 rounded text-xs text-slate-800 leading-relaxed">
                               <strong>Ghi chú từ Giáo vụ Khoa:</strong> {customRemindNote}
                             </div>
                           )}
@@ -1210,9 +1210,9 @@ export function GradeAdmin({ token }: { token: string }) {
                                         </td>
                                         <td className="p-2 text-center">
                                           {s.waiting_for_grade ? (
-                                            <span className="text-[#034ea1] font-bold">⏳ Chờ Thầy/Cô chấm</span>
+                                            <span className="text-[#034ea1] font-bold">Chờ Thầy/Cô chấm</span>
                                           ) : (
-                                            <span className="text-amber-800 font-bold">⚠️ Chờ SV nộp báo cáo</span>
+                                            <span className="text-amber-800 font-bold">Chờ SV nộp báo cáo</span>
                                           )}
                                         </td>
                                       </tr>
@@ -1221,6 +1221,19 @@ export function GradeAdmin({ token }: { token: string }) {
                                 )}
                               </tbody>
                             </table>
+                          </div>
+
+                          {/* Formal instructions */}
+                          <div className="my-3 text-xs leading-relaxed">
+                            <p className="m-0 font-bold mb-1.5 text-slate-800">Kính đề nghị Thầy/Cô:</p>
+                            <ol className="m-0 pl-5 space-y-1 list-decimal text-slate-700">
+                              <li>
+                                <strong>Đối với sinh viên ĐÃ nộp báo cáo:</strong> Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.
+                              </li>
+                              <li>
+                                <strong>Đối với sinh viên CHƯA nộp báo cáo:</strong> Kính nhờ Thầy/Cô đôn đốc sinh viên khẩn trương nộp báo cáo hoặc cho ĐIỂM 0 nếu không tương tác và nộp đúng thời hạn theo quy định.
+                              </li>
+                            </ol>
                           </div>
 
                           {/* CTA Button */}

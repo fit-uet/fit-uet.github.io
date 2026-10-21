@@ -1979,7 +1979,7 @@ adminRouter.post('/api/admin/notifications/final-report-reminders', requireAuth,
       const isRevision = r.report_status === 'needs_revision';
       const subject = customSubject || `[FIT-UET] Nhắc nộp Báo cáo Thực tập tốt nghiệp${deadlineStr ? ` - Hạn: ${settings.final_report_close_at.replace('T', ' ')}` : ''}`;
       
-      const body = `Kính gửi em ${displayName} (${r.student_id || '-'}), Lớp ${r.class_name || '-'},\n\nKhoa Công nghệ Thông tin - Trường ĐH Công nghệ nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:\n- Học phần: ${r.course_code || 'Thực tập'}\n- Nơi thực tập: ${r.internship_place || '-'}\n- Giảng viên hướng dẫn chính: ${r.primary_advisors || 'Khoa phân công'}\n- Tình trạng hiện tại: ${isRevision ? 'Cần nộp lại theo góp ý của GVHD' : 'Chưa nộp báo cáo'}\n- Thời hạn nộp cuối cùng:${deadlineStr || ' theo thông báo của Khoa'}.\n\nLƯU Ý QUAN TRỌNG:\n1. Báo cáo định dạng file PDF, dung lượng tối đa 10 MB.\n2. Sinh viên không nộp báo cáo đúng hạn sẽ không có căn cứ để Giảng viên hướng dẫn đánh giá và cho điểm học phần.${customNote ? `\n\nLưu ý từ Giáo vụ Khoa:\n${customNote}` : ''}\n\n👉 Đường dẫn nộp báo cáo trực tuyến:\nhttps://fit-uet.github.io/internship-registration-system/#/student/report\n\nTrân trọng,\nVăn phòng Khoa Công nghệ Thông tin - Trường Đại học Công nghệ, ĐHQGHN.`;
+      const body = `Kính gửi em ${displayName} (${r.student_id || '-'}), Lớp ${r.class_name || '-'},\n\nKhoa Công nghệ Thông tin - Trường ĐH Công nghệ nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:\n- Học phần: ${r.course_code || 'Thực tập'}\n- Nơi thực tập: ${r.internship_place || '-'}\n- Giảng viên hướng dẫn chính: ${r.primary_advisors || 'Khoa phân công'}\n- Tình trạng hiện tại: ${isRevision ? 'Cần nộp lại theo góp ý của GVHD' : 'Chưa nộp báo cáo'}\n- Thời hạn nộp cuối cùng:${deadlineStr || ' theo thông báo của Khoa'}.\n\nLƯU Ý QUAN TRỌNG:\n1. Báo cáo định dạng file PDF, dung lượng tối đa 10 MB.\n2. Sinh viên không nộp báo cáo đúng hạn sẽ không có căn cứ để Giảng viên hướng dẫn đánh giá và cho điểm học phần.${customNote ? `\n\nLưu ý từ Giáo vụ Khoa:\n${customNote}` : ''}\n\nĐường dẫn nộp báo cáo trực tuyến:\nhttps://fit-uet.github.io/internship-registration-system/#/student/report\n\nTrân trọng,\nVăn phòng Khoa Công nghệ Thông tin - Trường Đại học Công nghệ, ĐHQGHN.`;
 
       const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background-color: #034ea1; color: white; padding: 20px; text-align: center;">
@@ -1996,7 +1996,7 @@ adminRouter.post('/api/admin/notifications/final-report-reminders', requireAuth,
             <li><strong>Tình trạng hiện tại:</strong> <span style="color: ${isRevision ? '#c2410c' : '#b91c1c'}; font-weight: bold;">${isRevision ? 'Cần nộp lại theo góp ý' : 'Chưa nộp báo cáo'}</span></li>
             <li><strong>Thời hạn cuối:</strong> <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
           </ul>
-          ${customNote ? `<div style="background-color: #fef3c7; border: 1px solid #fde68a; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #92400e; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
+          ${customNote ? `<div style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1e293b; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
           <div style="text-align: center; margin: 24px 0;">
             <a href="https://fit-uet.github.io/internship-registration-system/#/student/report" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Nộp Báo Cáo Ngay</a>
           </div>
@@ -2147,13 +2147,13 @@ adminRouter.post('/api/admin/notifications/final-report-reminders', requireAuth,
       });
 
       const subject = `[FIT-UET] Danh sách sinh viên chưa hoàn thành điểm thực tập - GVHD: ${gv.lecturer_name}`;
-      const body = `Kính gửi: Thầy/Cô ${gv.lecturer_name},\nĐơn vị: ${gv.work_unit || 'Khoa CNTT'},\n\nKhoa Công nghệ Thông tin kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện CHƯA ĐƯỢC HOÀN THIỆN ĐIỂM trên hệ thống:\n- Tổng số sinh viên chưa có điểm: ${gv.students.length} sinh viên\n  + Trong đó đã nộp báo cáo (chờ Thầy/Cô chấm): ${waitingLecturerCount} sinh viên\n  + Trong đó sinh viên chưa nộp báo cáo: ${waitingStudentCount} sinh viên\n- Thời hạn nhập điểm của Khoa:${deadlineStr || ' theo thông báo của Khoa'}.\n\nCHI TIẾT DANH SÁCH SINH VIÊN:\n${tableText}\n\nKÍNH ĐỀ NGHỊ THẦY/CÔ:\n1. Đối với sinh viên ĐÃ nộp báo cáo: Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.\n2. Đối với sinh viên CHƯA nộp báo cáo: Kính nhờ Thầy/Cô đôn đốc sinh viên nộp báo cáo trước khi hết hạn.${customNote ? `\n\nGhi chú từ Giáo vụ Khoa:\n${customNote}` : ''}\n\n👉 Đường dẫn vào trang Chấm điểm của Thầy/Cô:\nhttps://fit-uet.github.io/internship-registration-system/#/lecturer/grades\n\nKhoa CNTT xin trân trọng cảm ơn Thầy/Cô!`;
+      const body = `Kính gửi: Thầy/Cô ${gv.lecturer_name},\nĐơn vị: ${gv.work_unit || 'Khoa CNTT'},\n\nKhoa Công nghệ Thông tin kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện CHƯA ĐƯỢC HOÀN THIỆN ĐIỂM trên hệ thống:\n- Tổng số sinh viên chưa có điểm: ${gv.students.length} sinh viên\n  + Trong đó đã nộp báo cáo (chờ Thầy/Cô chấm): ${waitingLecturerCount} sinh viên\n  + Trong đó sinh viên chưa nộp báo cáo: ${waitingStudentCount} sinh viên\n- Thời hạn nhập điểm của Khoa:${deadlineStr || ' theo thông báo của Khoa'}.\n\nCHI TIẾT DANH SÁCH SINH VIÊN:\n${tableText}\n\nKÍNH ĐỀ NGHỊ THẦY/CÔ:\n1. Đối với sinh viên ĐÃ nộp báo cáo: Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.\n2. Đối với sinh viên CHƯA nộp báo cáo: Kính nhờ Thầy/Cô đôn đốc sinh viên khẩn trương nộp báo cáo hoặc cho ĐIỂM 0 nếu không tương tác và nộp đúng thời hạn theo quy định.${customNote ? `\n\nGhi chú từ Giáo vụ Khoa:\n${customNote}` : ''}\n\nĐường dẫn vào trang Chấm điểm của Thầy/Cô:\nhttps://fit-uet.github.io/internship-registration-system/#/lecturer/grades\n\nKhoa CNTT xin trân trọng cảm ơn Thầy/Cô!`;
 
       let rowsHtml = '';
       gv.students.forEach((s: any, idx: number) => {
         const condition = s.waiting_for_grade
-          ? '<span style="color: #034ea1; font-weight: bold;">⏳ Chờ Thầy/Cô chấm</span>'
-          : '<span style="color: #c2410c; font-weight: bold;">⚠️ Chờ SV nộp báo cáo</span>';
+          ? '<span style="color: #034ea1; font-weight: bold;">Chờ Thầy/Cô chấm</span>'
+          : '<span style="color: #c2410c; font-weight: bold;">Chờ SV nộp báo cáo</span>';
         const bc = s.report_status === 'submitted'
           ? '<span style="color: #15803d; font-weight: bold;">Đã nộp</span>'
           : s.report_status === 'accepted'
@@ -2186,7 +2186,7 @@ adminRouter.post('/api/admin/notifications/final-report-reminders', requireAuth,
             <li>Sinh viên chưa nộp báo cáo: <strong style="color: #c2410c;">${waitingStudentCount} sinh viên</strong></li>
             <li>Thời hạn nhập điểm của Khoa: <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
           </ul>
-          ${customNote ? `<div style="background-color: #fef3c7; border: 1px solid #fde68a; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #92400e; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
+          ${customNote ? `<div style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #1e293b; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
           <div style="overflow-x: auto; margin: 20px 0;">
             <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #cbd5e1;">
               <thead>
@@ -2205,6 +2205,13 @@ adminRouter.post('/api/admin/notifications/final-report-reminders', requireAuth,
                 ${rowsHtml}
               </tbody>
             </table>
+          </div>
+          <div style="margin: 18px 0; font-size: 13px; line-height: 1.6;">
+            <p style="margin: 0 0 6px 0; font-weight: bold; color: #1e293b;">Kính đề nghị Thầy/Cô:</p>
+            <ol style="margin: 0; padding-left: 20px; color: #334155;">
+              <li style="margin-bottom: 6px;"><strong>Đối với sinh viên ĐÃ nộp báo cáo:</strong> Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.</li>
+              <li><strong>Đối với sinh viên CHƯA nộp báo cáo:</strong> Kính nhờ Thầy/Cô đôn đốc sinh viên khẩn trương nộp báo cáo hoặc cho ĐIỂM 0 nếu không tương tác và nộp đúng thời hạn theo quy định.</li>
+            </ol>
           </div>
           <div style="text-align: center; margin: 28px 0 20px 0;">
             <a href="https://fit-uet.github.io/internship-registration-system/#/lecturer/grades" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Vào Bảng Chấm Điểm Của Thầy/Cô</a>
