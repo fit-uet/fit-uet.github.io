@@ -195,7 +195,7 @@ The exported XLSX file (`danh_sach_sinh_vien_chua_xac_nhan_thuc_tap.xlsx`) inclu
 
 During the final internship grading phase, faculty advisors review 10–30 student reports in succession. Under the naive implementation:
 1. **Redundant Egress & Latency**: Each PDF file ranges from 2 MB to 10 MB. Every time an advisor opened a student's submission, closed the panel, or revisited an already-graded student, the system initiated a full network `fetch` for the binary blob. This caused 1–3s latency per review and wasted network bandwidth.
-2. **State Thrashing on Grade Submission**: Tying the PDF loading hook (`useEffect`) to the report status (`localReportStatus`) caused the PDF viewer to tear down, re-fetch over the network, and re-mount whenever the advisor pressed **“Nộp điểm cho Khoa”** or **“Lưu nháp”**.
+2. **State Thrashing on Grade Submission**: Tying the PDF loading hook (`useEffect`) to the report status (`localReportStatus`) caused the PDF viewer to tear down, re-fetch over the network, and re-mount whenever the advisor pressed **“Nộp điểm cho Khoa”**.
 3. **Ambiguous Status Taxonomy**: Displaying a generic `Đã nộp` badge for all submitted reports failed to distinguish between reports awaiting evaluation and those already completed.
 
 ### 2. Status Taxonomy: "Chưa chấm điểm" Paradigm
@@ -205,7 +205,7 @@ To provide clear operational cues for faculty advisors, report assessment badges
 | Raw DB Status (`report_status`) | Grade Status (`grade_status`) | Hiển thị Giảng viên (UI Badge) | Màu sắc & Kiểu dáng | Ý nghĩa nghiệp vụ |
 | :--- | :--- | :--- | :--- | :--- |
 | `NULL` / Chưa có | `missing` / Chưa có | **Chưa nộp** | `bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ) | Sinh viên chưa nộp báo cáo. |
-| **`submitted`** | `draft` hoặc `missing` | **Chưa chấm điểm** | **`bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ)** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** Mặc định báo cáo được coi là hợp lệ để chấm; GVHD chỉ nhấn "Yêu cầu sửa" khi phát hiện lỗi, không cần thao tác duyệt thủ công trước. |
+| **`submitted`** | `missing` / Chưa có | **Chưa chấm điểm** | **`bg-rose-50 text-rose-700 border-rose-200` (Cảnh báo đỏ)** | **Sinh viên đã nộp báo cáo, đang chờ GVHD chấm điểm.** Mặc định báo cáo được coi là hợp lệ để chấm; GVHD chỉ nhấn "Yêu cầu sửa" khi phát hiện lỗi, không cần thao tác duyệt thủ công trước. |
 | **`submitted`** hoặc **`accepted`** | **`submitted`** (hoặc đã có điểm) | **Đã nộp điểm** | `bg-emerald-50 text-emerald-700 border-emerald-200` | GVHD đã hoàn tất nhập và nộp điểm về Khoa (hệ thống tự động chuyển trạng thái báo cáo sang `accepted`). |
 | **`needs_revision`** | Bất kỳ | **Cần nộp lại** | `bg-orange-50 text-orange-700 border-orange-200` | GVHD yêu cầu sinh viên chỉnh sửa, bổ sung báo cáo. |
 
@@ -282,6 +282,18 @@ Theo quy chế đào tạo của Khoa CNTT - Trường Đại học Công nghệ
   - **Trạng thái yêu cầu sửa (`needs_revision`)**: Hiển thị rõ nội dung yêu cầu gửi cho sinh viên, hỗ trợ **Sửa lý do** và **Hủy yêu cầu** (tự phục hồi về `submitted` nếu ấn nhầm mà không cần can thiệp database).
   - **Nộp điểm chính thức**: Kích hoạt đồng thời chốt điểm và hoàn tất duyệt báo cáo (`status = 'accepted'`).
   - **Quy chuẩn mã màu UET UI System**: Sử dụng bảng màu chuẩn (`#15803d` / `#dcfce7`, `#b25e00` / `#ffedd5`, `#b91c1c` / `#fee2e2`, và `--ui-brand` `#034ea1`).
+
+#### e. Loại bỏ hoàn toàn cơ chế điểm Nháp (Direct & Official Grading Paradigm)
+- **Bản chất nghiệp vụ**: Quy trình chấm điểm thực tập là quy trình trực tiếp giữa Giảng viên hướng dẫn và Khoa. Khi GVHD nhập điểm, toàn bộ các đầu điểm và điểm tổng kết là kết quả đánh giá thực tế của học phần.
+- **Rủi ro của cơ chế "Điểm nháp" cũ**:
+  1. **Hiểu lầm & sót điểm**: Giảng viên nhấn "Lưu nháp" vì tưởng đã hoàn tất, nhưng trạng thái vẫn là `draft`, dẫn tới khi Khoa đóng sổ điểm và xuất báo cáo điểm sang Phòng Đào tạo thì sinh viên bị tính là chưa nộp điểm.
+  2. **Trạng thái mập mờ phía Sinh viên**: Sinh viên nhìn thấy trạng thái "Đang chấm (bản nháp)" không biết điểm có được công nhận hay bị thay đổi.
+  3. **Thừa thao tác**: Phải có 2 nút "Lưu nháp" và "Nộp điểm", gây rối mắt và không chuẩn UI System tối giản.
+- **Giải pháp chuẩn hóa**:
+  - Loại bỏ trạng thái `draft` trong vòng đời chấm điểm; điểm khi lưu là chính thức (`status = 'submitted'`).
+  - Nút bấm tinh giản thành **"Nộp điểm cho Khoa"** (hoặc **"Cập nhật điểm"** nếu đã nộp).
+  - Tôn trọng quyền tự chủ của GVHD: Điểm sau khi nộp vẫn có thể được GVHD cập nhật lại linh hoạt bất kỳ lúc nào trước khi Khoa niêm phong/khóa bảng điểm (`locked_at`).
+  - Toàn bộ điểm nháp trước đây được di trú chuyển thành điểm chính thức và gửi thông báo công bố đến sinh viên.
 
 ---
 

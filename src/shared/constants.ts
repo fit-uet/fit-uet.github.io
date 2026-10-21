@@ -198,8 +198,7 @@ Trang **Chấm điểm thực tập** cho phép:
 - Tải báo cáo nếu sinh viên đã nộp.
 - Nhập điểm quá trình, điểm báo cáo và điểm đánh giá công ty hoặc giảng viên.
 - Hệ thống tự tính điểm tổng kết theo công thức hiện tại: 20% quá trình, 20% báo cáo, 60% đánh giá công ty hoặc giảng viên.
-- Lưu nháp trong quá trình chấm.
-- Nộp điểm về Khoa khi đã hoàn tất.
+- Nộp điểm trực tiếp về Khoa khi đã hoàn tất (có thể cập nhật lại điểm trước khi Khoa khóa bảng điểm).
 
 Sau khi điểm đã khóa hoặc đã tổng hợp, nếu cần sửa điểm giảng viên liên hệ Khoa để được hỗ trợ theo quy trình.
 
@@ -235,4 +234,4 @@ Nếu chưa rõ quy trình hoặc gặp lỗi nghiệp vụ, giảng viên có t
 - Đánh dấu tình trạng liên hệ để tránh bỏ sót sinh viên.
 - Dùng chat nhóm cho thông báo chung và chat riêng cho góp ý cá nhân.
 - Tải và kiểm tra báo cáo trước hạn chấm điểm.
-- Lưu nháp điểm trước khi nộp chính thức về Khoa.`;
+- Nộp điểm trực tiếp về Khoa khi đã hoàn tất đánh giá.`;

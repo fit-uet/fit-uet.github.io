@@ -513,7 +513,7 @@ export async function initDb() {
       report_score REAL,
       company_score REAL,
       final_score REAL,
-      status TEXT NOT NULL DEFAULT 'draft',
+      status TEXT NOT NULL DEFAULT 'submitted',
       comment TEXT,
       submitted_at DATETIME,
       locked_at DATETIME,
@@ -769,6 +769,20 @@ Mỗi sinh viên cần viết **01 báo cáo thực tập** theo mẫu Khoa quy 
   } catch (e) { }
   try { await db.executeMultiple('ALTER TABLE final_reports ADD COLUMN lecturer_comment TEXT'); } catch (e) { }
   try { await db.executeMultiple('ALTER TABLE grades ADD COLUMN locked_at DATETIME'); } catch (e) { }
+  try {
+    await db.executeMultiple(`
+      UPDATE grades
+      SET status = 'submitted',
+          submitted_at = COALESCE(submitted_at, datetime('now', '+7 hours'))
+      WHERE status = 'draft';
+
+      UPDATE grades
+      SET final_score = ROUND(progress_score * 0.2 + report_score * 0.2 + company_score * 0.6, 1)
+      WHERE progress_score IS NOT NULL AND report_score IS NOT NULL AND company_score IS NOT NULL AND final_score IS NULL;
+    `);
+  } catch (e) {
+    console.error('Error migrating legacy draft grades:', e);
+  }
   try {
     await db.executeMultiple(`CREATE TABLE IF NOT EXISTS chat_messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

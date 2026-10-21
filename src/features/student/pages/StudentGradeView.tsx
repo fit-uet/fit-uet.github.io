@@ -25,7 +25,6 @@ export function StudentGradeView({ token }: { token: string }) {
 
   const statusLabel = (status?: string) => {
     if (status === 'submitted') return 'Đã công bố chính thức';
-    if (status === 'draft') return 'Đang chấm (Bản nháp)';
     return 'Chưa có điểm';
   };
 
@@ -149,13 +148,7 @@ export function StudentGradeView({ token }: { token: string }) {
                 Điểm tổng kết
               </span>
               <Badge
-                variant={
-                  grade?.grade_status === 'submitted'
-                    ? 'success'
-                    : grade?.grade_status === 'draft'
-                    ? 'warning'
-                    : 'neutral'
-                }
+                variant={grade?.grade_status === 'submitted' ? 'success' : 'neutral'}
                 size="sm"
                 pulse={grade?.grade_status === 'submitted'}
               >

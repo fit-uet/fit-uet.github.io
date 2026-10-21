@@ -33,7 +33,7 @@ async function getPrimaryLecturerForUser(actor: any, userId: number) {
   return assignment ? Number(lecturer.id) : null;
 }
 
-async function saveGradeForStudent(userId: number, lecturerId: number, body: any, submit = false, actorRole = 'lecturer') {
+async function saveGradeForStudent(userId: number, lecturerId: number, body: any, actorRole = 'lecturer') {
   const existing = (await db.execute({ sql: 'SELECT * FROM grades WHERE user_id = ?', args: [userId] })).rows[0] as any;
   if (existing?.locked_at) return { error: 'Điểm đã bị khóa. Vui lòng liên hệ Khoa nếu cần sửa.', status: 400 };
   if (actorRole !== 'admin') {
@@ -54,34 +54,31 @@ async function saveGradeForStudent(userId: number, lecturerId: number, body: any
   if (progressScore === undefined || reportScore === undefined || companyScore === undefined) {
     return { error: 'Điểm phải nằm trong khoảng 0 đến 10.', status: 400 };
   }
-  if (submit && (progressScore === null || reportScore === null || companyScore === null)) {
-    return { error: 'Cần nhập đủ 3 đầu điểm trước khi nộp.', status: 400 };
+  if (progressScore === null || reportScore === null || companyScore === null) {
+    return { error: 'Cần nhập đủ 3 đầu điểm (Tiến độ, Báo cáo, Đánh giá đơn vị/GV) trước khi nộp.', status: 400 };
   }
   const finalScore = calculateFinalScore(progressScore, reportScore, companyScore);
-  const status = submit ? 'submitted' : 'draft';
   await db.execute({
     sql: `INSERT INTO grades (user_id, lecturer_id, progress_score, report_score, company_score, final_score, status, comment, submitted_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ${submit ? "datetime('now', '+7 hours')" : 'NULL'}, datetime('now', '+7 hours'))
+          VALUES (?, ?, ?, ?, ?, ?, 'submitted', ?, datetime('now', '+7 hours'), datetime('now', '+7 hours'))
           ON CONFLICT(user_id) DO UPDATE SET
             lecturer_id = excluded.lecturer_id,
             progress_score = excluded.progress_score,
             report_score = excluded.report_score,
             company_score = excluded.company_score,
             final_score = excluded.final_score,
-            status = excluded.status,
+            status = 'submitted',
             comment = excluded.comment,
-            submitted_at = ${submit ? "datetime('now', '+7 hours')" : 'grades.submitted_at'},
+            submitted_at = COALESCE(grades.submitted_at, datetime('now', '+7 hours')),
             updated_at = datetime('now', '+7 hours')`,
-    args: [userId, lecturerId, progressScore, reportScore, companyScore, finalScore, status, body.comment || null],
+    args: [userId, lecturerId, progressScore, reportScore, companyScore, finalScore, body.comment || null],
   });
-  if (submit) {
-    await db.execute({
-      sql: `UPDATE final_reports 
-            SET status = 'accepted', updated_at = datetime('now', '+7 hours') 
-            WHERE user_id = ? AND object_key IS NOT NULL AND (status IS NULL OR status != 'accepted')`,
-      args: [userId],
-    });
-  }
+  await db.execute({
+    sql: `UPDATE final_reports 
+          SET status = 'accepted', updated_at = datetime('now', '+7 hours') 
+          WHERE user_id = ? AND object_key IS NOT NULL AND (status IS NULL OR status != 'accepted')`,
+    args: [userId],
+  });
   return { row: (await db.execute({ sql: 'SELECT * FROM grades WHERE user_id = ?', args: [userId] })).rows[0] };
 }
 
@@ -280,8 +277,16 @@ lecturerRouter.put('/api/lecturer/grades/:userId', requireAuth, async (req: any,
   let lecturerId = await getPrimaryLecturerForUser(req.user, userId);
   if (req.user.role === 'admin' && req.body.lecturer_id) lecturerId = Number(req.body.lecturer_id);
   if (!lecturerId) return res.status(403).json({ error: 'Chỉ GVHD chính được nhập điểm cho sinh viên này.' });
-  const result = await saveGradeForStudent(userId, lecturerId, req.body, false, req.user.role);
+  const result = await saveGradeForStudent(userId, lecturerId, req.body, req.user.role);
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
+  const student = (await db.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
+  await createNotification({
+    user_id: userId,
+    recipient_email: student?.personal_email || student?.email,
+    type: 'grade_submitted',
+    subject: 'GVHD đã nộp điểm thực tập',
+    body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+  });
   res.json(result.row);
 });
 
@@ -291,7 +296,7 @@ lecturerRouter.post('/api/lecturer/grades/:userId/submit', requireAuth, async (r
   let lecturerId = await getPrimaryLecturerForUser(req.user, userId);
   if (req.user.role === 'admin' && req.body.lecturer_id) lecturerId = Number(req.body.lecturer_id);
   if (!lecturerId) return res.status(403).json({ error: 'Chỉ GVHD chính được nộp điểm cho sinh viên này.' });
-  const result = await saveGradeForStudent(userId, lecturerId, req.body, true, req.user.role);
+  const result = await saveGradeForStudent(userId, lecturerId, req.body, req.user.role);
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
   const student = (await db.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
   await createNotification({
@@ -299,7 +304,7 @@ lecturerRouter.post('/api/lecturer/grades/:userId/submit', requireAuth, async (r
     recipient_email: student?.personal_email || student?.email,
     type: 'grade_submitted',
     subject: 'GVHD đã nộp điểm thực tập',
-    body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết tạm tính: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+    body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
   });
   res.json(result.row);
 });

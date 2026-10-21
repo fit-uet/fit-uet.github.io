@@ -7,6 +7,21 @@ export const saveXlsx = (filename: string, headers: string[], rows: any[][], she
   XLSX.writeFile(workbook, filename);
 };
 
+export interface MultiSheetConfig {
+  sheetName: string;
+  headers: string[];
+  rows: any[][];
+}
+
+export const saveMultiSheetXlsx = (filename: string, sheets: MultiSheetConfig[]) => {
+  const workbook = XLSX.utils.book_new();
+  for (const sheet of sheets) {
+    const worksheet = XLSX.utils.aoa_to_sheet([sheet.headers, ...sheet.rows]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.sheetName.slice(0, 31) || 'Sheet');
+  }
+  XLSX.writeFile(workbook, filename);
+};
+
 export const xlsxArrayBuffer = (headers: string[], rows: any[][], sheetName = 'Sheet1') => {
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   const workbook = XLSX.utils.book_new();

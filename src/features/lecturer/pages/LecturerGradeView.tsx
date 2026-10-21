@@ -64,7 +64,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
       : 'Chưa nộp';
 
   const gradeStatusLabel = (status?: string) =>
-    status === 'submitted' ? 'Đã công bố' : status === 'draft' ? 'Bản nháp' : 'Chưa nhập';
+    status === 'submitted' ? 'Đã nộp điểm' : 'Chưa nhập';
 
   const gradingWindowStatus = useMemo(() => {
     if (user?.role === 'admin') return { status: 'open', message: '' };
@@ -133,14 +133,14 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
     updateGradeEdit(userId, field, value);
   };
 
-  const saveGrade = async (row: any, submit = false) => {
+  const saveGrade = async (row: any) => {
     const edit = gradeEdits[String(row.user_id)] || {};
     const validationErrors: Record<string, string> = {};
     SCORE_FIELDS.forEach((field) => {
       const value = edit[field];
       const score = value === '' || value === null || value === undefined ? null : Number(value);
-      if (submit && score === null) validationErrors[scoreErrorKey(row.user_id, field)] = 'Bắt buộc';
-      else if (score !== null && (!Number.isFinite(score) || score < 0 || score > 10)) {
+      if (score === null) validationErrors[scoreErrorKey(row.user_id, field)] = 'Bắt buộc';
+      else if (!Number.isFinite(score) || score < 0 || score > 10) {
         validationErrors[scoreErrorKey(row.user_id, field)] = 'Từ 0 đến 10';
       }
     });
@@ -149,17 +149,17 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
       if (Object.keys(validationErrors).length > 0) setScoreErrors((prev) => ({ ...prev, ...validationErrors }));
       return;
     }
-    const key = `${row.user_id}:${submit ? 'submit' : 'draft'}`;
+    const key = `${row.user_id}:submit`;
     setSavingKey(key);
     try {
-      const endpoint = `${API_BASE}/api/lecturer/grades/${row.user_id}${submit ? '/submit' : ''}`;
+      const endpoint = `${API_BASE}/api/lecturer/grades/${row.user_id}/submit`;
       const res = await fetch(endpoint, {
-        method: submit ? 'POST' : 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(edit),
       });
       const data = await res.json();
-      if (!res.ok) return alert(data.error || 'Lưu điểm thất bại.');
+      if (!res.ok) return alert(data.error || 'Nộp điểm thất bại.');
       fetchGrades();
     } finally {
       setSavingKey(null);
@@ -227,7 +227,6 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
   const stats = {
     total: grades.length,
     missing: grades.filter((row) => !row.grade_status || row.grade_status === 'missing').length,
-    draft: grades.filter((row) => row.grade_status === 'draft').length,
     submitted: grades.filter((row) => row.grade_status === 'submitted').length,
     locked: grades.filter((row) => row.locked_at).length,
   };
@@ -325,7 +324,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
         </div>
 
         {/* Apple KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
             <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Tổng sinh viên</span>
             <div className="mt-2 text-3xl font-black text-[#0f172a] tracking-tight">{stats.total}</div>
@@ -334,11 +333,6 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
             <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Chưa có điểm</span>
             <div className="mt-2 text-3xl font-black text-[#64748b] tracking-tight">{stats.missing}</div>
-          </div>
-
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Bản nháp</span>
-            <div className="mt-2 text-3xl font-black text-[#c2410c] tracking-tight">{stats.draft}</div>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
@@ -425,8 +419,6 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                                 className={`text-[10px] font-semibold ${
                                   row.grade_status === 'submitted'
                                     ? 'text-[#1d833f]'
-                                    : row.grade_status === 'draft'
-                                    ? 'text-[#b25e00]'
                                     : 'text-[#64748b]'
                                 }`}
                               >
@@ -501,18 +493,15 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                             />
                             <div className="flex items-center gap-1.5">
                               <button
-                                disabled={disabled || savingKey === `${row.user_id}:draft`}
-                                onClick={() => saveGrade(row, false)}
-                                className="rounded-full border border-black/[0.08] bg-white px-3 py-1 text-xs font-semibold text-[#0f172a] hover:bg-[#f8fafc] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
-                              >
-                                {savingKey === `${row.user_id}:draft` ? 'Đang lưu...' : 'Lưu nháp'}
-                              </button>
-                              <button
                                 disabled={disabled || savingKey === `${row.user_id}:submit`}
-                                onClick={() => saveGrade(row, true)}
-                                className="rounded-full bg-[#034ea1] px-3.5 py-1 text-xs font-semibold text-white hover:bg-[#023a7a] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
+                                onClick={() => saveGrade(row)}
+                                className="rounded-full bg-[#034ea1] px-4 py-1 text-xs font-semibold text-white hover:bg-[#023a7a] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
                               >
-                                {savingKey === `${row.user_id}:submit` ? 'Đang nộp...' : 'Nộp điểm'}
+                                {savingKey === `${row.user_id}:submit`
+                                  ? 'Đang lưu...'
+                                  : row.grade_status === 'submitted'
+                                  ? 'Cập nhật điểm'
+                                  : 'Nộp điểm'}
                               </button>
                             </div>
                           </div>

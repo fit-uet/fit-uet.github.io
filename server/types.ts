@@ -11,6 +11,7 @@ export type NotificationInput = {
   type: string;
   subject: string;
   body: string;
+  html?: string;
   status?: 'queued' | 'website_only';
   send_now?: boolean;
   no_queue_on_send_skip?: boolean;

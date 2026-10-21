@@ -83,7 +83,7 @@ Tiêu chuẩn này áp dụng nhất quán trên **tất cả các màn hình** 
 | **Thành công (Success)** | `#15803d` | `#dcfce7` | `#bbf7d0` | Đã duyệt đề cương, Nộp báo cáo thành công, Điểm đạt, Đã nộp điểm. |
 | **Cảnh báo (Warning)** | `#c2410c` | `#ffedd5` | `#fed7aa` | Cần nộp lại báo cáo, Chờ GV duyệt, Sắp hết hạn nộp đề cương/báo cáo. |
 | **Nguy hiểm (Danger)** | `#b91c1c` | `#fee2e2` | `#fecaca` | Bị từ chối, Quá hạn nộp bài, Xóa phân công. |
-| **Trung tính (Neutral)** | `#64748b` | `#f1f5f9` | `#e2e8f0` | Chưa nộp báo cáo, Bản nháp, Chưa phân công, Tài liệu đính kèm. |
+| **Trung tính (Neutral)** | `#64748b` | `#f1f5f9` | `#e2e8f0` | Chưa nộp báo cáo, Chưa phân công, Tài liệu đính kèm. |
 
 ---
 

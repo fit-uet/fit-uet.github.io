@@ -74,10 +74,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
   const registeredCount = advisedStudentCount;
   const confirmedCount = uniqueStudents.filter((s: any) => s.confirmed_at || s.internship_place || s.internship_type).length;
   const reportCount = uniqueStudents.filter((s: any) => s.report_submitted_at || ['submitted', 'accepted', 'needs_revision'].includes(s.report_status)).length;
-  const gradedCount = uniqueStudents.filter((s: any) =>
-    s.grade_status === 'submitted' || s.grade_status === 'draft' || (s.final_score !== null && s.final_score !== undefined && s.final_score !== '') ||
-    grades.some((g: any) => Number(g.user_id) === Number(s.user_id) && (g.grade_status === 'submitted' || g.grade_status === 'draft' || (g.final_score !== null && g.final_score !== undefined && g.final_score !== '')))
-  ).length;
+  const gradedCount = uniqueStudents.filter(isStudentGraded).length;
 
   const downloadReport = async (student: any) => {
     const res = await fetch(`${API_BASE}/api/reports/final/${student.user_id}/download`, { headers: { Authorization: `Bearer ${token}` } });

@@ -615,6 +615,7 @@ type NotificationInput = {
   type: string;
   subject: string;
   body: string;
+  html?: string;
   status?: 'queued' | 'website_only';
   send_now?: boolean;
 };
@@ -670,12 +671,15 @@ async function sendNotificationEmail(database: DatabaseClient, env: Env, notific
   cc_emails?: string[];
   subject: string;
   body: string;
+  html?: string;
 }) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.EMAIL_FROM;
   if (!apiKey || !from || !notificationId) return 'queued';
   if ((await emailSentTodayCount(database)) >= emailDailySendCap(env)) return 'queued';
   try {
+    const plainText = data.body ? data.body.replace(/<[^>]+>/g, '') : '';
+    const htmlContent = data.html || (data.body && data.body.includes('<') ? data.body : undefined);
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -687,7 +691,8 @@ async function sendNotificationEmail(database: DatabaseClient, env: Env, notific
         to: [data.recipient_email],
         ...((data.cc_emails || []).length > 0 ? { cc: data.cc_emails } : {}),
         subject: data.subject,
-        text: data.body,
+        ...(htmlContent ? { html: htmlContent } : {}),
+        text: plainText || data.body,
       }),
     });
     const responseText = await response.text();
@@ -927,6 +932,158 @@ async function normalizeExistingStudentNames(database: DatabaseClient) {
   }
 }
 
+async function checkAndQueueScheduledRemindersWorker(database: DatabaseClient): Promise<{ studentCount: number; lecturerCount: number }> {
+  const settingsRows = (await database.execute("SELECT key, value FROM settings WHERE key IN ('final_report_close_at', 'grading_close_at')")).rows as any[];
+  const settings = rowsToSettings(settingsRows);
+
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+  let studentCount = 0;
+  let lecturerCount = 0;
+
+  // 1. Check final_report_close_at (T-3 to T-0 days)
+  if (settings.final_report_close_at) {
+    const reportDeadline = new Date(settings.final_report_close_at);
+    const diffHours = (reportDeadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours > 0 && diffHours <= 72) {
+      const studentRows = (await database.execute(`
+        SELECT f.user_id, u.id, u.student_id, u.name, u.email, u.personal_email, u.class_name, u.course_code,
+               CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+               fr.status as report_status,
+               GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN l.name END) as primary_advisors
+        FROM final_internships f
+        JOIN users u ON u.id = f.user_id
+        LEFT JOIN companies c ON c.id = f.company_id
+        LEFT JOIN registrations r ON r.id = f.registration_id
+        LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+        LEFT JOIN advisor_assignments aa ON aa.user_id = f.user_id
+        LEFT JOIN lecturers l ON l.id = aa.lecturer_id
+        WHERE fr.id IS NULL OR fr.status IN ('missing', 'needs_revision')
+        GROUP BY f.user_id
+      `)).rows as any[];
+
+      const deadlineStr = settings.final_report_close_at ? ` trước ${settings.final_report_close_at.replace('T', ' ')} (GMT+7)` : '';
+
+      for (const r of studentRows) {
+        if (!r.email && !r.personal_email) continue;
+        const recent = (await database.execute({
+          sql: `SELECT id FROM notifications
+                WHERE user_id = ? AND type = 'final_report_due_reminder'
+                  AND created_at >= datetime('now', '+7 hours', '-24 hours')
+                LIMIT 1`,
+          args: [r.id],
+        })).rows;
+        if (recent.length > 0) continue;
+
+        const displayName = cleanStudentName(r.name, r.student_id, r.email);
+        const isRevision = r.report_status === 'needs_revision';
+        const subject = `[FIT-UET] Nhắc nộp Báo cáo Thực tập tốt nghiệp - Hạn chót:${deadlineStr || ' theo thông báo'}`;
+        const body = `Kính gửi em ${displayName} (${r.student_id || '-'}), Lớp ${r.class_name || '-'},\n\nKhoa Công nghệ Thông tin - Trường ĐH Công nghệ nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:\n- Học phần: ${r.course_code || 'Thực tập'}\n- Nơi thực tập: ${r.internship_place || '-'}\n- Giảng viên hướng dẫn chính: ${r.primary_advisors || 'Khoa phân công'}\n- Tình trạng hiện tại: ${isRevision ? 'Cần nộp lại theo góp ý của GVHD' : 'Chưa nộp báo cáo'}\n- Thời hạn nộp cuối cùng:${deadlineStr || ' theo thông báo của Khoa'}.\n\nLƯU Ý QUAN TRỌNG:\n1. Báo cáo định dạng file PDF, dung lượng tối đa 10 MB.\n2. Sinh viên không nộp báo cáo đúng hạn sẽ không có căn cứ để Giảng viên hướng dẫn đánh giá và cho điểm học phần.\n\n👉 Đường dẫn nộp báo cáo trực tuyến:\nhttps://fit-uet.github.io/internship-registration-system/#/student/report\n\nTrân trọng,\nVăn phòng Khoa Công nghệ Thông tin - Trường Đại học Công nghệ, ĐHQGHN.`;
+
+        await database.execute({
+          sql: `INSERT INTO notifications (user_id, recipient_email, type, subject, body, status, created_at)
+                VALUES (?, ?, ?, ?, ?, 'queued', datetime('now', '+7 hours'))`,
+          args: [Number(r.id), r.email || r.personal_email, 'final_report_due_reminder', subject, body],
+        });
+        studentCount++;
+      }
+    }
+  }
+
+  // 2. Check grading_close_at (T-3 to T-0 days)
+  if (settings.grading_close_at) {
+    const gradeDeadline = new Date(settings.grading_close_at);
+    const diffHours = (gradeDeadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours > 0 && diffHours <= 72) {
+      const rows = (await database.execute(`
+        SELECT f.user_id,
+               u.student_id, u.name as student_name, u.email as student_email, u.class_name, u.course_code,
+               CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+               fr.status as report_status, fr.submitted_at as report_submitted_at,
+               g.status as grade_status,
+               l.id as lecturer_id, l.name as lecturer_name, l.email as lecturer_email, l.work_unit
+        FROM final_internships f
+        JOIN users u ON u.id = f.user_id
+        LEFT JOIN companies c ON c.id = f.company_id
+        LEFT JOIN registrations r ON r.id = f.registration_id
+        LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+        LEFT JOIN grades g ON g.user_id = f.user_id
+        JOIN advisor_assignments aa ON aa.user_id = f.user_id AND aa.role = 'primary'
+        JOIN lecturers l ON l.id = aa.lecturer_id
+        WHERE g.id IS NULL OR g.status != 'submitted'
+        ORDER BY l.name ASC, u.student_id ASC
+      `)).rows as any[];
+
+      const lecturerMap = new Map<number, any>();
+      for (const r of rows) {
+        if (!lecturerMap.has(r.lecturer_id)) {
+          lecturerMap.set(r.lecturer_id, {
+            lecturer_id: r.lecturer_id,
+            lecturer_name: r.lecturer_name,
+            lecturer_email: r.lecturer_email,
+            work_unit: r.work_unit,
+            students: [],
+          });
+        }
+        lecturerMap.get(r.lecturer_id).students.push({
+          user_id: r.user_id,
+          student_id: r.student_id,
+          student_name: cleanStudentName(r.student_name, r.student_id, r.student_email),
+          class_name: r.class_name,
+          course_code: r.course_code,
+          internship_place: r.internship_place,
+          report_status: r.report_status || 'missing',
+          waiting_for_grade: r.report_status === 'submitted' || r.report_status === 'accepted',
+        });
+      }
+
+      const deadlineStr = settings.grading_close_at ? ` trước ${settings.grading_close_at.replace('T', ' ')} (GMT+7)` : '';
+
+      for (const gv of lecturerMap.values()) {
+        if (!gv.lecturer_email) continue;
+
+        const recent = (await database.execute({
+          sql: `SELECT id FROM notifications
+                WHERE recipient_email = ? AND type = 'lecturer_grade_pending_reminder'
+                  AND created_at >= datetime('now', '+7 hours', '-24 hours')
+                LIMIT 1`,
+          args: [gv.lecturer_email],
+        })).rows;
+        if (recent.length > 0) continue;
+
+        const waitingLecturerCount = gv.students.filter((s: any) => s.waiting_for_grade).length;
+        const waitingStudentCount = gv.students.filter((s: any) => !s.waiting_for_grade).length;
+
+        let tableText = 'STT | Mã SV | Họ tên | Lớp | Học phần | Nơi TT | Trạng thái BC | Tình trạng\n';
+        tableText += '-----------------------------------------------------------------------------------\n';
+        gv.students.forEach((s: any, idx: number) => {
+          const condition = s.waiting_for_grade ? 'Chờ Thầy/Cô chấm' : 'Chờ SV nộp báo cáo';
+          const bc = s.report_status === 'submitted' ? 'Đã nộp' : s.report_status === 'accepted' ? 'Đã duyệt' : 'Chưa nộp';
+          tableText += `${idx + 1} | ${s.student_id} | ${s.student_name} | ${s.class_name || '-'} | ${s.course_code || '-'} | ${s.internship_place || '-'} | ${bc} | ${condition}\n`;
+        });
+
+        const subject = `[FIT-UET] Danh sách sinh viên chưa hoàn thành điểm thực tập - GVHD: ${gv.lecturer_name}`;
+        const body = `Kính gửi: Thầy/Cô ${gv.lecturer_name},\nĐơn vị: ${gv.work_unit || 'Khoa CNTT'},\n\nKhoa Công nghệ Thông tin kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện CHƯA ĐƯỢC HOÀN THIỆN ĐIỂM trên hệ thống:\n- Tổng số sinh viên chưa có điểm: ${gv.students.length} sinh viên\n  + Trong đó đã nộp báo cáo (chờ Thầy/Cô chấm): ${waitingLecturerCount} sinh viên\n  + Trong đó sinh viên chưa nộp báo cáo: ${waitingStudentCount} sinh viên\n- Thời hạn nhập điểm của Khoa:${deadlineStr || ' theo thông báo của Khoa'}.\n\nCHI TIẾT DANH SÁCH SINH VIÊN:\n${tableText}\n\nKÍNH ĐỀ NGHỊ THẦY/CÔ:\n1. Đối với sinh viên ĐÃ nộp báo cáo: Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.\n2. Đối với sinh viên CHƯA nộp báo cáo: Kính nhờ Thầy/Cô đôn đốc sinh viên nộp báo cáo trước khi hết hạn.\n\n👉 Đường dẫn vào trang Chấm điểm của Thầy/Cô:\nhttps://fit-uet.github.io/internship-registration-system/#/lecturer/grades\n\nKhoa CNTT xin trân trọng cảm ơn Thầy/Cô!`;
+
+        const userMatch = (await database.execute({
+          sql: 'SELECT id FROM users WHERE email = ? LIMIT 1',
+          args: [gv.lecturer_email],
+        })).rows[0] as any;
+
+        await database.execute({
+          sql: `INSERT INTO notifications (user_id, recipient_email, type, subject, body, status, created_at)
+                VALUES (?, ?, ?, ?, ?, 'queued', datetime('now', '+7 hours'))`,
+          args: [userMatch ? Number(userMatch.id) : null, gv.lecturer_email, 'lecturer_grade_pending_reminder', subject, body],
+        });
+        lecturerCount++;
+      }
+    }
+  }
+
+  return { studentCount, lecturerCount };
+}
+
 let isDbInitialized = false;
 
 async function initDb(env: Env, force = false) {
@@ -1059,7 +1216,7 @@ async function initDb(env: Env, force = false) {
         report_score REAL,
         company_score REAL,
         final_score REAL,
-        status TEXT NOT NULL DEFAULT 'draft',
+        status TEXT NOT NULL DEFAULT 'submitted',
         comment TEXT,
         submitted_at DATETIME,
         locked_at DATETIME,
@@ -2403,34 +2560,31 @@ async function route(request: Request, env: Env) {
     if (progressScore === undefined || reportScore === undefined || companyScore === undefined) {
       return { error: 'Điểm phải nằm trong khoảng 0 đến 10.', status: 400 };
     }
-    if (submit && (progressScore === null || reportScore === null || companyScore === null)) {
-      return { error: 'Cần nhập đủ 3 đầu điểm trước khi nộp.', status: 400 };
+    if (progressScore === null || reportScore === null || companyScore === null) {
+      return { error: 'Cần nhập đủ 3 đầu điểm (Tiến độ, Báo cáo, Đánh giá đơn vị/GV) trước khi nộp.', status: 400 };
     }
     const finalScore = calculateFinalScore(progressScore, reportScore, companyScore);
-    const status = submit ? 'submitted' : 'draft';
     await database.execute({
       sql: `INSERT INTO grades (user_id, lecturer_id, progress_score, report_score, company_score, final_score, status, comment, submitted_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ${submit ? "datetime('now', '+7 hours')" : 'NULL'}, datetime('now', '+7 hours'))
+            VALUES (?, ?, ?, ?, ?, ?, 'submitted', ?, datetime('now', '+7 hours'), datetime('now', '+7 hours'))
             ON CONFLICT(user_id) DO UPDATE SET
               lecturer_id = excluded.lecturer_id,
               progress_score = excluded.progress_score,
               report_score = excluded.report_score,
               company_score = excluded.company_score,
               final_score = excluded.final_score,
-              status = excluded.status,
+              status = 'submitted',
               comment = excluded.comment,
-              submitted_at = ${submit ? "datetime('now', '+7 hours')" : 'grades.submitted_at'},
+              submitted_at = COALESCE(grades.submitted_at, datetime('now', '+7 hours')),
               updated_at = datetime('now', '+7 hours')`,
-      args: [userId, lecturerId, progressScore, reportScore, companyScore, finalScore, status, body.comment || null],
+      args: [userId, lecturerId, progressScore, reportScore, companyScore, finalScore, body.comment || null],
     });
-    if (submit) {
-      await database.execute({
-        sql: `UPDATE final_reports 
-              SET status = 'accepted', updated_at = datetime('now', '+7 hours') 
-              WHERE user_id = ? AND object_key IS NOT NULL AND (status IS NULL OR status != 'accepted')`,
-        args: [userId],
-      });
-    }
+    await database.execute({
+      sql: `UPDATE final_reports 
+            SET status = 'accepted', updated_at = datetime('now', '+7 hours') 
+            WHERE user_id = ? AND object_key IS NOT NULL AND (status IS NULL OR status != 'accepted')`,
+      args: [userId],
+    });
     return { row: (await database.execute({ sql: 'SELECT * FROM grades WHERE user_id = ?', args: [userId] })).rows[0] };
   }
 
@@ -2480,8 +2634,16 @@ async function route(request: Request, env: Env) {
     let lecturerId = await getPrimaryLecturerForUser(user, userId);
     if (user.role === 'admin' && body.lecturer_id) lecturerId = Number(body.lecturer_id);
     if (!lecturerId) return json({ error: 'Chỉ GVHD chính được nhập điểm cho sinh viên này.' }, 403);
-    const result = await saveGradeForStudent(userId, lecturerId, body, false, user.role);
+    const result = await saveGradeForStudent(userId, lecturerId, body, user.role);
     if (result.error) return json({ error: result.error }, result.status || 400);
+    const student = (await database.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
+    await notify({
+      user_id: userId,
+      recipient_email: student?.personal_email || student?.email,
+      type: 'grade_submitted',
+      subject: 'GVHD đã nộp điểm thực tập',
+      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+    });
     return json(result.row);
   }
 
@@ -2493,7 +2655,7 @@ async function route(request: Request, env: Env) {
     let lecturerId = await getPrimaryLecturerForUser(user, userId);
     if (user.role === 'admin' && body.lecturer_id) lecturerId = Number(body.lecturer_id);
     if (!lecturerId) return json({ error: 'Chỉ GVHD chính được nộp điểm cho sinh viên này.' }, 403);
-    const result = await saveGradeForStudent(userId, lecturerId, body, true, user.role);
+    const result = await saveGradeForStudent(userId, lecturerId, body, user.role);
     if (result.error) return json({ error: result.error }, result.status || 400);
     const student = (await database.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
     await notify({
@@ -2501,7 +2663,7 @@ async function route(request: Request, env: Env) {
       recipient_email: student?.personal_email || student?.email,
       type: 'grade_submitted',
       subject: 'GVHD đã nộp điểm thực tập',
-      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết tạm tính: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
     });
     return json(result.row);
   }
@@ -2516,6 +2678,9 @@ async function route(request: Request, env: Env) {
       if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
         return json({ success: true, skipped: true, message: 'Bỏ qua vì chưa cấu hình RESEND_API_KEY hoặc EMAIL_FROM.' });
       }
+      await checkAndQueueScheduledRemindersWorker(database).catch(e => {
+        console.error('Lỗi khi quét email nhắc nhở tự động:', e?.message || e);
+      });
       const result = await sendQueuedNotificationBatch(database, env, { ignoreBatchSize: true });
       return json({ success: true, skipped: false, message: 'Đã tự động xử lý hàng đợi email theo quota ngày.', ...result });
     } catch (error: any) {
@@ -2613,7 +2778,7 @@ async function route(request: Request, env: Env) {
         (SELECT COUNT(DISTINCT user_id) FROM final_reports WHERE status = 'submitted' OR object_key IS NOT NULL) AS reportCount,
         (SELECT COUNT(DISTINCT user_id)
            FROM grades
-          WHERE status IN ('submitted', 'draft') OR final_score IS NOT NULL) AS gradedCount
+          WHERE status = 'submitted' OR final_score IS NOT NULL) AS gradedCount
     `)).rows[0] as any;
     return json({
       registeredCount: Number(stats?.registeredCount || 0),
@@ -3589,6 +3754,7 @@ async function route(request: Request, env: Env) {
              fr.id as report_id, fr.original_filename, fr.file_size, fr.status as report_status,
              fr.submitted_at as report_submitted_at, fr.updated_at as report_updated_at, fr.lecturer_comment,
              GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as primary_advisors,
+             GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN l.email END) as primary_advisors_email,
              GROUP_CONCAT(CASE WHEN aa.role = 'co' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as co_advisors
       FROM final_internships f
       JOIN users u ON u.id = f.user_id
@@ -3604,18 +3770,31 @@ async function route(request: Request, env: Env) {
   }
 
   if (method === 'GET' && path === '/api/admin/grades') {
+    await database.execute(`
+      UPDATE grades
+      SET status = 'submitted',
+          submitted_at = COALESCE(submitted_at, datetime('now', '+7 hours'))
+      WHERE status = 'draft'
+    `).catch(() => {});
+    await database.execute(`
+      UPDATE grades
+      SET final_score = ROUND(progress_score * 0.2 + report_score * 0.2 + company_score * 0.6, 1)
+      WHERE progress_score IS NOT NULL AND report_score IS NOT NULL AND company_score IS NOT NULL AND final_score IS NULL
+    `).catch(() => {});
+
     const rows = (await database.execute(`
       SELECT f.user_id, f.internship_type, f.confirmed_at,
              u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
              CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
              fr.status as report_status,
              g.progress_score, g.report_score, g.company_score, g.final_score,
-             COALESCE(g.status, 'missing') as grade_status, g.comment, g.submitted_at as grade_submitted_at, g.locked_at,
+             CASE WHEN g.status = 'draft' THEN 'submitted' ELSE COALESCE(g.status, 'missing') END as grade_status, g.comment, g.submitted_at as grade_submitted_at, g.locked_at,
              CASE
                WHEN g.id IS NULL THEN NULL
                ELSE gl.name
              END as grading_lecturer_name,
              GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as primary_advisors,
+             GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN l.email END) as primary_advisors_email,
              GROUP_CONCAT(CASE WHEN aa.role = 'co' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as co_advisors
       FROM final_internships f
       JOIN users u ON u.id = f.user_id
@@ -3861,6 +4040,324 @@ async function route(request: Request, env: Env) {
       });
     }
     return json({ success: true, count: rows.length });
+  }
+
+  if (method === 'GET' && path === '/api/admin/notifications/preview-pending-students') {
+    const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('final_report_close_at')")).rows);
+    const rows = (await database.execute(`
+      SELECT u.id, u.student_id, u.name as student_name, u.email, u.personal_email, u.class_name, u.course_code,
+             CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+             fr.status as report_status, fr.lecturer_comment,
+             GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as primary_advisors
+      FROM final_internships f
+      JOIN users u ON u.id = f.user_id
+      LEFT JOIN companies c ON c.id = f.company_id
+      LEFT JOIN registrations r ON r.id = f.registration_id
+      LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+      LEFT JOIN advisor_assignments aa ON aa.user_id = f.user_id
+      LEFT JOIN lecturers l ON l.id = aa.lecturer_id
+      WHERE fr.id IS NULL OR fr.status = 'needs_revision' OR fr.status = 'missing'
+      GROUP BY f.user_id
+      ORDER BY u.student_id ASC
+    `)).rows as any[];
+    return json({
+      students: rows.map(r => ({
+        ...r,
+        student_name: cleanStudentName(r.student_name, r.student_id, r.email),
+      })),
+      deadline: settings.final_report_close_at || '',
+    });
+  }
+
+  if (method === 'POST' && path === '/api/admin/notifications/remind-pending-students') {
+    const body = await readBody(request);
+    const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('final_report_close_at')")).rows);
+    const selectedUserIds = Array.isArray(body.userIds) ? body.userIds.map(Number) : null;
+    const customSubject = body.subject?.trim();
+    const customNote = body.customNote?.trim();
+
+    const rows = (await database.execute(`
+      SELECT u.id, u.student_id, u.name as student_name, u.email, u.personal_email, u.class_name, u.course_code,
+             CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+             fr.status as report_status,
+             GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN COALESCE(l.name, 'Giảng viên đã bị xóa') END) as primary_advisors
+      FROM final_internships f
+      JOIN users u ON u.id = f.user_id
+      LEFT JOIN companies c ON c.id = f.company_id
+      LEFT JOIN registrations r ON r.id = f.registration_id
+      LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+      LEFT JOIN advisor_assignments aa ON aa.user_id = f.user_id
+      LEFT JOIN lecturers l ON l.id = aa.lecturer_id
+      WHERE fr.id IS NULL OR fr.status = 'needs_revision' OR fr.status = 'missing'
+      GROUP BY f.user_id
+      ORDER BY u.student_id ASC
+    `)).rows as any[];
+
+    const targetStudents = selectedUserIds && selectedUserIds.length > 0
+      ? rows.filter(r => selectedUserIds.includes(Number(r.id)))
+      : rows;
+
+    const deadlineStr = settings.final_report_close_at ? ` trước ${settings.final_report_close_at.replace('T', ' ')} (GMT+7)` : '';
+    let count = 0;
+
+    for (const r of targetStudents) {
+      const displayName = cleanStudentName(r.student_name, r.student_id, r.email);
+      const isRevision = r.report_status === 'needs_revision';
+      const subject = customSubject || `[FIT-UET] Nhắc nộp Báo cáo Thực tập tốt nghiệp${deadlineStr ? ` - Hạn: ${settings.final_report_close_at.replace('T', ' ')}` : ''}`;
+      
+      const textContent = `Kính gửi em ${displayName} (${r.student_id || '-'}), Lớp ${r.class_name || '-'},\n\nKhoa Công nghệ Thông tin - Trường ĐH Công nghệ nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:\n- Học phần: ${r.course_code || 'Thực tập'}\n- Nơi thực tập: ${r.internship_place || '-'}\n- Giảng viên hướng dẫn chính: ${r.primary_advisors || 'Khoa phân công'}\n- Tình trạng hiện tại: ${isRevision ? 'Cần nộp lại theo góp ý của GVHD' : 'Chưa nộp báo cáo'}\n- Thời hạn nộp cuối cùng:${deadlineStr || ' theo thông báo của Khoa'}.\n\nLƯU Ý QUAN TRỌNG:\n1. Báo cáo định dạng file PDF, dung lượng tối đa 10 MB.\n2. Sinh viên không nộp báo cáo đúng hạn sẽ không có căn cứ để Giảng viên hướng dẫn đánh giá và cho điểm học phần.${customNote ? `\n\nLưu ý từ Giáo vụ Khoa:\n${customNote}` : ''}\n\n👉 Đường dẫn nộp báo cáo trực tuyến:\nhttps://fit-uet.github.io/internship-registration-system/#/student/report\n\nTrân trọng,\nVăn phòng Khoa Công nghệ Thông tin - Trường Đại học Công nghệ, ĐHQGHN.`;
+
+      const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #034ea1; color: white; padding: 20px; text-align: center;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: bold;">KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CÔNG NGHỆ</h2>
+          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Nhắc nộp Báo cáo Thực tập tốt nghiệp</p>
+        </div>
+        <div style="padding: 24px; background-color: #ffffff;">
+          <p>Kính gửi em <strong>${displayName}</strong> (${r.student_id || '-'}), Lớp <strong>${r.class_name || '-'}</strong>,</p>
+          <p>Khoa Công nghệ Thông tin nhắc em về việc hoàn thành nộp Báo cáo Thực tập tốt nghiệp:</p>
+          <ul style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 12px 16px 12px 28px; border-radius: 4px; font-size: 13px;">
+            <li><strong>Học phần:</strong> ${r.course_code || 'Thực tập'}</li>
+            <li><strong>Nơi thực tập:</strong> ${r.internship_place || '-'}</li>
+            <li><strong>GVHD chính:</strong> ${r.primary_advisors || 'Khoa phân công'}</li>
+            <li><strong>Tình trạng hiện tại:</strong> <span style="color: ${isRevision ? '#c2410c' : '#b91c1c'}; font-weight: bold;">${isRevision ? 'Cần nộp lại theo góp ý' : 'Chưa nộp báo cáo'}</span></li>
+            <li><strong>Thời hạn cuối:</strong> <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
+          </ul>
+          ${customNote ? `<div style="background-color: #fef3c7; border: 1px solid #fde68a; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #92400e; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="https://fit-uet.github.io/internship-registration-system/#/student/report" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Nộp Báo Cáo Ngay</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-top: 20px;">* Lưu ý: File PDF tối đa 10 MB. Sinh viên không nộp báo cáo đúng hạn sẽ không thể được đánh giá và hoàn thành học phần.</p>
+        </div>
+      </div>`;
+
+      await notify({
+        user_id: Number(r.id),
+        recipient_email: r.email || r.personal_email,
+        cc_emails: r.personal_email && r.email && r.personal_email !== r.email ? [r.personal_email] : undefined,
+        type: 'final_report_due_reminder',
+        subject,
+        body: textContent,
+        html,
+        send_now: true,
+      });
+      count++;
+    }
+
+    return json({ success: true, count, total: targetStudents.length });
+  }
+
+  if (method === 'GET' && path === '/api/admin/notifications/preview-pending-lecturers') {
+    const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('grading_close_at')")).rows);
+    const rows = (await database.execute(`
+      SELECT f.user_id,
+             u.student_id, u.name as student_name, u.email as student_email, u.class_name, u.course_code,
+             CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+             fr.status as report_status, fr.submitted_at as report_submitted_at,
+             g.status as grade_status,
+             l.id as lecturer_id, l.name as lecturer_name, l.email as lecturer_email, l.work_unit
+      FROM final_internships f
+      JOIN users u ON u.id = f.user_id
+      LEFT JOIN companies c ON c.id = f.company_id
+      LEFT JOIN registrations r ON r.id = f.registration_id
+      LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+      LEFT JOIN grades g ON g.user_id = f.user_id
+      JOIN advisor_assignments aa ON aa.user_id = f.user_id AND aa.role = 'primary'
+      JOIN lecturers l ON l.id = aa.lecturer_id
+      WHERE g.id IS NULL OR g.status != 'submitted'
+      ORDER BY l.name ASC, u.student_id ASC
+    `)).rows as any[];
+
+    const lecturerMap = new Map<number, any>();
+    for (const r of rows) {
+      if (!lecturerMap.has(r.lecturer_id)) {
+        lecturerMap.set(r.lecturer_id, {
+          lecturer_id: r.lecturer_id,
+          lecturer_name: r.lecturer_name,
+          lecturer_email: r.lecturer_email,
+          work_unit: r.work_unit,
+          students: [],
+        });
+      }
+      lecturerMap.get(r.lecturer_id).students.push({
+        user_id: r.user_id,
+        student_id: r.student_id,
+        student_name: cleanStudentName(r.student_name, r.student_id, r.student_email),
+        student_email: r.student_email,
+        class_name: r.class_name,
+        course_code: r.course_code,
+        internship_place: r.internship_place,
+        report_status: r.report_status || 'missing',
+        report_submitted_at: r.report_submitted_at,
+        waiting_for_grade: r.report_status === 'submitted' || r.report_status === 'accepted',
+      });
+    }
+
+    const lecturers = Array.from(lecturerMap.values()).map(l => ({
+      ...l,
+      missing_count: l.students.length,
+      waiting_for_lecturer: l.students.filter((s: any) => s.waiting_for_grade).length,
+      waiting_for_student: l.students.filter((s: any) => !s.waiting_for_grade).length,
+    }));
+
+    return json({
+      lecturers,
+      deadline: settings.grading_close_at || '',
+    });
+  }
+
+  if (method === 'POST' && path === '/api/admin/notifications/remind-pending-lecturers') {
+    const body = await readBody(request);
+    const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('grading_close_at')")).rows);
+    const selectedLecturerIds = Array.isArray(body.lecturerIds) ? body.lecturerIds.map(Number) : null;
+    const customNote = body.customNote?.trim();
+
+    const rows = (await database.execute(`
+      SELECT f.user_id,
+             u.student_id, u.name as student_name, u.email as student_email, u.class_name, u.course_code,
+             CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
+             fr.status as report_status, fr.submitted_at as report_submitted_at,
+             g.status as grade_status,
+             l.id as lecturer_id, l.name as lecturer_name, l.email as lecturer_email, l.work_unit
+      FROM final_internships f
+      JOIN users u ON u.id = f.user_id
+      LEFT JOIN companies c ON c.id = f.company_id
+      LEFT JOIN registrations r ON r.id = f.registration_id
+      LEFT JOIN final_reports fr ON fr.user_id = f.user_id
+      LEFT JOIN grades g ON g.user_id = f.user_id
+      JOIN advisor_assignments aa ON aa.user_id = f.user_id AND aa.role = 'primary'
+      JOIN lecturers l ON l.id = aa.lecturer_id
+      WHERE g.id IS NULL OR g.status != 'submitted'
+      ORDER BY l.name ASC, u.student_id ASC
+    `)).rows as any[];
+
+    const lecturerMap = new Map<number, any>();
+    for (const r of rows) {
+      if (!lecturerMap.has(r.lecturer_id)) {
+        lecturerMap.set(r.lecturer_id, {
+          lecturer_id: r.lecturer_id,
+          lecturer_name: r.lecturer_name,
+          lecturer_email: r.lecturer_email,
+          work_unit: r.work_unit,
+          students: [],
+        });
+      }
+      lecturerMap.get(r.lecturer_id).students.push({
+        user_id: r.user_id,
+        student_id: r.student_id,
+        student_name: cleanStudentName(r.student_name, r.student_id, r.student_email),
+        class_name: r.class_name,
+        course_code: r.course_code,
+        internship_place: r.internship_place,
+        report_status: r.report_status || 'missing',
+        waiting_for_grade: r.report_status === 'submitted' || r.report_status === 'accepted',
+      });
+    }
+
+    const targetLecturers = Array.from(lecturerMap.values()).filter(l =>
+      !selectedLecturerIds || selectedLecturerIds.includes(l.lecturer_id)
+    );
+
+    const deadlineStr = settings.grading_close_at ? ` trước ${settings.grading_close_at.replace('T', ' ')} (GMT+7)` : '';
+    let count = 0;
+
+    for (const gv of targetLecturers) {
+      if (!gv.lecturer_email) continue;
+      const waitingLecturerCount = gv.students.filter((s: any) => s.waiting_for_grade).length;
+      const waitingStudentCount = gv.students.filter((s: any) => !s.waiting_for_grade).length;
+
+      let tableText = 'STT | Mã SV | Họ tên | Lớp | Học phần | Nơi TT | Trạng thái BC | Tình trạng\n';
+      tableText += '-----------------------------------------------------------------------------------\n';
+      gv.students.forEach((s: any, idx: number) => {
+        const condition = s.waiting_for_grade ? 'Chờ Thầy/Cô chấm' : 'Chờ SV nộp báo cáo';
+        const bc = s.report_status === 'submitted' ? 'Đã nộp' : s.report_status === 'accepted' ? 'Đã duyệt' : 'Chưa nộp';
+        tableText += `${idx + 1} | ${s.student_id} | ${s.student_name} | ${s.class_name || '-'} | ${s.course_code || '-'} | ${s.internship_place || '-'} | ${bc} | ${condition}\n`;
+      });
+
+      const subject = `[FIT-UET] Danh sách sinh viên chưa hoàn thành điểm thực tập - GVHD: ${gv.lecturer_name}`;
+      const textContent = `Kính gửi: Thầy/Cô ${gv.lecturer_name},\nĐơn vị: ${gv.work_unit || 'Khoa CNTT'},\n\nKhoa Công nghệ Thông tin kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện CHƯA ĐƯỢC HOÀN THIỆN ĐIỂM trên hệ thống:\n- Tổng số sinh viên chưa có điểm: ${gv.students.length} sinh viên\n  + Trong đó đã nộp báo cáo (chờ Thầy/Cô chấm): ${waitingLecturerCount} sinh viên\n  + Trong đó sinh viên chưa nộp báo cáo: ${waitingStudentCount} sinh viên\n- Thời hạn nhập điểm của Khoa:${deadlineStr || ' theo thông báo của Khoa'}.\n\nCHI TIẾT DANH SÁCH SINH VIÊN:\n${tableText}\n\nKÍNH ĐỀ NGHỊ THẦY/CÔ:\n1. Đối với sinh viên ĐÃ nộp báo cáo: Kính nhờ Thầy/Cô vào hệ thống xem báo cáo và nộp điểm chính thức về Khoa.\n2. Đối với sinh viên CHƯA nộp báo cáo: Kính nhờ Thầy/Cô đôn đốc sinh viên nộp báo cáo trước khi hết hạn.${customNote ? `\n\nGhi chú từ Giáo vụ Khoa:\n${customNote}` : ''}\n\n👉 Đường dẫn vào trang Chấm điểm của Thầy/Cô:\nhttps://fit-uet.github.io/internship-registration-system/#/lecturer/grades\n\nKhoa CNTT xin trân trọng cảm ơn Thầy/Cô!`;
+
+      let rowsHtml = '';
+      gv.students.forEach((s: any, idx: number) => {
+        const condition = s.waiting_for_grade
+          ? '<span style="color: #034ea1; font-weight: bold;">⏳ Chờ Thầy/Cô chấm</span>'
+          : '<span style="color: #c2410c; font-weight: bold;">⚠️ Chờ SV nộp báo cáo</span>';
+        const bc = s.report_status === 'submitted'
+          ? '<span style="color: #15803d; font-weight: bold;">Đã nộp</span>'
+          : s.report_status === 'accepted'
+          ? '<span style="color: #15803d; font-weight: bold;">Đã duyệt</span>'
+          : '<span style="color: #64748b;">Chưa nộp</span>';
+        rowsHtml += `<tr style="border-bottom: 1px solid #e2e8f0; font-size: 12px;">
+          <td style="padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0;">${idx + 1}</td>
+          <td style="padding: 8px 10px; font-weight: bold; border: 1px solid #e2e8f0;">${s.student_id}</td>
+          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.student_name}</td>
+          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.class_name || '-'}</td>
+          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.course_code || '-'}</td>
+          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${s.internship_place || '-'}</td>
+          <td style="padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0;">${bc}</td>
+          <td style="padding: 8px 10px; border: 1px solid #e2e8f0;">${condition}</td>
+        </tr>`;
+      });
+
+      const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #034ea1; color: white; padding: 20px; text-align: center;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: bold;">KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CÔNG NGHỆ</h2>
+          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Danh sách sinh viên chưa hoàn thành điểm thực tập</p>
+        </div>
+        <div style="padding: 24px; background-color: #ffffff;">
+          <p>Kính gửi: <strong>Thầy/Cô ${gv.lecturer_name}</strong>,</p>
+          <p>Đơn vị công tác: <em>${gv.work_unit || 'Khoa Công nghệ Thông tin'}</em>,</p>
+          <p>Khoa CNTT kính gửi Thầy/Cô danh sách sinh viên thực tập do Thầy/Cô hướng dẫn chính hiện <strong>chưa được hoàn thiện điểm</strong> trên hệ thống:</p>
+          <ul style="background-color: #f8fafc; border-left: 4px solid #034ea1; padding: 12px 16px 12px 28px; border-radius: 4px; font-size: 13px; margin: 16px 0;">
+            <li>Tổng số sinh viên chưa có điểm: <strong>${gv.students.length} sinh viên</strong></li>
+            <li>Đã có báo cáo (chờ Thầy/Cô chấm): <strong style="color: #034ea1;">${waitingLecturerCount} sinh viên</strong></li>
+            <li>Sinh viên chưa nộp báo cáo: <strong style="color: #c2410c;">${waitingStudentCount} sinh viên</strong></li>
+            <li>Thời hạn nhập điểm của Khoa: <strong>${deadlineStr || ' Theo kế hoạch đào tạo'}</strong></li>
+          </ul>
+          ${customNote ? `<div style="background-color: #fef3c7; border: 1px solid #fde68a; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #92400e; margin: 16px 0;"><strong>Ghi chú từ Giáo vụ Khoa:</strong> ${customNote}</div>` : ''}
+          <div style="overflow-x: auto; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #cbd5e1;">
+              <thead>
+                <tr style="background-color: #f1f5f9; text-align: left; color: #475569;">
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">STT</th>
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Mã SV</th>
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Họ và tên</th>
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Lớp</th>
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Môn</th>
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Nơi thực tập</th>
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center;">Báo cáo</th>
+                  <th style="padding: 8px 10px; border: 1px solid #cbd5e1;">Tình trạng</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+          <div style="text-align: center; margin: 28px 0 20px 0;">
+            <a href="https://fit-uet.github.io/internship-registration-system/#/lecturer/grades" style="background-color: #034ea1; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Vào Bảng Chấm Điểm Của Thầy/Cô</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b;">Khoa CNTT xin trân trọng cảm ơn Thầy/Cô!</p>
+        </div>
+      </div>`;
+
+      const userMatch = (await database.execute({
+        sql: 'SELECT id FROM users WHERE email = ? LIMIT 1',
+        args: [gv.lecturer_email],
+      })).rows[0] as any;
+
+      await notify({
+        user_id: userMatch ? Number(userMatch.id) : null,
+        recipient_email: gv.lecturer_email,
+        type: 'lecturer_grade_pending_reminder',
+        subject,
+        body: textContent,
+        html,
+        send_now: true,
+      });
+      count++;
+    }
+
+    return json({ success: true, count, total: targetLecturers.length });
   }
 
   if (method === 'POST' && path === '/api/admin/notifications/final-confirmation-open') {
@@ -4476,6 +4973,9 @@ export default {
   async scheduled(event: any, env: Env, ctx: any) {
     try {
       const database = db(env);
+      await checkAndQueueScheduledRemindersWorker(database).catch(e => {
+        console.error('Worker scheduled auto reminder error:', e?.message || e);
+      });
       if (env.RESEND_API_KEY && env.EMAIL_FROM) {
         await sendQueuedNotificationBatch(database, env, { ignoreBatchSize: true });
       }

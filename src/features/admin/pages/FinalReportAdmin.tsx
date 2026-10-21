@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { Download, Search, FileText, ChevronLeft, CheckCircle2, AlertCircle, Clock, FileCheck } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Download, Search, FileText, ChevronLeft, CheckCircle2, AlertCircle, Clock, FileCheck, Mail, X, Loader2, Send } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, paginationBounds, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
 
@@ -10,6 +10,13 @@ export function FinalReportAdmin({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [courseCodeFilter, setCourseCodeFilter] = useState('');
+  const [advisorFilter, setAdvisorFilter] = useState('');
+  const [showRemindModal, setShowRemindModal] = useState(false);
+  const [reminding, setReminding] = useState(false);
+  const [remindSuccess, setRemindSuccess] = useState<string | null>(null);
+  const [customRemindNote, setCustomRemindNote] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
@@ -62,23 +69,44 @@ export function FinalReportAdmin({ token }: { token: string }) {
     else alert('Cập nhật trạng thái thất bại.');
   };
 
+  const advisorOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach(r => {
+      if (r.primary_advisors) {
+        r.primary_advisors.split(',').forEach((name: string) => {
+          const trimmed = name.trim();
+          if (trimmed && trimmed !== 'Giảng viên đã bị xóa') set.add(trimmed);
+        });
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [rows]);
+
+  const pendingStudents = useMemo(() => {
+    return rows.filter(r => !r.report_status || r.report_status === 'missing' || r.report_status === 'needs_revision');
+  }, [rows]);
+
   const filtered = rows.filter((row) => {
     const term = searchTerm.trim().toLowerCase();
     const status = row.report_status || 'missing';
     const matchStatus = statusFilter ? status === statusFilter : true;
+    const matchCourse = courseCodeFilter ? row.course_code === courseCodeFilter : true;
+    const matchAdvisor = advisorFilter ? (row.primary_advisors || '').includes(advisorFilter) : true;
     const matchTerm =
       !term ||
       row.student_id?.toLowerCase().includes(term) ||
       row.student_name?.toLowerCase().includes(term) ||
+      row.email?.toLowerCase().includes(term) ||
+      cleanStudentName(row.student_name, row.student_id, row.email).toLowerCase().includes(term) ||
       row.internship_place?.toLowerCase().includes(term) ||
       row.primary_advisors?.toLowerCase().includes(term) ||
       row.co_advisors?.toLowerCase().includes(term);
-    return matchStatus && matchTerm;
+    return matchStatus && matchCourse && matchAdvisor && matchTerm;
   });
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, rows.length]);
+  }, [searchTerm, statusFilter, courseCodeFilter, advisorFilter, rows.length]);
 
   const pagination = paginationBounds(filtered.length, currentPage, pageSize);
   const paginatedRows = filtered.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
@@ -94,11 +122,13 @@ export function FinalReportAdmin({ token }: { token: string }) {
     const headers = [
       'STT',
       'Mã SV',
-      'Họ tên',
+      'Họ và tên',
+      'Email VNU',
       'Lớp',
       'Mã môn',
       'Nơi thực tập',
       'GVHD chính',
+      'Email GVHD',
       'Đồng hướng dẫn',
       'Trạng thái',
       'Tên file',
@@ -109,19 +139,48 @@ export function FinalReportAdmin({ token }: { token: string }) {
     const data = filtered.map((row, idx) => [
       idx + 1,
       row.student_id || '',
-      cleanStudentName(row.student_name, row.student_id),
+      cleanStudentName(row.student_name, row.student_id, row.email),
+      row.email || '',
       row.class_name || '',
       formatCourseCode(row.course_code),
       row.internship_place || '',
       row.primary_advisors || '',
+      row.primary_advisors_email || '',
       row.co_advisors || '',
       statusLabel(row.report_status),
       row.original_filename || '',
-      row.file_size || '',
+      formatBytes(row.file_size),
       row.report_submitted_at || '',
       row.lecturer_comment || '',
     ]);
     saveXlsx('bao_cao_thuc_tap.xlsx', headers, data, 'Báo cáo');
+  };
+
+  const handleSendReminders = async () => {
+    setReminding(true);
+    setRemindSuccess(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/notifications/remind-pending-students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          userIds: selectedStudentIds.length > 0 ? selectedStudentIds : undefined,
+          customNote: customRemindNote,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error || 'Gửi nhắc nhở thất bại.');
+      setRemindSuccess(`Đã gửi email nhắc nhở thành công tới ${data.count || 0} sinh viên!`);
+      setTimeout(() => {
+        setShowRemindModal(false);
+        setRemindSuccess(null);
+        setCustomRemindNote('');
+      }, 2000);
+    } catch (e: any) {
+      alert(e.message || 'Lỗi kết nối khi gửi nhắc nhở.');
+    } finally {
+      setReminding(false);
+    }
   };
 
   if (loading) {
@@ -159,14 +218,27 @@ export function FinalReportAdmin({ token }: { token: string }) {
           </div>
         </div>
 
-        {/* Top Action */}
-        <button
-          onClick={exportXlsx}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto"
-        >
-          <Download size={14} className="text-[#64748b]" />
-          Xuất XLSX
-        </button>
+        {/* Top Actions */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={() => {
+              setSelectedStudentIds(pendingStudents.map(s => Number(s.user_id)));
+              setShowRemindModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#b45309] bg-amber-50 border border-amber-200 hover:bg-amber-100 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            title="Gửi email nhắc nhở sinh viên chưa nộp báo cáo hoặc cần nộp lại"
+          >
+            <Mail size={14} className="text-amber-600" />
+            Nhắc SV chưa nộp ({pendingStudents.length})
+          </button>
+          <button
+            onClick={exportXlsx}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+          >
+            <Download size={14} className="text-[#64748b]" />
+            Xuất XLSX ({filtered.length})
+          </button>
+        </div>
       </div>
 
       {/* Apple Executive KPI Row */}
@@ -232,11 +304,35 @@ export function FinalReportAdmin({ token }: { token: string }) {
           />
         </div>
 
-        <div className="flex items-center gap-2 self-end md:self-auto w-full md:w-auto">
+        <div className="flex items-center gap-2 self-end md:self-auto w-full md:w-auto flex-wrap">
+          <select
+            value={courseCodeFilter}
+            onChange={(e) => setCourseCodeFilter(e.target.value)}
+            className="border border-black/[0.08] rounded-full px-3.5 py-2 text-xs font-semibold bg-[#f8fafc] hover:bg-[#e8e8ed] text-[#0f172a] outline-none cursor-pointer"
+          >
+            <option value="">Tất cả học phần</option>
+            <option value="INT3508">INT3508 - TT Chuyên ngành</option>
+            <option value="INT4002">INT4002 - TT Doanh nghiệp</option>
+            <option value="INT4003">INT4003 - TT DN Nhật Bản</option>
+          </select>
+
+          <select
+            value={advisorFilter}
+            onChange={(e) => setAdvisorFilter(e.target.value)}
+            className="border border-black/[0.08] rounded-full px-3.5 py-2 text-xs font-semibold bg-[#f8fafc] hover:bg-[#e8e8ed] text-[#0f172a] outline-none cursor-pointer max-w-[180px] truncate"
+          >
+            <option value="">Tất cả GVHD</option>
+            {advisorOptions.map((adv) => (
+              <option key={adv} value={adv}>
+                {adv}
+              </option>
+            ))}
+          </select>
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full md:w-auto border border-black/[0.08] rounded-full px-4 py-2 text-xs font-semibold bg-[#f8fafc] hover:bg-[#e8e8ed] text-[#0f172a] outline-none cursor-pointer"
+            className="border border-black/[0.08] rounded-full px-3.5 py-2 text-xs font-semibold bg-[#f8fafc] hover:bg-[#e8e8ed] text-[#0f172a] outline-none cursor-pointer"
           >
             <option value="">Tất cả trạng thái nộp</option>
             <option value="missing">Chưa nộp</option>
@@ -368,6 +464,166 @@ export function FinalReportAdmin({ token }: { token: string }) {
           label="báo cáo"
         />
       </div>
+
+      {/* Modal Nhắc Sinh Viên Nộp Báo Cáo */}
+      {showRemindModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowRemindModal(false); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-100">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                  <Mail size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Gửi Email Nhắc Sinh Viên Nộp Báo Cáo</h3>
+                  <p className="text-[11px] text-slate-500">Tự động gửi email tới hộp thư VNU (@vnu.edu.vn) và chuông thông báo</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRemindModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/50 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
+              {remindSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-semibold flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  {remindSuccess}
+                </div>
+              )}
+
+              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-1.5">
+                <div className="font-bold text-amber-900 flex items-center justify-between">
+                  <span>Đối tượng nhận thông báo:</span>
+                  <span className="text-amber-800 font-extrabold">{selectedStudentIds.length} / {pendingStudents.length} sinh viên</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Bao gồm các sinh viên trong danh sách thực tập chính thức <strong>chưa nộp file báo cáo PDF</strong> hoặc <strong>được yêu cầu nộp lại</strong>.
+                </p>
+              </div>
+
+              {/* Danh sách sinh viên */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                    Danh sách sinh viên ({selectedStudentIds.length}):
+                  </label>
+                  <div className="flex gap-2 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStudentIds(pendingStudents.map(s => Number(s.user_id)))}
+                      className="text-[#034ea1] hover:underline font-semibold cursor-pointer"
+                    >
+                      Chọn tất cả
+                    </button>
+                    <span>|</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStudentIds([])}
+                      className="text-slate-500 hover:underline cursor-pointer"
+                    >
+                      Bỏ chọn
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-[#f8fafc]">
+                  {pendingStudents.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400 italic">Không có sinh viên nào đang thiếu báo cáo.</div>
+                  ) : (
+                    pendingStudents.map((s) => {
+                      const isSelected = selectedStudentIds.includes(Number(s.user_id));
+                      return (
+                        <label
+                          key={s.user_id}
+                          className="flex items-center gap-2.5 px-3 py-2 hover:bg-white transition-colors cursor-pointer text-xs"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedStudentIds(prev => [...prev, Number(s.user_id)]);
+                              else setSelectedStudentIds(prev => prev.filter(id => id !== Number(s.user_id)));
+                            }}
+                            className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1]"
+                          />
+                          <span className="font-bold text-slate-800 w-20 shrink-0">{s.student_id}</span>
+                          <span className="font-medium text-slate-900 flex-1 truncate">{s.student_name}</span>
+                          <span className="text-[11px] text-slate-500 shrink-0">{s.class_name || s.course_code || '-'}</span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                            s.report_status === 'needs_revision'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {s.report_status === 'needs_revision' ? 'Cần nộp lại' : 'Chưa nộp'}
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Ghi chú thêm từ giáo vụ */}
+              <div>
+                <label className="block font-bold text-slate-800 text-[11px] uppercase tracking-wider mb-1">
+                  Ghi chú bổ sung từ Giáo vụ Khoa (Tùy chọn):
+                </label>
+                <textarea
+                  value={customRemindNote}
+                  onChange={(e) => setCustomRemindNote(e.target.value)}
+                  placeholder="Ví dụ: Đề nghị các bạn hoàn thành trước 17h00 ngày 25/06/2026 để Khoa tiến hành niêm phong danh sách..."
+                  rows={2}
+                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-[#f8fafc] focus:bg-white focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none"
+                />
+              </div>
+
+              {/* Mẫu email preview */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] text-slate-600 space-y-1">
+                <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wider">Mẫu thư gửi đi:</span>
+                <p><strong>Tiêu đề:</strong> [FIT-UET] Nhắc nộp Báo cáo Thực tập tốt nghiệp</p>
+                <p><strong>Nội dung:</strong> Thông báo đích danh sinh viên, học phần, nơi thực tập, hạn chót và đính kèm link nộp trực tiếp.</p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowRemindModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={reminding || selectedStudentIds.length === 0}
+                onClick={handleSendReminders}
+                className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                {reminding ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    Đang gửi email...
+                  </>
+                ) : (
+                  <>
+                    <Send size={13} />
+                    Gửi email nhắc nhở ({selectedStudentIds.length})
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export interface ReviewTarget {
   company_score?: number | string | null;
   final_score?: number | string | null;
   comment?: string | null;
-  grade_status?: string;         // 'draft' | 'submitted'
+  grade_status?: string;         // 'submitted'
   locked_at?: string | null;
   // Quyền
   is_primary?: boolean;
@@ -131,7 +131,7 @@ export function ReportReviewPanel({
   const [company, setCompany] = useState(String(target.company_score ?? ''));
   const [noteText, setNoteText] = useState(target.comment ?? '');
   const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({});
-  const [gradeSaving, setGradeSaving] = useState<null | 'draft' | 'submit'>(null);
+  const [gradeSaving, setGradeSaving] = useState(false);
   const [gradeSuccess, setGradeSuccess] = useState<string | null>(null);
 
   const finalScore = calcFinal(progress, report, company);
@@ -317,7 +317,7 @@ export function ReportReviewPanel({
     return true;
   };
 
-  const saveGrade = async (submit: boolean) => {
+  const saveGrade = async () => {
     if (!uid) return;
     const allValid = [
       validateScore(progress, 'progress'),
@@ -325,40 +325,36 @@ export function ReportReviewPanel({
       validateScore(company, 'company'),
     ].every(Boolean);
     if (!allValid) return;
-    if (submit && [progress, report, company].some(v => v === '')) {
-      alert('Vui lòng nhập đủ 3 đầu điểm trước khi nộp.');
+    if ([progress, report, company].some(v => v === '')) {
+      alert('Vui lòng nhập đủ 3 đầu điểm trước khi nộp điểm.');
       return;
     }
 
-    setGradeSaving(submit ? 'submit' : 'draft');
+    setGradeSaving(true);
     setGradeSuccess(null);
     try {
-      const endpoint = `${API_BASE}/api/lecturer/grades/${uid}${submit ? '/submit' : ''}`;
+      const endpoint = `${API_BASE}/api/lecturer/grades/${uid}/submit`;
       const res = await fetch(endpoint, {
-        method: submit ? 'POST' : 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          progress_score: progress === '' ? null : Number(progress),
-          report_score: report === '' ? null : Number(report),
-          company_score: company === '' ? null : Number(company),
+          progress_score: Number(progress),
+          report_score: Number(report),
+          company_score: Number(company),
           comment: noteText,
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert(data.error || 'Lưu điểm thất bại.'); return; }
-      if (submit) {
-        setGradeSuccess('Đã nộp điểm thành công!');
-        setLocalReportStatus('accepted');
-        setLocalGradeStatus('submitted');
-        target.grade_status = 'submitted';
-        onReportStatusChange?.();
-      } else {
-        setGradeSuccess('Đã lưu nháp điểm.');
-      }
+      if (!res.ok) { alert(data.error || 'Nộp điểm thất bại.'); return; }
+      setGradeSuccess(localGradeStatus === 'submitted' ? 'Đã cập nhật điểm thành công!' : 'Đã nộp điểm thành công!');
+      setLocalReportStatus('accepted');
+      setLocalGradeStatus('submitted');
+      target.grade_status = 'submitted';
+      onReportStatusChange?.();
       onGradeChange?.();
       setTimeout(() => setGradeSuccess(null), 3000);
     } finally {
-      setGradeSaving(null);
+      setGradeSaving(false);
     }
   };
 
@@ -734,24 +730,16 @@ export function ReportReviewPanel({
                   />
                 </div>
 
-                {/* Nút lưu / nộp */}
+                {/* Nút nộp / cập nhật điểm */}
                 {isPrimary && !locked && (
-                  <div className="flex gap-2 pt-1">
+                  <div className="pt-1">
                     <button
-                      disabled={gradeSaving !== null}
-                      onClick={() => saveGrade(false)}
-                      className="flex-1 py-2 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                      disabled={gradeSaving}
+                      onClick={saveGrade}
+                      className="w-full py-2 px-3 rounded-lg bg-[#034ea1] hover:bg-[#023a7a] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                     >
-                      {gradeSaving === 'draft' && <Loader2 size={12} className="animate-spin inline mr-1" />}
-                      Lưu nháp
-                    </button>
-                    <button
-                      disabled={gradeSaving !== null}
-                      onClick={() => saveGrade(true)}
-                      className="flex-1 py-2 px-3 rounded-lg bg-[#034ea1] hover:bg-[#023a7a] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      {gradeSaving === 'submit' && <Loader2 size={12} className="animate-spin inline mr-1" />}
-                      Nộp điểm
+                      {gradeSaving && <Loader2 size={13} className="animate-spin" />}
+                      <span>{localGradeStatus === 'submitted' ? 'Cập nhật điểm' : 'Nộp điểm cho Khoa'}</span>
                     </button>
                   </div>
                 )}

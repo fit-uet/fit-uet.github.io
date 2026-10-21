@@ -193,7 +193,7 @@ Hiện tại giảng viên có thể:
 - Xem kế hoạch triển khai.
 - Xem danh sách sinh viên được phân công.
 - Tải và cập nhật trạng thái báo cáo final của sinh viên phụ trách.
-- Nhập/lưu nháp/nộp điểm thực tập cho sinh viên mình là GVHD chính.
+- Nhập và nộp điểm thực tập cho sinh viên mình là GVHD chính (có thể cập nhật điểm trước khi Khoa khóa bảng điểm).
 
 ## 4. Mô hình dữ liệu hiện tại
 
@@ -440,7 +440,7 @@ Lưu ý cấu hình Google OAuth/Drive:
 | Sinh viên báo cáo định kỳ với giảng viên | Nghiệp vụ thực hiện qua email, không cần quản lý chi tiết trên hệ thống | Ngoài phạm vi hệ thống |
 | Sinh viên nộp báo cáo thực tập | Có upload báo cáo final PDF theo khoảng thời gian mở/đóng nộp, giới hạn 10 MB | Đáp ứng phần chính |
 | Giảng viên đánh giá và chấm điểm | Có nhập 3 đầu điểm và tự tính điểm tổng kết theo công thức 20/20/60 | Đáp ứng phần chính |
-| Giảng viên nộp điểm cho Khoa | Có lưu nháp/nộp điểm, admin xem trạng thái | Đáp ứng phần chính |
+| Giảng viên nộp điểm cho Khoa | Nhập và nộp/cập nhật điểm chính thức, admin xem và khóa bảng điểm | Đáp ứng đầy đủ |
 | Khoa tổng hợp và nhập hệ thống đào tạo | Có trang bảng điểm và export XLSX cuối kỳ | Đáp ứng phần chính |
 | Sinh viên đăng ký học phần trên daotao.vnu.edu.vn | Hệ thống chỉ lưu học phần sinh viên chọn, chưa đối soát với hệ thống đào tạo | Đáp ứng nhắc nhở, chưa kiểm chứng |
 
@@ -929,7 +929,7 @@ Bên phải — Grading Panel (35–38% chiều rộng, chuẩn Apple Inset Grou
   - Lưới 3 cột ngang nhỏ gọn: Định kỳ (20%), Báo cáo (20%), Đơn vị/GV (60%).
   - Điểm tổng kết: Hiển thị 1 dòng sạch sẽ, điểm số nổi bật tính tự động realtime.
   - Ghi chú/Nhận xét: Textarea tối giản, không chiếm diện tích cuộn.
-  - Cụm nút bấm chuẩn Apple: **Lưu nháp** (Secondary) và **Nộp điểm cho Khoa** (Primary SF Blue).
+  - Nút bấm chuẩn Apple: **Nộp điểm cho Khoa** (hoặc **Cập nhật điểm** nếu đã nộp). Bỏ nút "Lưu nháp" để tinh giản quy trình chấm và tránh tình trạng sót điểm nháp.
 - Toàn bộ nội dung cột phải vừa vặn trong 1 màn hình chuẩn, không cần cuộn trang.
 
 **Cơ chế Tối ưu Hiệu năng & Cache PDF (Tránh tải lại file qua mạng):**
@@ -939,7 +939,7 @@ Bên phải — Grading Panel (35–38% chiều rộng, chuẩn Apple Inset Grou
    - Khi giảng viên ấn xem báo cáo lần đầu, file PDF được tải và tạo `Blob URL` lưu vào cache.
    - Khi giảng viên đóng panel và **ấn lại vào bài đã nộp của sinh viên đó** (hoặc chuyển qua lại giữa các sinh viên bằng phím tắt `[` / `]`), panel lấy ngay `Blob URL` từ bộ nhớ đệm: **hiển thị tức thì 0ms, không tốn thêm băng thông mạng và không có màn hình chờ xoay loading**.
 2. **Tách biệt vòng đời Form Chấm điểm và PDF Viewer**:
-   - Thao tác chấm bài, lưu nháp hay nộp điểm chỉ cập nhật trạng thái dữ liệu điểm và nhãn báo cáo (`localReportStatus`).
+   - Thao tác chấm bài nộp điểm chỉ cập nhật trạng thái dữ liệu điểm và nhãn báo cáo (`localReportStatus`).
    - Tuyệt đối không gắn trạng thái chấm điểm vào dependency của PDF loader. Do đó, sau khi chấm xong, file PDF vẫn giữ nguyên trên màn hình, không bị giật hay kích hoạt tải lại.
 3. **Backend HTTP Caching & ETag Validation**:
    - Endpoint `GET /api/reports/final/:userId/view` trả kèm `ETag: "<id>-<file_size>-<timestamp>"` và `Cache-Control: private, max-age=3600, must-revalidate`.
@@ -972,7 +972,7 @@ CREATE TABLE IF NOT EXISTS grades (
   report_score REAL,
   company_score REAL,
   final_score REAL,
-  status TEXT NOT NULL DEFAULT 'draft',
+  status TEXT NOT NULL DEFAULT 'submitted',
   comment TEXT,
   submitted_at DATETIME,
   locked_at DATETIME,
@@ -987,15 +987,15 @@ Quy tắc điểm:
 - `company_score`: 60%, giảng viên nhập dựa trên trao đổi/bản cứng.
 - `final_score = Math.round((progress_score * 0.2 + report_score * 0.2 + company_score * 0.6) * 10) / 10` (chỉ làm tròn đến một chữ số sau phần thập phân theo quy chế đào tạo).
 - Điểm hợp lệ từ 0 đến 10.
-- Giảng viên có thể lưu nháp.
+- Giảng viên nhập và nộp điểm chính thức về Khoa (có thể cập nhật lại điểm nếu chưa bị Khoa khóa).
 - Khi `submitted`, admin nhìn thấy để tổng hợp.
 - Khi `locked`, chỉ admin mở khóa mới sửa được.
 
 Thiết kế API:
 
 - `GET /api/lecturer/grades`: giảng viên xem danh sách điểm.
-- `PUT /api/lecturer/grades/:userId`: lưu điểm nháp.
-- `POST /api/lecturer/grades/:userId/submit`: nộp điểm.
+- `PUT /api/lecturer/grades/:userId`: nộp/cập nhật điểm chính thức.
+- `POST /api/lecturer/grades/:userId/submit`: nộp/cập nhật điểm chính thức.
 - `GET /api/admin/grades`: admin xem toàn bộ điểm.
 - `PUT /api/admin/grades/:userId/lock`: khóa/mở khóa điểm từng sinh viên.
 - `PUT /api/admin/grades/lock-all`: khóa tất cả điểm đã nộp hoặc mở khóa toàn bộ bảng điểm (`{ locked: boolean, onlySubmitted?: boolean }`).
@@ -1012,13 +1012,13 @@ Thiết kế UI:
   - Chặn sửa khi điểm đã bị admin khoá hoặc khi hết thời hạn chấm điểm (panel vẫn mở được để xem báo cáo, form chuyển read-only).
   - Tự tính điểm tổng kết realtime khi nhập.
   - Cảnh báo thiếu báo cáo final hoặc chưa xác nhận nơi thực tập ngay trong panel.
-  - Nút “Nộp điểm cho Khoa” nằm trong panel.
+  - Nút “Nộp điểm cho Khoa” (hoặc “Cập nhật điểm”) nằm trong panel và trong bảng danh sách.
 - Admin:
   - Cài đặt hệ thống: cấu hình mốc “Mở chấm điểm lúc” (`grading_open_at`) và “Đóng chấm điểm lúc” (`grading_close_at`).
   - Site “Bảng điểm”.
   - Nút “Khóa tất cả đã nộp” và “Mở khóa tất cả” để niêm phong nhanh bảng điểm trước khi nộp Phòng Đào tạo.
-  - Lọc theo chưa có/nháp/đã nộp.
-  - Dashboard tổng hợp: chưa có điểm, nháp, đã nộp, đã khoá.
+  - Lọc theo chưa có/đã nộp.
+  - Dashboard tổng hợp: chưa có điểm, đã nộp, đã khoá.
   - Khoá/mở khoá điểm từng sinh viên.
   - Admin cũng mở được inline review panel để xem báo cáo (form điểm ở chế độ read-only với admin).
   - Xuất XLSX để tổng hợp và nhập hệ thống.

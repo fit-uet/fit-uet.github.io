@@ -38,6 +38,7 @@ export async function sendNotificationEmail(notificationId: number, data: {
   cc_emails?: string[];
   subject: string;
   body: string;
+  html?: string;
 }) {
   const from = process.env.EMAIL_FROM || process.env.NOTIFICATION_EMAIL_FROM;
   const provider = (process.env.EMAIL_PROVIDER || (process.env.BREVO_API_KEY ? 'brevo' : process.env.RESEND_API_KEY ? 'resend' : '')).toLowerCase();
@@ -46,6 +47,9 @@ export async function sendNotificationEmail(notificationId: number, data: {
   try {
     let response: Response;
     let providerMessageId: string | null = null;
+    const plainText = data.body ? data.body.replace(/<[^>]+>/g, '') : '';
+    const htmlContent = data.html || (data.body && data.body.includes('<') ? data.body : undefined);
+
     if (provider === 'brevo') {
       const apiKey = process.env.BREVO_API_KEY;
       if (!apiKey) return 'queued';
@@ -61,7 +65,8 @@ export async function sendNotificationEmail(notificationId: number, data: {
           to: [parseEmailAddress(data.recipient_email)],
           ...((data.cc_emails || []).length > 0 ? { cc: data.cc_emails.map(parseEmailAddress) } : {}),
           subject: data.subject,
-          textContent: data.body,
+          ...(htmlContent ? { htmlContent } : {}),
+          textContent: plainText || data.body,
         }),
       });
     } else if (provider === 'resend') {
@@ -78,7 +83,8 @@ export async function sendNotificationEmail(notificationId: number, data: {
           to: [data.recipient_email],
           ...((data.cc_emails || []).length > 0 ? { cc: data.cc_emails } : {}),
           subject: data.subject,
-          text: data.body,
+          ...(htmlContent ? { html: htmlContent } : {}),
+          text: plainText || data.body,
         }),
       });
     } else {
