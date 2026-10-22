@@ -213,7 +213,7 @@ lecturerRouter.put('/api/reports/final/:userId/status', requireAuth, async (req:
     recipient_email: student?.personal_email || student?.email,
     type: 'final_report_status_changed',
     subject: 'Cập nhật trạng thái báo cáo',
-    body: `Báo cáo của bạn đã được cập nhật trạng thái: ${status === 'accepted' ? 'Đã nộp điểm' : status === 'needs_revision' ? 'Cần nộp lại' : 'Đã nộp'}.${req.body.lecturer_comment ? `\nGhi chú: ${req.body.lecturer_comment}` : ''}`,
+    body: `Báo cáo của bạn đã được cập nhật trạng thái: ${status === 'accepted' ? 'Đã duyệt' : status === 'needs_revision' ? 'Cần nộp lại' : 'Đã nộp'}.${req.body.lecturer_comment ? `\nGhi chú: ${req.body.lecturer_comment}` : ''}`,
   });
   res.json({ success: true });
 });

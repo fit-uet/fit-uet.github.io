@@ -154,7 +154,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
   };
 
   const reportStatusLabel = (status?: string) => {
-    if (status === 'accepted') return 'Đã nộp điểm';
+    if (status === 'accepted') return 'Đã duyệt';
     if (status === 'needs_revision') return 'Cần nộp lại';
     if (status === 'submitted') return 'Đã nộp';
     return 'Chưa nộp';

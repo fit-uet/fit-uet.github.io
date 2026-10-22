@@ -54,12 +54,16 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
     });
   }, [token]);
 
-  const statusLabel = (status?: string, gradeStatus?: string) =>
-    status === 'accepted' || gradeStatus === 'submitted'
+  const isRowGraded = (row: any) =>
+    row.grade_status === 'submitted' ||
+    (row.final_score !== null && row.final_score !== undefined && row.final_score !== '');
+
+  const statusLabel = (status?: string, gradeStatus?: string, finalScore?: any) =>
+    (gradeStatus === 'submitted' || (finalScore !== null && finalScore !== undefined && finalScore !== ''))
       ? 'Đã nộp điểm'
       : status === 'needs_revision'
       ? 'Cần nộp lại'
-      : status === 'submitted'
+      : (status === 'submitted' || status === 'accepted')
       ? 'Chưa chấm điểm'
       : 'Chưa nộp';
 
@@ -404,14 +408,16 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
                           <div className="flex flex-col gap-1 items-start">
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                                row.report_status === 'accepted' || row.grade_status === 'submitted'
+                                isRowGraded(row)
                                   ? 'bg-[#dcfce7] text-[#1d833f] border-emerald-200/60'
                                   : row.report_status === 'needs_revision'
                                   ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
+                                  : (row.report_status === 'submitted' || row.report_status === 'accepted' || row.original_filename)
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200/60'
                                   : 'bg-[#fee2e2] text-[#b91c1c] border-red-200/60'
                               }`}
                             >
-                              {statusLabel(row.report_status, row.grade_status)}
+                              {statusLabel(row.report_status, row.grade_status, row.final_score)}
                             </span>
 
                             <div className="flex items-center gap-1 mt-0.5">

@@ -59,16 +59,18 @@ interface Props {
 const pdfBlobCache = new Map<number, { blob: Blob; url: string; filename?: string; timestamp: number }>();
 
 const reportStatusLabel = (s?: string, gradeStatus?: string) =>
-  s === 'accepted' || gradeStatus === 'submitted' ? 'Đã nộp điểm'
+  gradeStatus === 'submitted' ? 'Đã nộp điểm'
   : s === 'needs_revision' ? 'Cần nộp lại'
-  : s === 'submitted' ? 'Chưa chấm điểm'
+  : (s === 'submitted' || s === 'accepted') ? 'Chưa chấm điểm'
   : 'Chưa nộp';
 
 const reportStatusBadgeClass = (s?: string, gradeStatus?: string) =>
-  s === 'accepted' || gradeStatus === 'submitted'
+  gradeStatus === 'submitted'
     ? 'bg-[#dcfce7] text-[#15803d] border-emerald-200/60'
     : s === 'needs_revision'
     ? 'bg-[#ffedd5] text-[#b25e00] border-amber-200/60'
+    : (s === 'submitted' || s === 'accepted')
+    ? 'bg-blue-50 text-blue-700 border-blue-200/60'
     : 'bg-[#fee2e2] text-[#b91c1c] border-red-200/60';
 
 const calcFinal = (p: string, r: string, c: string) => {
@@ -182,6 +184,9 @@ export function ReportReviewPanel({
         }
         if (g.comment) {
           setNoteText(g.comment);
+        }
+        if (g.status) {
+          setLocalGradeStatus(g.status);
         }
       } catch {}
     })();
