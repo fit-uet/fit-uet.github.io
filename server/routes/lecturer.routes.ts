@@ -214,6 +214,7 @@ lecturerRouter.put('/api/reports/final/:userId/status', requireAuth, async (req:
     type: 'final_report_status_changed',
     subject: 'Cập nhật trạng thái báo cáo',
     body: `Báo cáo của bạn đã được cập nhật trạng thái: ${status === 'accepted' ? 'Đã duyệt' : status === 'needs_revision' ? 'Cần nộp lại' : 'Đã nộp'}.${req.body.lecturer_comment ? `\nGhi chú: ${req.body.lecturer_comment}` : ''}`,
+    send_now: true,
   });
   res.json({ success: true });
 });
@@ -286,6 +287,7 @@ lecturerRouter.put('/api/lecturer/grades/:userId', requireAuth, async (req: any,
     type: 'grade_submitted',
     subject: 'GVHD đã nộp điểm thực tập',
     body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+    send_now: true,
   });
   res.json(result.row);
 });
@@ -305,6 +307,7 @@ lecturerRouter.post('/api/lecturer/grades/:userId/submit', requireAuth, async (r
     type: 'grade_submitted',
     subject: 'GVHD đã nộp điểm thực tập',
     body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+    send_now: true,
   });
   res.json(result.row);
 });

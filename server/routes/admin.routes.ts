@@ -1700,6 +1700,7 @@ adminRouter.put('/api/admin/grades/:userId/lock', requireAuth, requireAdmin, asy
         type: 'grade_submitted',
         subject: 'Khoa đã khóa điểm thực tập',
         body: `Khoa đã khóa điểm thực tập của bạn. Điểm tổng kết: ${row?.final_score !== null && row?.final_score !== undefined ? Number(row.final_score).toFixed(1) : '-'}.`,
+        send_now: true,
       });
     }
     res.json({ success: true });

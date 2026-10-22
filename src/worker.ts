@@ -2522,6 +2522,7 @@ async function route(request: Request, env: Env, ctx?: any) {
       type: 'final_report_status_changed',
       subject: 'Cập nhật trạng thái báo cáo',
       body: `Báo cáo của bạn đã được cập nhật trạng thái: ${status === 'accepted' ? 'Đã duyệt' : status === 'needs_revision' ? 'Cần nộp lại' : 'Đã nộp'}.${body.lecturer_comment ? `\nGhi chú: ${body.lecturer_comment}` : ''}`,
+      send_now: true,
     });
     return json({ success: true });
   }
@@ -2643,6 +2644,7 @@ async function route(request: Request, env: Env, ctx?: any) {
       type: 'grade_submitted',
       subject: 'GVHD đã nộp điểm thực tập',
       body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+      send_now: true,
     });
     return json(result.row);
   }
@@ -2664,6 +2666,7 @@ async function route(request: Request, env: Env, ctx?: any) {
       type: 'grade_submitted',
       subject: 'GVHD đã nộp điểm thực tập',
       body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+      send_now: true,
     });
     return json(result.row);
   }
@@ -3876,6 +3879,7 @@ async function route(request: Request, env: Env, ctx?: any) {
         type: 'grade_submitted',
         subject: 'Khoa đã khóa điểm thực tập',
         body: `Khoa đã khóa điểm thực tập của bạn. Điểm tổng kết: ${row?.final_score !== null && row?.final_score !== undefined ? Number(row.final_score).toFixed(1) : '-'}.`,
+        send_now: true,
       });
     }
     return json({ success: true });
