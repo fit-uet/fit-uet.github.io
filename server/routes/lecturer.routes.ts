@@ -280,15 +280,18 @@ lecturerRouter.put('/api/lecturer/grades/:userId', requireAuth, async (req: any,
   if (!lecturerId) return res.status(403).json({ error: 'Chỉ GVHD chính được nhập điểm cho sinh viên này.' });
   const result = await saveGradeForStudent(userId, lecturerId, req.body, req.user.role);
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
-  const student = (await db.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
-  await createNotification({
-    user_id: userId,
-    recipient_email: student?.personal_email || student?.email,
-    type: 'grade_submitted',
-    subject: 'GVHD đã nộp điểm thực tập',
-    body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
-    send_now: true,
-  });
+  const notifySettingPut = (await db.execute("SELECT value FROM settings WHERE key = 'notify_on_grade_submission' LIMIT 1")).rows[0] as any;
+  if (notifySettingPut?.value !== '0') {
+    const student = (await db.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
+    await createNotification({
+      user_id: userId,
+      recipient_email: student?.personal_email || student?.email,
+      type: 'grade_submitted',
+      subject: 'GVHD đã nộp điểm thực tập',
+      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+      send_now: true,
+    });
+  }
   res.json(result.row);
 });
 
@@ -300,14 +303,17 @@ lecturerRouter.post('/api/lecturer/grades/:userId/submit', requireAuth, async (r
   if (!lecturerId) return res.status(403).json({ error: 'Chỉ GVHD chính được nộp điểm cho sinh viên này.' });
   const result = await saveGradeForStudent(userId, lecturerId, req.body, req.user.role);
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
-  const student = (await db.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
-  await createNotification({
-    user_id: userId,
-    recipient_email: student?.personal_email || student?.email,
-    type: 'grade_submitted',
-    subject: 'GVHD đã nộp điểm thực tập',
-    body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
-    send_now: true,
-  });
+  const notifySettingPost = (await db.execute("SELECT value FROM settings WHERE key = 'notify_on_grade_submission' LIMIT 1")).rows[0] as any;
+  if (notifySettingPost?.value !== '0') {
+    const student = (await db.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
+    await createNotification({
+      user_id: userId,
+      recipient_email: student?.personal_email || student?.email,
+      type: 'grade_submitted',
+      subject: 'GVHD đã nộp điểm thực tập',
+      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+      send_now: true,
+    });
+  }
   res.json(result.row);
 });

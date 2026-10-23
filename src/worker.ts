@@ -587,7 +587,7 @@ function calculateFinalScore(progressScore: number | null, reportScore: number |
 }
 
 async function getCampaignSettings(database: DatabaseClient) {
-  const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'grading_open_at', 'grading_close_at', 'faq_student_md', 'faq_lecturer_md')")).rows);
+  const settings = rowsToSettings((await database.execute("SELECT key, value FROM settings WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'grading_open_at', 'grading_close_at', 'faq_student_md', 'faq_lecturer_md', 'notify_on_grade_submission')")).rows);
   return {
     year: settings.campaign_year || '2026',
     start: settings.campaign_start || '22/05/2026',
@@ -605,6 +605,7 @@ async function getCampaignSettings(database: DatabaseClient) {
     grading_close_at: settings.grading_close_at || '',
     faq_student_md: settings.faq_student_md || DEFAULT_STUDENT_FAQ,
     faq_lecturer_md: settings.faq_lecturer_md || DEFAULT_LECTURER_FAQ,
+    notify_on_grade_submission: settings.notify_on_grade_submission ?? '1',
   };
 }
 
@@ -2637,15 +2638,18 @@ async function route(request: Request, env: Env, ctx?: any) {
     if (!lecturerId) return json({ error: 'Chỉ GVHD chính được nhập điểm cho sinh viên này.' }, 403);
     const result = await saveGradeForStudent(userId, lecturerId, body, user.role);
     if (result.error) return json({ error: result.error }, result.status || 400);
-    const student = (await database.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
-    await notify({
-      user_id: userId,
-      recipient_email: student?.personal_email || student?.email,
-      type: 'grade_submitted',
-      subject: 'GVHD đã nộp điểm thực tập',
-      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
-      send_now: true,
-    });
+    const notifySettingPut = (await database.execute("SELECT value FROM settings WHERE key = 'notify_on_grade_submission' LIMIT 1")).rows[0] as any;
+    if (notifySettingPut?.value !== '0') {
+      const student = (await database.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
+      await notify({
+        user_id: userId,
+        recipient_email: student?.personal_email || student?.email,
+        type: 'grade_submitted',
+        subject: 'GVHD đã nộp điểm thực tập',
+        body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+        send_now: true,
+      });
+    }
     return json(result.row);
   }
 
@@ -2659,15 +2663,18 @@ async function route(request: Request, env: Env, ctx?: any) {
     if (!lecturerId) return json({ error: 'Chỉ GVHD chính được nộp điểm cho sinh viên này.' }, 403);
     const result = await saveGradeForStudent(userId, lecturerId, body, user.role);
     if (result.error) return json({ error: result.error }, result.status || 400);
-    const student = (await database.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
-    await notify({
-      user_id: userId,
-      recipient_email: student?.personal_email || student?.email,
-      type: 'grade_submitted',
-      subject: 'GVHD đã nộp điểm thực tập',
-      body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
-      send_now: true,
-    });
+    const notifySettingPost = (await database.execute("SELECT value FROM settings WHERE key = 'notify_on_grade_submission' LIMIT 1")).rows[0] as any;
+    if (notifySettingPost?.value !== '0') {
+      const student = (await database.execute({ sql: 'SELECT email, personal_email, name FROM users WHERE id = ?', args: [userId] })).rows[0] as any;
+      await notify({
+        user_id: userId,
+        recipient_email: student?.personal_email || student?.email,
+        type: 'grade_submitted',
+        subject: 'GVHD đã nộp điểm thực tập',
+        body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+        send_now: true,
+      });
+    }
     return json(result.row);
   }
 
@@ -4806,6 +4813,7 @@ async function route(request: Request, env: Env, ctx?: any) {
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('grading_close_at', ?)", args: [body.grading_close_at || ''] },
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('classes_list', ?)", args: [body.classes_list || DEFAULT_CLASSES] },
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('allowed_registration_cohorts', ?)", args: [Array.isArray(body.allowed_registration_cohorts) ? body.allowed_registration_cohorts.join(',') : String(body.allowed_registration_cohorts || '')] },
+      { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('notify_on_grade_submission', ?)", args: [body.notify_on_grade_submission === '0' ? '0' : '1'] },
     ]);
     return json({ success: true });
   }

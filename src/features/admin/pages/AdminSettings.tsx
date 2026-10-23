@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { RefreshCw, Save, Clock } from 'lucide-react';
+import { RefreshCw, Save, Clock, Bell } from 'lucide-react';
 import { API_BASE, Button, cohortOptionsForYear, defaultAllowedCohortsForYear, CACHE_TTL, clearJsonCache, cachedJsonFetch, PageHeader, Surface } from '../../../shared';
 import { AdminSettingsSubNav } from '../components/AdminSettingsSubNav';
 
 export function AdminSettings({ token }: { token: string }) {
   const [sheetUrl, setSheetUrl] = useState('');
   const [exportSheetUrl, setExportSheetUrl] = useState('');
-  const [campaign, setCampaign] = useState({ year: '', registration_open_at: '', registration_close_at: '', classes_list: '' } as any);
+  const [campaign, setCampaign] = useState({ year: '', registration_open_at: '', registration_close_at: '', classes_list: '', notify_on_grade_submission: '1' } as any);
   const [savingUrl, setSavingUrl] = useState(false);
   const [savingCampaign, setSavingCampaign] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -323,6 +323,38 @@ export function AdminSettings({ token }: { token: string }) {
               className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
             />
           </div>
+
+          {/* Cấu hình thông báo khi GVHD cho điểm */}
+          <div className="md:col-span-2 p-4 rounded-xl border border-slate-200/90 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Bell size={16} className="text-[#034ea1]" />
+                <span className="text-xs font-bold text-slate-800">
+                  Tự động gửi thông báo cho sinh viên khi GVHD cho điểm
+                </span>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                  (campaign as any).notify_on_grade_submission !== '0'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}>
+                  {(campaign as any).notify_on_grade_submission !== '0' ? 'Đang bật' : 'Đang tắt'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Nếu tắt, hệ thống vẫn lưu điểm bình thường khi giảng viên chấm, nhưng sẽ không gửi email và thông báo tức thì đến sinh viên (phù hợp khi muốn rà soát bảng điểm trước khi công bố).
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={(campaign as any).notify_on_grade_submission !== '0'}
+                onChange={e => setCampaign({ ...campaign, notify_on_grade_submission: e.target.checked ? '1' : '0' } as any)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#034ea1]"></div>
+            </label>
+          </div>
+
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Danh sách lớp khóa học <span className="text-slate-400 font-normal">(mỗi lớp cách nhau bởi dấu phẩy)</span></label>
             <textarea

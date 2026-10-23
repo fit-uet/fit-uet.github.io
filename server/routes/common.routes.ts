@@ -247,7 +247,7 @@ commonRouter.put('/api/notifications/my/read-all', requireAuth, async (req: any,
 commonRouter.get('/api/settings/campaign', async (req: any, res: any) => {
   const settings = rowsToSettings((await db.execute(`
     SELECT key, value FROM settings
-    WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'faq_student_md', 'faq_lecturer_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'grading_open_at', 'grading_close_at', 'advisor_request_open_at', 'advisor_request_close_at', 'advisor_quota_pgs', 'advisor_quota_ts', 'advisor_quota_ths')
+    WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'faq_student_md', 'faq_lecturer_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'grading_open_at', 'grading_close_at', 'advisor_request_open_at', 'advisor_request_close_at', 'advisor_quota_pgs', 'advisor_quota_ts', 'advisor_quota_ths', 'notify_on_grade_submission')
   `)).rows);
 
   res.json({
@@ -271,7 +271,8 @@ commonRouter.get('/api/settings/campaign', async (req: any, res: any) => {
     advisor_request_close_at: settings.advisor_request_close_at || '',
     advisor_quota_pgs: settings.advisor_quota_pgs || '5',
     advisor_quota_ts: settings.advisor_quota_ts || '8',
-    advisor_quota_ths: settings.advisor_quota_ths || '10'
+    advisor_quota_ths: settings.advisor_quota_ths || '10',
+    notify_on_grade_submission: settings.notify_on_grade_submission ?? '1'
   });
 });
 
