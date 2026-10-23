@@ -13,6 +13,7 @@ import {
   cachedJsonFetch,
   PageDescriptionTooltip,
 } from '../../../shared';
+import { AdminSettingsSubNav } from '../components/AdminSettingsSubNav';
 import { SegmentedControl } from '../../../shared/ui/SegmentedControl';
 
 export function FAQSettingsAdmin({ token }: { token: string }) {
@@ -132,6 +133,9 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
           Lưu thay đổi FAQ
         </button>
       </div>
+
+      {/* Sub Navigation Bar for Settings */}
+      <AdminSettingsSubNav />
 
       {/* Editor & Preview Split Workspace */}
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">

@@ -1,7 +1,7 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { HashRouter, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { LogOut, User as UserIcon, CheckCircle2, LogIn, LayoutDashboard, AlertTriangle, FileText, Bell, CircleHelp, MessageCircle, GraduationCap } from 'lucide-react';
+import { LogOut, User as UserIcon, CheckCircle2, LogIn, LayoutDashboard, AlertTriangle, FileText, Bell, CircleHelp, MessageCircle, GraduationCap, Settings } from 'lucide-react';
 import { API_BASE, clearJsonCache, GOOGLE_CLIENT_ID, isAuthExpiredResponse, jwtExpiresAtMs, MyNotifications } from './shared';
 import { AppRoutes } from './app/AppRoutes';
 
@@ -262,6 +262,9 @@ function App() {
                           </Link>
                           {user.role === 'student' && (
                             <>
+                              <Link to="/plan" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
+                                <FileText size={15} className="text-blue-600" /> Kế hoạch triển khai
+                              </Link>
                               <Link to="/reports/final" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <FileText size={15} className="text-blue-600" /> Báo cáo thực tập
                               </Link>
@@ -275,6 +278,9 @@ function App() {
                               <Link to="/lecturer" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <GraduationCap size={15} className="text-blue-600" /> Trang giảng viên
                               </Link>
+                              <Link to="/plan" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
+                                <FileText size={15} className="text-blue-600" /> Kế hoạch triển khai
+                              </Link>
                               <Link to="/lecturer-guide" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <CircleHelp size={15} className="text-slate-500" /> Hướng dẫn sử dụng
                               </Link>
@@ -287,6 +293,12 @@ function App() {
                             <>
                               <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <LayoutDashboard size={15} className="text-blue-600" /> Trang quản trị
+                              </Link>
+                              <Link to="/admin/settings" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
+                                <Settings size={15} className="text-slate-600" /> Cài đặt hệ thống
+                              </Link>
+                              <Link to="/plan" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
+                                <FileText size={15} className="text-blue-600" /> Kế hoạch triển khai
                               </Link>
                               {user.is_lecturer && (
                                 <>

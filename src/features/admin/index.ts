@@ -16,3 +16,4 @@ export { FAQQuestionsAdmin } from './pages/FAQQuestionsAdmin';
 export { FAQSettingsAdmin } from './pages/FAQSettingsAdmin';
 export { StudentRegistry } from './pages/StudentRegistry';
 export { AdminRegistry } from './pages/AdminRegistry';
+export { AdminSettingsSubNav } from './components/AdminSettingsSubNav';

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { RefreshCw, Save, Clock } from 'lucide-react';
 import { API_BASE, Button, cohortOptionsForYear, defaultAllowedCohortsForYear, CACHE_TTL, clearJsonCache, cachedJsonFetch, PageHeader, Surface } from '../../../shared';
+import { AdminSettingsSubNav } from '../components/AdminSettingsSubNav';
 
 export function AdminSettings({ token }: { token: string }) {
   const [sheetUrl, setSheetUrl] = useState('');
@@ -180,6 +181,9 @@ export function AdminSettings({ token }: { token: string }) {
         </h2>
         <p className="text-xs text-slate-500 mt-1">Quản lý campaign, phạm vi sinh viên và các kết nối dữ liệu của hệ thống.</p>
       </div>
+
+      {/* Sub Navigation Bar for Settings */}
+      <AdminSettingsSubNav />
 
       {/* Cài đặt học phần */}
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6 flex flex-col gap-5">

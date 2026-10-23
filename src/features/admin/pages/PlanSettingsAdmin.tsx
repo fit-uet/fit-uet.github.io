@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { Upload, RefreshCw, Save, FileText } from 'lucide-react';
 import { API_BASE, convertDocxFileToMarkdown, clearJsonCache, PageDescriptionTooltip, DEFAULT_PLAN } from '../../../shared';
+import { AdminSettingsSubNav } from '../components/AdminSettingsSubNav';
 
 export function PlanSettingsAdmin({ token }: { token: string }) {
   const navigate = useNavigate();
@@ -85,6 +86,9 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
           {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Lưu kế hoạch
         </button>
       </div>
+
+      {/* Sub Navigation Bar for Settings */}
+      <AdminSettingsSubNav />
 
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3">

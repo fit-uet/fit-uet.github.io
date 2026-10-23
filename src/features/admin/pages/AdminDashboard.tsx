@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import {
   Users, CheckCircle2, LayoutDashboard, Building2, FileText,
-  Shield, Mail, Settings, GraduationCap, UserCheck, BookOpen
+  Shield, Mail, Settings, GraduationCap, UserCheck, BookOpen, CircleHelp
 } from 'lucide-react';
 import { API_BASE, cachedJsonFetch } from '../../../shared';
 
@@ -36,7 +36,10 @@ export function AdminDashboard({ token }: { token: string; user?: any }) {
     { title: 'CSDL Thẩm định', path: '/admin/approved-companies', icon: <Shield size={20} className="text-[#034ea1]" /> },
     { title: 'Thông báo & Email', path: '/admin/notifications', icon: <Mail size={20} className="text-[#b25e00]" /> },
     { title: 'Cài đặt hệ thống', path: '/admin/settings', icon: <Settings size={20} className="text-slate-600" /> },
-    { title: 'Hướng dẫn GV', path: '/admin/lecturer-guide', icon: <BookOpen size={20} className="text-slate-600" /> },
+    { title: 'Kế hoạch triển khai', path: '/admin/plan', icon: <FileText size={20} className="text-blue-600" /> },
+    { title: 'Quy định thực tập', path: '/admin/registration-rules', icon: <Shield size={20} className="text-indigo-600" /> },
+    { title: 'Hướng dẫn GV', path: '/admin/lecturer-guide', icon: <BookOpen size={20} className="text-teal-600" /> },
+    { title: 'Cài đặt FAQ', path: '/admin/faq', icon: <CircleHelp size={20} className="text-amber-600" /> },
     { title: 'Quản trị viên', path: '/admin/admins', icon: <Shield size={20} className="text-slate-600" /> },
   ];
 
@@ -49,6 +52,12 @@ export function AdminDashboard({ token }: { token: string; user?: any }) {
           <p className="text-xs text-slate-500 mt-0.5">Học phần Thực tập</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/plan')}
+            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <FileText size={14} className="text-blue-600" /> Kế hoạch triển khai
+          </button>
           <button
             onClick={() => navigate('/admin/settings')}
             className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
