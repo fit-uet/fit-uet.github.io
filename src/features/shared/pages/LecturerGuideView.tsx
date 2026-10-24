@@ -43,20 +43,20 @@ export function LecturerGuideView({ token, user }: { token: string; user: any })
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-slate-900 mb-4" {...props} />,
-              h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-slate-900 mt-6 mb-3" {...props} />,
-              h3: ({ node, ...props }) => <h3 className="text-lg font-bold text-slate-900 mt-4 mb-2" {...props} />,
-              p: ({ node, ...props }) => <p className="mb-4 text-slate-600 leading-relaxed" {...props} />,
-              ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 text-slate-600 space-y-1" {...props} />,
-              ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 text-slate-600 space-y-1" {...props} />,
+              h1: ({ node, ...props }) => <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 tracking-tight" {...props} />,
+              h2: ({ node, ...props }) => <h2 className="text-base sm:text-lg font-bold text-[#034ea1] mt-6 mb-3" {...props} />,
+              h3: ({ node, ...props }) => <h3 className="text-sm sm:text-base font-semibold text-slate-900 mt-4 mb-2" {...props} />,
+              p: ({ node, ...props }) => <p className="mb-4 text-sm text-slate-600 leading-relaxed" {...props} />,
+              ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 text-sm text-slate-600 space-y-1.5" {...props} />,
+              ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 text-sm text-slate-600 space-y-1.5" {...props} />,
               strong: ({ node, ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
-              a: ({ node, ...props }) => <a className="text-[#034ea1] hover:underline" {...props} />,
-              table: ({ node, ...props }) => <div className="overflow-x-auto mb-6 rounded-xl border border-slate-200"><table className="min-w-full divide-y divide-slate-100 text-xs" {...props} /></div>,
+              a: ({ node, ...props }) => <a className="text-[#034ea1] hover:underline font-medium" {...props} />,
+              table: ({ node, ...props }) => <div className="overflow-x-auto mb-6 rounded-xl border border-slate-200"><table className="min-w-full divide-y divide-slate-100 text-xs sm:text-sm" {...props} /></div>,
               thead: ({ node, ...props }) => <thead className="bg-[#f9f9fb]" {...props} />,
               tbody: ({ node, ...props }) => <tbody className="divide-y divide-slate-100 bg-white" {...props} />,
               tr: ({ node, ...props }) => <tr className="hover:bg-[#f8fafc] transition-colors" {...props} />,
               th: ({ node, ...props }) => <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-700" {...props} />,
-              td: ({ node, ...props }) => <td className="px-4 py-2.5 text-xs text-slate-600" {...props} />,
+              td: ({ node, ...props }) => <td className="px-4 py-2.5 text-xs sm:text-sm text-slate-600" {...props} />,
             }}
           >
             {guide}

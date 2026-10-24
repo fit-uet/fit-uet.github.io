@@ -168,11 +168,11 @@ export function FAQView({ user, token }: { user: any; token: string }) {
 
       {/* Card 1: Static Handbook FAQ (Markdown) */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 bg-[#f9f9fb]">
+        <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f9f9fb]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <CircleHelp className="text-[#034ea1]" /> Sổ tay quy định FAQ
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                <CircleHelp size={18} className="text-[#034ea1]" /> Sổ tay quy định FAQ
                 <PageDescriptionTooltip
                   description={
                     <>
@@ -201,7 +201,7 @@ export function FAQView({ user, token }: { user: any; token: string }) {
             )}
           </div>
         </div>
-        <div className="p-6 max-w-none prose prose-blue prose-sm sm:prose-base">
+        <div className="p-5 sm:p-6 max-w-none">
           {loading ? (
             <div className="animate-pulse space-y-4">
               <div className="h-6 bg-slate-200 rounded w-1/2"></div>
@@ -213,24 +213,24 @@ export function FAQView({ user, token }: { user: any; token: string }) {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-slate-800 mb-4" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-slate-800 mt-6 mb-3" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-lg font-bold text-slate-800 mt-5 mb-2" {...props} />,
-                p: ({ node, ...props }) => <p className="mb-4 text-slate-600 leading-relaxed" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 text-slate-600 space-y-1" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 text-slate-600 space-y-1" {...props} />,
+                h1: ({ node, ...props }) => <h1 className="text-base sm:text-lg font-bold text-slate-900 mb-3" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-sm sm:text-base font-bold text-[#034ea1] mt-5 mb-2.5" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-sm sm:text-base font-semibold text-slate-900 mt-4 mb-2 flex items-start gap-1.5" {...props} />,
+                p: ({ node, ...props }) => <p className="mb-3 text-sm text-slate-600 leading-relaxed" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 text-sm text-slate-600 space-y-1.5" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 text-sm text-slate-600 space-y-1.5" {...props} />,
                 strong: ({ node, ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
-                a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
+                a: ({ node, ...props }) => <a className="text-[#034ea1] hover:underline font-medium" {...props} />,
                 table: ({ node, ...props }) => (
-                  <div className="overflow-x-auto mb-6">
-                    <table className="min-w-full divide-y divide-slate-200 border border-slate-200" {...props} />
+                  <div className="overflow-x-auto mb-5 rounded-xl border border-slate-200">
+                    <table className="min-w-full divide-y divide-slate-100 text-sm" {...props} />
                   </div>
                 ),
                 th: ({ node, ...props }) => (
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 border-x border-slate-200" {...props} />
+                  <th className="px-3.5 py-2.5 text-left text-xs font-semibold text-slate-700 bg-[#f9f9fb]" {...props} />
                 ),
                 td: ({ node, ...props }) => (
-                  <td className="px-4 py-3 text-sm text-slate-600 border-x border-slate-200" {...props} />
+                  <td className="px-3.5 py-2.5 text-sm text-slate-600 border-t border-slate-100" {...props} />
                 ),
               }}
             >
@@ -245,10 +245,10 @@ export function FAQView({ user, token }: { user: any; token: string }) {
         <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f9f9fb] flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CircleHelp size={18} className="text-[#034ea1]" />
-            <h3 className="font-bold text-slate-900 text-sm sm:text-base whitespace-nowrap">
+            <h3 className="font-bold text-slate-900 text-base sm:text-lg whitespace-nowrap">
               Câu hỏi đã được giải đáp
             </h3>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#034ea1] border border-blue-200/60">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#034ea1] border border-blue-200/60">
               {publicQuestions.length}
             </span>
           </div>
@@ -274,7 +274,7 @@ export function FAQView({ user, token }: { user: any; token: string }) {
             </div>
 
             {studentPublicCount > 0 && lecturerPublicCount > 0 && (
-              <div className="flex items-center gap-0.5 bg-slate-200/70 p-0.5 rounded-lg text-[11px]">
+              <div className="flex items-center gap-0.5 bg-slate-200/70 p-0.5 rounded-lg text-xs">
                 <button
                   onClick={() => setRoleFilter('all')}
                   className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
@@ -334,7 +334,7 @@ export function FAQView({ user, token }: { user: any; token: string }) {
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400">
                 <CircleHelp size={20} />
               </div>
-              <div className="font-semibold text-slate-800 text-xs sm:text-sm">
+              <div className="font-semibold text-slate-800 text-sm">
                 {searchKeyword ? `Không tìm thấy kết quả phù hợp với "${searchKeyword}"` : 'Chưa có câu hỏi nào được giải đáp'}
               </div>
               {searchKeyword && (
@@ -360,14 +360,14 @@ export function FAQView({ user, token }: { user: any; token: string }) {
                       className="w-full text-left px-3.5 py-2.5 sm:px-4 sm:py-3 flex items-start justify-between gap-2.5 hover:bg-slate-50/70 transition-colors cursor-pointer"
                     >
                       <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                        <span className="mt-0.5 text-[#034ea1] font-bold text-[11px] flex-shrink-0 w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center border border-blue-100">
+                        <span className="mt-0.5 text-[#034ea1] font-bold text-xs flex-shrink-0 w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center border border-blue-100">
                           {idx + 1}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
+                          <div className="text-sm sm:text-base font-semibold text-slate-900 leading-snug">
                             {item.question}
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                          <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
                             <span className="text-emerald-700 font-medium">✓ Đã giải đáp</span>
                             {item.answered_at && (
                               <span>• {new Date(item.answered_at).toLocaleDateString('vi-VN')}</span>
@@ -382,8 +382,8 @@ export function FAQView({ user, token }: { user: any; token: string }) {
 
                     {isExpanded && (
                       <div className="px-3.5 pb-3 pt-0 sm:px-4 sm:pb-3.5">
-                        <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-3 text-xs sm:text-sm text-slate-700 leading-relaxed">
-                          <span className="font-bold text-[#034ea1] mr-1.5">Trả lời:</span>
+                        <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-3 text-sm text-slate-700 leading-relaxed">
+                          <span className="font-semibold text-[#034ea1] mr-1.5">Trả lời:</span>
                           {item.answer}
                         </div>
                       </div>
@@ -399,22 +399,22 @@ export function FAQView({ user, token }: { user: any; token: string }) {
       {/* Card 3: Ask a Question & My Questions */}
       {user?.role !== 'admin' && (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 bg-[#f9f9fb]">
-            <h3 className="font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
+          <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f9f9fb]">
+            <h3 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-1.5 flex-wrap">
               <span className="flex items-center gap-2">
                 <CircleHelp size={18} className="text-[#034ea1]" /> Gửi câu hỏi riêng cho Khoa
               </span>
               <PageDescriptionTooltip description="Nếu các câu hỏi thường gặp ở trên chưa giải đáp được thắc mắc của bạn, vui lòng gửi câu hỏi tại đây. Ban chủ nhiệm Khoa sẽ trả lời và gửi thông báo trực tiếp cho bạn." />
             </h3>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-5 sm:p-6 space-y-4">
             <textarea
               value={newQuestion}
               onChange={e => setNewQuestion(e.target.value)}
               rows={4}
               maxLength={2000}
               placeholder="Nhập câu hỏi của bạn (ví dụ: về con dấu, đơn xin thực tập, thay đổi nơi thực tập...)..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-white shadow-2xs resize-y leading-relaxed"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-white shadow-2xs resize-y leading-relaxed"
             />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="text-xs text-slate-400 font-medium">{newQuestion.length}/2000 ký tự</span>
@@ -429,7 +429,7 @@ export function FAQView({ user, token }: { user: any; token: string }) {
 
             <div className="border-t border-slate-100 pt-5 mt-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                   <MessageSquare size={16} className="text-[#034ea1]" /> Câu hỏi của tôi ({questions.length})
                 </h4>
                 <button
@@ -451,7 +451,7 @@ export function FAQView({ user, token }: { user: any; token: string }) {
                     <div key={q.id} className="border border-slate-200 rounded-xl p-4 bg-white shadow-2xs">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                             q.status === 'answered'
                               ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-700'
                               : 'bg-amber-50 border border-amber-200/80 text-amber-700'
@@ -459,17 +459,17 @@ export function FAQView({ user, token }: { user: any; token: string }) {
                         >
                           {q.status === 'answered' ? '✓ Khoa đã trả lời' : 'Chờ Khoa trả lời'}
                         </span>
-                        <span className="text-[11px] text-slate-400 font-medium">
+                        <span className="text-xs text-slate-400 font-medium">
                           {q.created_at ? new Date(q.created_at).toLocaleString('vi-VN') : ''}
                         </span>
                       </div>
-                      <div className="text-xs font-semibold text-slate-800 whitespace-pre-wrap leading-relaxed">
+                      <div className="text-sm sm:text-base font-semibold text-slate-900 whitespace-pre-wrap leading-relaxed">
                         {q.question}
                       </div>
                       {q.answer && (
-                        <div className="mt-3 bg-blue-50/60 border border-blue-200/80 rounded-xl p-3.5 text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
-                          <div className="text-[10px] font-bold text-[#034ea1] uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <Sparkles size={11} className="text-amber-500" /> Trả lời từ Khoa:
+                        <div className="mt-3 bg-blue-50/60 border border-blue-200/80 rounded-xl p-3.5 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                          <div className="text-xs font-bold text-[#034ea1] uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <Sparkles size={13} className="text-amber-500" /> Trả lời từ Khoa:
                           </div>
                           {q.answer}
                         </div>
