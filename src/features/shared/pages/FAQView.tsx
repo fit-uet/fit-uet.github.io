@@ -242,124 +242,112 @@ export function FAQView({ user, token }: { user: any; token: string }) {
 
       {/* Card 2: Community Answered FAQs (Công khai cho toàn bộ sinh viên & GV cùng xem) */}
       <div id="public-faq" className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden scroll-mt-6">
-        <div className="px-6 py-5 border-b border-slate-100 bg-[#f9f9fb]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-blue-100/70 text-[#034ea1]">
-                  <HelpCircle size={18} />
-                </span>
-                <h3 className="text-xl font-bold text-slate-900">
-                  Câu hỏi thực tế đã được Khoa giải đáp
-                </h3>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-[#034ea1] border border-blue-200/60">
-                  {publicQuestions.length} câu trả lời
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Các câu hỏi thực tế từ sinh viên và giảng viên được Khoa giải đáp trực tiếp, công khai để mọi người cùng tham khảo.
-              </p>
-            </div>
-            {publicQuestions.length > 0 && (
-              <button
-                onClick={toggleAllExpanded}
-                className="text-xs font-semibold text-slate-600 hover:text-[#034ea1] bg-white border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-xl transition-all shadow-2xs self-start md:self-auto cursor-pointer"
-              >
-                {expandedIds.size === filteredPublicQuestions.length ? 'Thu gọn tất cả' : 'Mở tất cả câu trả lời'}
-              </button>
-            )}
+        <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f9f9fb] flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CircleHelp size={18} className="text-[#034ea1]" />
+            <h3 className="font-bold text-slate-900 text-sm sm:text-base whitespace-nowrap">
+              Câu hỏi đã được giải đáp
+            </h3>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#034ea1] border border-blue-200/60">
+              {publicQuestions.length}
+            </span>
           </div>
 
-          {/* Search bar & filter tabs */}
-          <div className="mt-4 pt-4 border-t border-slate-200/60 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 md:max-w-md justify-end">
             <div className="relative flex-1">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchKeyword}
                 onChange={e => setSearchKeyword(e.target.value)}
-                placeholder="Tìm nhanh câu hỏi hoặc câu trả lời (con dấu, nộp báo cáo, F-Soft, điểm...)"
-                className="w-full pl-9 pr-9 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-white"
+                placeholder="Tìm câu hỏi, câu trả lời..."
+                className="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-white"
               />
               {searchKeyword && (
                 <button
                   onClick={() => setSearchKeyword('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl self-start sm:self-auto">
-              <button
-                onClick={() => setRoleFilter('all')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  roleFilter === 'all'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Tất cả ({publicQuestions.length})
-              </button>
-              <button
-                onClick={() => setRoleFilter('student')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  roleFilter === 'student'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Sinh viên ({studentPublicCount})
-              </button>
-              {lecturerPublicCount > 0 && (
+            {studentPublicCount > 0 && lecturerPublicCount > 0 && (
+              <div className="flex items-center gap-0.5 bg-slate-200/70 p-0.5 rounded-lg text-[11px]">
                 <button
-                  onClick={() => setRoleFilter('lecturer')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    roleFilter === 'lecturer'
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
+                  onClick={() => setRoleFilter('all')}
+                  className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                    roleFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Giảng viên ({lecturerPublicCount})
+                  Tất cả
                 </button>
-              )}
-            </div>
+                <button
+                  onClick={() => setRoleFilter('student')}
+                  className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                    roleFilter === 'student' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  SV
+                </button>
+                <button
+                  onClick={() => setRoleFilter('lecturer')}
+                  className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                    roleFilter === 'lecturer' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  GV
+                </button>
+              </div>
+            )}
+
+            {publicQuestions.length > 0 && (
+              <button
+                onClick={toggleAllExpanded}
+                className="text-xs font-semibold text-slate-600 hover:text-[#034ea1] bg-white border border-slate-200 hover:bg-slate-50 px-2.5 py-1.5 rounded-xl transition-all shadow-2xs whitespace-nowrap cursor-pointer flex items-center gap-1 flex-shrink-0"
+              >
+                {expandedIds.size === filteredPublicQuestions.length ? (
+                  <>
+                    <ChevronUp size={13} /> Thu gọn
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={13} /> Mở tất cả
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
         {/* List of answered FAQs */}
-        <div className="p-6">
+        <div className="p-4 sm:p-5">
           {publicLoading ? (
-            <div className="animate-pulse space-y-3">
-              <div className="h-16 bg-slate-100 rounded-xl"></div>
-              <div className="h-16 bg-slate-100 rounded-xl"></div>
-              <div className="h-16 bg-slate-100 rounded-xl"></div>
+            <div className="animate-pulse space-y-2">
+              <div className="h-12 bg-slate-100 rounded-xl"></div>
+              <div className="h-12 bg-slate-100 rounded-xl"></div>
+              <div className="h-12 bg-slate-100 rounded-xl"></div>
             </div>
           ) : filteredPublicQuestions.length === 0 ? (
-            <div className="text-center py-10 px-4">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
-                <HelpCircle size={24} />
+            <div className="text-center py-8 px-4">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400">
+                <CircleHelp size={20} />
               </div>
-              <div className="font-semibold text-slate-800 text-sm">
-                {searchKeyword ? 'Không tìm thấy câu hỏi phù hợp' : 'Chưa có câu hỏi nào được giải đáp'}
+              <div className="font-semibold text-slate-800 text-xs sm:text-sm">
+                {searchKeyword ? `Không tìm thấy kết quả phù hợp với "${searchKeyword}"` : 'Chưa có câu hỏi nào được giải đáp'}
               </div>
-              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                {searchKeyword
-                  ? `Không có kết quả nào khớp với "${searchKeyword}". Bạn có thể thử tìm từ khóa khác hoặc gửi câu hỏi mới cho Khoa ở phần bên dưới.`
-                  : 'Các câu hỏi khi được Ban chủ nhiệm Khoa giải đáp sẽ hiển thị công khai tại đây.'}
-              </p>
               {searchKeyword && (
                 <button
                   onClick={() => setSearchKeyword('')}
-                  className="mt-3 text-xs font-semibold text-[#034ea1] hover:underline cursor-pointer"
+                  className="mt-2 text-xs font-semibold text-[#034ea1] hover:underline cursor-pointer"
                 >
-                  Xóa bộ lọc tìm kiếm
+                  Xóa từ khóa tìm kiếm
                 </button>
               )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {filteredPublicQuestions.map((item, idx) => {
                 const isExpanded = expandedIds.has(Number(item.id)) || searchKeyword.trim().length > 0;
                 return (
@@ -369,51 +357,34 @@ export function FAQView({ user, token }: { user: any; token: string }) {
                   >
                     <button
                       onClick={() => toggleExpand(Number(item.id))}
-                      className="w-full text-left p-4 flex items-start justify-between gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
+                      className="w-full text-left px-3.5 py-2.5 sm:px-4 sm:py-3 flex items-start justify-between gap-2.5 hover:bg-slate-50/70 transition-colors cursor-pointer"
                     >
                       <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                        <span className="mt-0.5 text-[#034ea1] font-bold text-xs flex-shrink-0 w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
-                          Q{idx + 1}
+                        <span className="mt-0.5 text-[#034ea1] font-bold text-[11px] flex-shrink-0 w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center border border-blue-100">
+                          {idx + 1}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span
-                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                                item.role === 'lecturer'
-                                  ? 'bg-purple-50 text-purple-700 border border-purple-200/60'
-                                  : 'bg-blue-50 text-blue-700 border border-blue-200/60'
-                              }`}
-                            >
-                              {item.role === 'lecturer' ? 'Giảng viên hỏi' : 'Sinh viên hỏi'}
-                            </span>
-                            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <CheckCircle2 size={10} /> Đã giải đáp
-                            </span>
-                            {item.answered_at && (
-                              <span className="text-[11px] text-slate-400 font-medium ml-auto">
-                                {new Date(item.answered_at).toLocaleDateString('vi-VN')}
-                              </span>
-                            )}
-                          </div>
                           <div className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
                             {item.question}
                           </div>
+                          <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                            <span className="text-emerald-700 font-medium">✓ Đã giải đáp</span>
+                            {item.answered_at && (
+                              <span>• {new Date(item.answered_at).toLocaleDateString('vi-VN')}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-slate-400 p-1 flex-shrink-0">
-                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      <div className="text-slate-400 p-0.5 flex-shrink-0 mt-0.5">
+                        {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                       </div>
                     </button>
 
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-1 bg-[#f9fafb] border-t border-slate-100">
-                        <div className="bg-white border border-blue-200/80 rounded-xl p-3.5 mt-2 shadow-2xs">
-                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#034ea1] uppercase tracking-wide mb-1.5">
-                            <Sparkles size={12} className="text-amber-500" /> Câu trả lời từ Khoa:
-                          </div>
-                          <div className="text-xs sm:text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                            {item.answer}
-                          </div>
+                      <div className="px-3.5 pb-3 pt-0 sm:px-4 sm:pb-3.5">
+                        <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-3 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                          <span className="font-bold text-[#034ea1] mr-1.5">Trả lời:</span>
+                          {item.answer}
                         </div>
                       </div>
                     )}
