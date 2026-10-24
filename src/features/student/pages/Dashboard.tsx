@@ -977,13 +977,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                 </div>
               ))}
             </div>
-
-            <button
-              onClick={() => navigate('/plan')}
-              className="w-full mt-2.5 py-2 px-3 rounded-xl bg-blue-50/70 hover:bg-blue-100/80 text-[#034ea1] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-100"
-            >
-              <FileText size={13} /> Xem Kế hoạch triển khai chi tiết
-            </button>
           </div>
 
           {/* Card 2: Quy định đăng ký */}
