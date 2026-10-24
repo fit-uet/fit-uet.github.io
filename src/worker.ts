@@ -2645,8 +2645,8 @@ async function route(request: Request, env: Env, ctx?: any) {
         user_id: userId,
         recipient_email: student?.personal_email || student?.email,
         type: 'grade_submitted',
-        subject: 'GVHD đã nộp điểm thực tập',
-        body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+        subject: 'GVHD đã hoàn thành đánh giá thực tập',
+        body: 'GVHD đã nộp kết quả đánh giá thực tập của bạn về Khoa. Điểm học phần chính thức sẽ được công bố trên Cổng Đào tạo của Trường (daotao.vnu.edu.vn).',
         send_now: true,
       });
     }
@@ -2670,8 +2670,8 @@ async function route(request: Request, env: Env, ctx?: any) {
         user_id: userId,
         recipient_email: student?.personal_email || student?.email,
         type: 'grade_submitted',
-        subject: 'GVHD đã nộp điểm thực tập',
-        body: `GVHD đã nộp điểm thực tập của bạn về Khoa. Điểm tổng kết: ${result.row?.final_score !== null && result.row?.final_score !== undefined ? Number(result.row.final_score).toFixed(1) : '-'}.`,
+        subject: 'GVHD đã hoàn thành đánh giá thực tập',
+        body: 'GVHD đã nộp kết quả đánh giá thực tập của bạn về Khoa. Điểm học phần chính thức sẽ được công bố trên Cổng Đào tạo của Trường (daotao.vnu.edu.vn).',
         send_now: true,
       });
     }

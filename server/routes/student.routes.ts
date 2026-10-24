@@ -225,50 +225,11 @@ studentRouter.post('/api/reports/final', requireAuth, requireStudent, express.ra
   }
 });
 
-// Student Grades
-studentRouter.get('/api/grades/my', requireAuth, requireStudent, async (req: any, res: any) => {
-  try {
-    const row = (await db.execute({
-      sql: `WITH school_registration AS (
-              SELECT r.user_id,
-                     'Trường Đại học Công nghệ' as school_place
-              FROM registrations r
-              JOIN companies c ON c.id = r.company_id
-              WHERE r.status != 'rejected' AND c.name = 'Trường Đại học Công nghệ'
-              GROUP BY r.user_id
-            )
-            SELECT u.id as user_id, u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
-                   f.internship_type, f.confirmed_at,
-                   CASE
-                     WHEN f.id IS NULL THEN sr.school_place
-                     WHEN c.name = 'Công ty khác' THEN r.other_company_name
-                     ELSE c.name
-                   END as internship_place,
-                   GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN l.name END) as primary_advisors,
-                   GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN l.email END) as primary_advisor_emails,
-                   GROUP_CONCAT(CASE WHEN aa.role = 'co' THEN l.name END) as co_advisors,
-                   GROUP_CONCAT(CASE WHEN aa.role = 'co' THEN l.email END) as co_advisor_emails,
-                   g.progress_score, g.report_score, g.company_score, g.final_score,
-                   COALESCE(g.status, 'missing') as grade_status, g.comment,
-                   g.submitted_at as grade_submitted_at, g.locked_at,
-                   gl.name as grading_lecturer_name
-            FROM users u
-            LEFT JOIN final_internships f ON f.user_id = u.id
-            LEFT JOIN school_registration sr ON sr.user_id = u.id
-            LEFT JOIN companies c ON c.id = f.company_id
-            LEFT JOIN registrations r ON r.id = f.registration_id
-            LEFT JOIN advisor_assignments aa ON aa.user_id = u.id
-            LEFT JOIN lecturers l ON l.id = aa.lecturer_id
-            LEFT JOIN grades g ON g.user_id = u.id
-            LEFT JOIN lecturers gl ON gl.id = g.lecturer_id
-            WHERE u.id = ?
-            GROUP BY u.id`,
-      args: [req.user.id],
-    })).rows[0] as any;
-    res.json(row || null);
-  } catch (e: any) {
-    res.status(500).json({ error: 'Không tải được điểm thực tập.', detail: e.message });
-  }
+// Student Grades - Deprecated: Chức năng xem điểm ở site sinh viên đã được loại bỏ; điểm chính thức công bố trên Cổng Đào tạo
+studentRouter.get('/api/grades/my', requireAuth, requireStudent, async (_req: any, res: any) => {
+  res.status(403).json({
+    error: 'Chức năng xem điểm trên hệ thống này đã đóng. Điểm học phần thực tập được công bố chính thức trên Cổng Đào tạo của Trường (daotao.vnu.edu.vn).'
+  });
 });
 
 // Final Internship Confirmation

@@ -131,7 +131,7 @@ To protect both system resources and administrative workflows, the system enforc
 | `advisor_assigned`            | Student                |         ❌ No         |        ❌ No        | Push assignment details to student                                                                                    |
 | `final_report_due_reminder`   | Student                |         ❌ No         |        ❌ No        | Deadline reminder targeted to students                                                                                |
 | `final_report_status_changed` | Student                |         ❌ No         |        ❌ No        | Review feedback pushed to student                                                                                     |
-| **`grade_submitted`**   | **Student Only** |  ❌**Excluded**  | ❌**Excluded** | **Push receipt strictly to the graded student. Admin excluded to prevent inbox flooding and quota exhaustion.** |
+| **`grade_submitted`**   | **Student Only** (Xác nhận hoàn thành đánh giá) |  ❌**Excluded**  | ❌**Excluded** | **Push receipt strictly to the evaluated student confirming completion of grading (without displaying score numbers on portal). Admin excluded to prevent inbox flooding and quota exhaustion.** |
 
 #### Design Rationale for Admin Exclusion on Grade Submission (`grade_submitted`)
 
@@ -294,6 +294,28 @@ Theo quy chế đào tạo của Khoa CNTT - Trường Đại học Công nghệ
   - Nút bấm tinh giản thành **"Nộp điểm cho Khoa"** (hoặc **"Cập nhật điểm"** nếu đã nộp).
   - Tôn trọng quyền tự chủ của GVHD: Điểm sau khi nộp vẫn có thể được GVHD cập nhật lại linh hoạt bất kỳ lúc nào trước khi Khoa niêm phong/khóa bảng điểm (`locked_at`).
   - Toàn bộ điểm nháp trước đây được di trú chuyển thành điểm chính thức và gửi thông báo công bố đến sinh viên.
+
+#### f. Loại bỏ chức năng xem điểm ở site Sinh viên (Student Grade View Deprecation Architecture)
+- **Bản chất nghiệp vụ & Phân định trách nhiệm học vụ**:
+  - Cổng Đăng ký thực tập (`internship-registration-system`) là hệ thống tác vụ quy trình (workflow system): Đăng ký nguyện vọng $\rightarrow$ Doanh nghiệp tiếp nhận/xác nhận $\rightarrow$ Phân công/kết nối GVHD $\rightarrow$ Nộp báo cáo PDF cuối kỳ.
+  - Điểm học phần thực tập là hồ sơ học vụ chính thức và pháp lý của Trường Đại học Công nghệ (VNU-UET).
+  - Quy trình chấm điểm thực tập diễn ra nội bộ giữa Giảng viên hướng dẫn và Khoa CNTT. Điểm sau khi GVHD hoàn thành được Khoa rà soát, khóa điểm (`locked_at`), và xuất file tổng hợp XLSX để bàn giao cho Phòng Đào tạo nhập vào Cổng Thông tin Đào tạo của Nhà trường (`daotao.vnu.edu.vn`).
+  - Điểm học phần chính thức được công bố duy nhất trên Cổng Thông tin Đào tạo của Trường (`daotao.vnu.edu.vn`).
+- **Lý do loại bỏ chức năng xem điểm trên Portal sinh viên**:
+  1. **Tránh nhầm lẫn và tranh chấp học vụ không đáng có**: Điểm số trên hệ thống thực tập là điểm đánh giá của GVHD trước khi Khoa đối soát, chuẩn hóa và khóa sổ. Việc hiển thị điểm tạm thời trên portal sinh viên dễ dẫn đến hiểu nhầm, thắc mắc trước hạn hoặc lệch pha với điểm học vụ chính thức trên Cổng Đào tạo.
+  2. **Bảo vệ tính pháp lý của điểm số**: Điểm học phần chỉ có giá trị pháp lý khi được Phòng Đào tạo duyệt và công bố trên hệ thống Đào tạo chung.
+  3. **Tinh gọn giao diện sinh viên theo đúng 4 mốc vòng đời**: Sinh viên tập trung hoàn thành 4 nhiệm vụ cốt lõi:
+     - Giai đoạn 1: Đăng ký nguyện vọng thực tập
+     - Giai đoạn 2: Xác nhận nơi thực tập chính thức (hoặc tại Trường)
+     - Giai đoạn 3: Chọn / Phân công GVHD
+     - Giai đoạn 4: Nộp Báo cáo thực tập cuối kỳ (PDF $\le$ 10MB) và theo dõi trạng thái tiếp nhận / yêu cầu sửa của GVHD
+     Giai đoạn 4 dừng lại ở việc xác nhận đã nộp báo cáo và nhận phản hồi của GVHD (nếu cần sửa), loại bỏ hoàn toàn phần xem điểm và các thẻ GPA/điểm chữ.
+- **Chi tiết kỹ thuật triển khai**:
+  - **Client Routing & Menus**: Loại bỏ route `/grades` và component `StudentGradeView` khỏi `AppRoutes.tsx`, menu dropdown avatar ở `src/App.tsx`, và module export `src/features/student/index.ts`. Xóa component `StudentGradeView.tsx`.
+  - **Student Dashboard**: Loại bỏ thẻ tóm tắt điểm tổng kết và điểm thành phần (`Score Section`), state `myGrade`, các hàm tiện ích điểm số (`getLetterGrade`, `scoreText`), và request fetch `/api/grades/my` trong `Dashboard.tsx`.
+  - **API Endpoint**: Khóa endpoint `GET /api/grades/my` trên `server/routes/student.routes.ts`, trả về mã lỗi HTTP 403 Forbidden kèm thông báo hướng dẫn sinh viên tra cứu trên Cổng Đào tạo.
+  - **Hệ thống thông báo**: Khi GVHD nộp điểm, thông báo gửi đến sinh viên (nếu được Admin bật trong Cài đặt) chỉ mang tính chất thông báo xác nhận GVHD đã hoàn tất nộp đánh giá báo cáo về Khoa, không chứa giá trị số điểm trên nội dung thông báo.
+  - **Bảo toàn phân hệ Giảng viên và Quản trị viên**: Giảng viên tiếp tục nhập điểm thành phần (Quá trình 20%, Báo cáo 20%, Doanh nghiệp 60%) và nộp điểm trên `/lecturer/grades` hoặc panel xem báo cáo PDF `ReportReviewPanel`. Quản trị viên quản lý bảng điểm trên `/admin/grades`, thực hiện khóa điểm và xuất file XLSX nộp Phòng Đào tạo bình thường.
 
 ---
 

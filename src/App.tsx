@@ -268,9 +268,6 @@ function App() {
                               <Link to="/reports/final" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <FileText size={15} className="text-blue-600" /> Báo cáo thực tập
                               </Link>
-                              <Link to="/grades" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
-                                <CheckCircle2 size={15} className="text-emerald-600" /> Điểm thực tập
-                              </Link>
                             </>
                           )}
                           {user.role === 'lecturer' && (

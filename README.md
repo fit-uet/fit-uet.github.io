@@ -37,8 +37,8 @@ Các quy tắc sau được dùng làm cơ sở khi mở rộng hệ thống:
 - Điểm 60% đánh giá công ty/GVHD do giảng viên tự nhập dựa trên trao đổi và bản cứng sinh viên nộp.
 - Hệ thống không cần lưu chữ ký/xác nhận của doanh nghiệp hoặc giảng viên.
 - Bảng điểm cuối cùng cần xuất được XLSX để Khoa tổng hợp và nhập hệ thống.
-- Cần có thông báo email tự động khi các trạng thái quan trọng thay đổi, ví dụ: đăng ký được duyệt/từ chối, mở hạn xác nhận nơi thực tập, sinh viên đã xác nhận nơi thực tập, phân công GVHD, nhắc hạn nộp báo cáo final và thông báo cho sinh viên khi GVHD nộp điểm.
-- **Quy tắc về thông báo nộp điểm:** Khi GVHD nộp điểm thực tập, hệ thống chỉ gửi thông báo (trên web và qua email) cho chính sinh viên tương ứng để biết điểm tổng kết tạm tính. Hệ thống **tuyệt đối không gửi thông báo trên website và không gửi email cho Quản trị viên (Admin/Khoa)** để tránh làm tràn hộp thư (inbox spam) khi giảng viên nộp điểm hàng loạt, đồng thời bảo toàn hạn ngạch gửi email hàng ngày của hệ thống. Quản trị viên theo dõi tiến độ nộp điểm tập trung trên trang Quản lý điểm (`/admin/grades`) và xuất file tổng hợp XLSX.
+- Cần có thông báo email tự động khi các trạng thái quan trọng thay đổi, ví dụ: đăng ký được duyệt/từ chối, mở hạn xác nhận nơi thực tập, sinh viên đã xác nhận nơi thực tập, phân công GVHD, nhắc hạn nộp báo cáo final và thông báo cho sinh viên khi GVHD hoàn tất nộp đánh giá (lưu ý: chức năng xem điểm học phần đã được loại bỏ trên portal này, điểm chính thức được công bố trên Cổng Đào tạo daotao.vnu.edu.vn).
+- **Quy định loại bỏ chức năng xem điểm ở site Sinh viên & thông báo đánh giá:** Điểm học phần thực tập là hồ sơ học vụ chính thức của Nhà trường, được quản lý và xử lý nội bộ giữa Giảng viên hướng dẫn (GVHD) và Khoa CNTT. Hệ thống **loại bỏ hoàn toàn chức năng xem điểm ở site sinh viên** (bao gồm menu Điểm thực tập, route `/grades`, bảng điểm tóm tắt trên Dashboard và API `/api/grades/my`). Sinh viên chỉ theo dõi tiến độ đến bước nộp báo cáo final; điểm số chính thức được công bố và tra cứu trên Cổng Thông tin Đào tạo của Trường (`daotao.vnu.edu.vn`). Khi GVHD nộp điểm, hệ thống chỉ gửi thông báo xác nhận GVHD đã hoàn tất nộp đánh giá cho sinh viên (nếu Admin bật tính năng trong Cài đặt); hệ thống **tuyệt đối không gửi thông báo trên website và không gửi email cho Quản trị viên (Admin/Khoa)** để tránh làm tràn hộp thư (inbox spam) khi giảng viên nộp điểm hàng loạt, đồng thời bảo toàn hạn ngạch gửi email hàng ngày của hệ thống. Quản trị viên theo dõi tiến độ nộp điểm tập trung trên trang Quản lý điểm (`/admin/grades`) và xuất file tổng hợp XLSX để nộp Phòng Đào tạo.
 - Khi admin soạn thông báo thủ công và chọn **“Hiển thị trên website và gửi email theo quota”**, thông báo phải hiển thị trên website ngay; hệ thống gửi email ngay cho số người nhận còn nằm trong quota ngày và tự động đưa phần vượt quota vào hàng đợi để gửi sau.
 - **Quy tắc gửi email tự động theo hạn ngạch mỗi ngày:** Các email nằm trong hàng đợi (`queued`) sẽ được hệ thống **tự động gửi định kỳ mỗi ngày khi bước sang ngày mới và quota được làm mới**, tự động gửi tối đa cho đến khi hết hạn ngạch ngày (`EMAIL_DAILY_SEND_CAP`). Quản trị viên (Admin) **hoàn toàn không cần phải đăng nhập và bấm nút “Gửi theo quota” thủ công** mỗi ngày; nút này trên giao diện chỉ đóng vai trò kích hoạt tức thì bổ sung nếu Admin muốn ép gửi ngay.
 - **Quy định hoàn thiện 100% điểm và xử lý sinh viên bỏ môn:** Khoa yêu cầu Giảng viên hướng dẫn (GVHD) phải hoàn thiện điểm cho **100% sinh viên được phân công**. Với sinh viên không nộp báo cáo thực tập hoặc bỏ môn, GVHD chủ động nhập **0 điểm** (Tiến độ: `0`, Báo cáo: `0`, Doanh nghiệp: `0` $\rightarrow$ Điểm tổng kết: `0.0`) kèm ghi chú lý do (*"Sinh viên không nộp báo cáo thực tập (Bỏ môn)."*). Hệ thống đồng bộ nhãn nút bấm **"Xem & Chấm"** cho tất cả sinh viên (cả khi đã nộp hoặc chưa nộp báo cáo) để đảm bảo giao diện nhất quán và tôn trọng tính tự chủ của giảng viên. Điểm tổng kết luôn được làm tròn đến 1 chữ số thập phân, đồng thời hệ thống bảo toàn tính toàn vẹn dữ liệu (không đánh dấu `accepted` báo cáo nếu sinh viên chưa nộp file thực tế).
@@ -160,6 +160,11 @@ Sinh viên có thể:
 - Đăng ký “Trường Đại học Công nghệ” khi thực tập tại trường, kèm tên giảng viên hướng dẫn.
 - Hủy toàn bộ đăng ký và đăng ký lại trong thời gian hệ thống mở.
 - Xem trạng thái đăng ký: `Chờ duyệt`, `Đã duyệt`, `Từ chối`.
+- Xác nhận 1 nơi thực tập chính thức trong đợt mở xác nhận.
+- Đăng ký nguyện vọng Giảng viên hướng dẫn (GVHD).
+- Nộp báo cáo thực tập cuối kỳ dạng file PDF (dung lượng tối đa 10 MB).
+- Nhận phản hồi/yêu cầu nộp lại báo cáo từ GVHD và nộp lại nếu cần.
+- *(Lưu ý: Hệ thống không hiển thị điểm học phần ở site sinh viên; điểm học phần chính thức được quản lý nội bộ giữa GVHD và Khoa, sau đó được nhập và công bố trên Cổng Đào tạo `daotao.vnu.edu.vn`).*
 
 ### Quản trị viên
 
@@ -559,7 +564,7 @@ Cần bổ sung thông báo email cho các mốc quan trọng:
 - Khoa phân công hoặc thay đổi GVHD.
 - Nhắc hạn nộp báo cáo final.
 - Báo cáo final được ghi nhận hoặc cần nộp lại.
-- Giảng viên nộp điểm (chỉ gửi cho sinh viên nhận điểm, không gửi thông báo trên web và không gửi email cho Admin) và Khoa khóa/tổng hợp điểm.
+- Giảng viên nộp kết quả đánh giá (chỉ gửi thông báo hoàn tất đánh giá cho sinh viên nhận đánh giá nếu admin bật tính năng, không hiển thị điểm trên portal sinh viên, không gửi thông báo trên web và không gửi email cho Admin) và Khoa khóa/tổng hợp bảng điểm XLSX.
 
 Về triển khai, có thể dùng một dịch vụ email transaction miễn phí hoặc quota thấp trước; nếu không muốn phụ thuộc dịch vụ ngoài, hệ thống vẫn nên lưu bảng `notifications` để theo dõi lịch sử thông báo và trạng thái gửi.
 
@@ -1223,6 +1228,8 @@ Thiết kế UI admin:
 - Chỉ tiêu mặc định GVHD được cấu hình trong `Cài đặt hệ thống`: `GS/PGS` mặc định 5, `TS` mặc định 8, `ThS/khác` mặc định 10. Quota riêng từng giảng viên nếu có sẽ ghi đè mặc định này. Hệ thống vẫn ghi nhận đăng ký GVHD đã được đồng ý khi vượt quota và chỉ cảnh báo trực tiếp cho sinh viên, không tạo thông báo hoặc email.
 
 ### 10.1. Bug: Admin sửa GVHD trong đăng ký không cập nhật trang sinh viên
+
+*(Lưu ý kiến trúc mới: Chức năng xem điểm ở site sinh viên `StudentGradeView` và API `/api/grades/my` đã được loại bỏ hoàn toàn; sinh viên tra cứu điểm chính thức trên Cổng Đào tạo. Tuy nhiên, logic đồng bộ `advisor_assignments` này vẫn giữ nguyên giá trị cốt lõi để đảm bảo hiển thị đúng GVHD trên Dashboard sinh viên và danh sách phân công GVHD của Khoa).*
 
 **Mô tả vấn đề:**
 

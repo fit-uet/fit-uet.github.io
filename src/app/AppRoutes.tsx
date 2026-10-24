@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { Dashboard, StudentFinalReportView, StudentGradeView } from '../features/student';
+import { Dashboard, StudentFinalReportView } from '../features/student';
 import { LecturerGradeView, LecturerHome } from '../features/lecturer';
 import { AdminDashboard, AdminPanel, FinalInternshipListAdmin, AdvisorAssignmentAdmin, FinalReportAdmin, GradeAdmin, NotificationAdmin, LecturerRegistry, CompanyRegistry, ApprovedCompanyRegistry, AdminSettings, PlanSettingsAdmin, LecturerGuideSettingsAdmin, RegistrationRulesSettingsAdmin, FAQQuestionsAdmin, FAQSettingsAdmin, StudentRegistry, AdminRegistry } from '../features/admin';
 import { CompanyDetail, PlanView, LecturerGuideView, FAQView, ChatView, Profile } from '../features/shared';
@@ -69,7 +69,6 @@ export function AppRoutes({
       <Route path="/admin/registration-rules" element={adminOnly(<RegistrationRulesSettingsAdmin token={token} />)} />
 
       <Route path="/reports/final" element={studentOnly(<StudentFinalReportView token={token} user={user} />)} />
-      <Route path="/grades" element={studentOnly(<StudentGradeView token={token} />)} />
       <Route path="/company/:id" element={<CompanyDetail user={user} token={token} />} />
       <Route path="/plan" element={<PlanView user={user} />} />
       <Route path="/lecturer-guide" element={lecturerOnly(<LecturerGuideView token={token} user={user} />)} />

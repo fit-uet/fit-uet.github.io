@@ -20,7 +20,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
   const [myAdvisors, setMyAdvisors] = useState<any[]>([]);
   const [advisorRequest, setAdvisorRequest] = useState<any>(null);
   const [finalReport, setFinalReport] = useState<any>(null);
-  const [myGrade, setMyGrade] = useState<any>(null);
   const [selectedMilestoneTab, setSelectedMilestoneTab] = useState<'registration' | 'confirmation' | 'advisor' | 'report' | null>(null);
   const [uploadingReport, setUploadingReport] = useState(false);
   const [campaign, setCampaign] = useState<any>({ year: '2026', start: '22/05/2026', end: '15/06/2026' });
@@ -375,20 +374,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
     });
   };
 
-  const getLetterGrade = (score: number | null | undefined) => {
-    if (score === null || score === undefined || isNaN(Number(score))) return { letter: '—', gpa: '—', label: 'Chưa có điểm' };
-    const s = Number(score);
-    if (s >= 9.0) return { letter: 'A+', gpa: '4.0', label: 'Xuất sắc' };
-    if (s >= 8.5) return { letter: 'A', gpa: '4.0', label: 'Giỏi' };
-    if (s >= 8.0) return { letter: 'B+', gpa: '3.5', label: 'Khá giỏi' };
-    if (s >= 7.0) return { letter: 'B', gpa: '3.0', label: 'Khá' };
-    if (s >= 6.5) return { letter: 'C+', gpa: '2.5', label: 'Trung bình khá' };
-    if (s >= 5.5) return { letter: 'C', gpa: '2.0', label: 'Trung bình' };
-    if (s >= 5.0) return { letter: 'D+', gpa: '1.5', label: 'Trung bình yếu' };
-    if (s >= 4.0) return { letter: 'D', gpa: '1.0', label: 'Đạt' };
-    return { letter: 'F', gpa: '0.0', label: 'Không đạt' };
-  };
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -398,7 +383,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
     try {
       const isStudent = user?.role === 'student';
       const authHeaders = { Authorization: `Bearer ${token}` };
-      const [compData, regRes, finalRes, advisorRes, advisorReqRes, reportRes, campData, itListData, lecData, gradeRes] = await Promise.all([
+      const [compData, regRes, finalRes, advisorRes, advisorReqRes, reportRes, campData, itListData, lecData] = await Promise.all([
         cachedJsonFetch<any[]>(`${API_BASE}/api/companies`, {
           cacheKey: 'companies',
           ttlMs: CACHE_TTL.companies,
@@ -428,12 +413,11 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
           headers: authHeaders,
           onAuthExpired,
         }),
-        isStudent ? fetch(`${API_BASE}/api/grades/my`, { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve(null),
       ]);
 
       setCompanies(Array.isArray(compData) ? compData : []);
 
-      const authResponses = [regRes, finalRes, advisorRes, advisorReqRes, reportRes, gradeRes];
+      const authResponses = [regRes, finalRes, advisorRes, advisorReqRes, reportRes];
       for (const r of authResponses) {
         if (r && r.status === 401) {
           onAuthExpired();
@@ -471,9 +455,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
 
       const reportData = reportRes ? await reportRes.json() : null;
       setFinalReport(reportData && !reportData.error ? reportData : null);
-
-      const gradeData = gradeRes ? await gradeRes.json().catch(() => null) : null;
-      setMyGrade(gradeData && !gradeData.error ? gradeData : null);
 
       if (campData && !campData.error) {
         setCampaign(campData);
@@ -837,7 +818,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
         ? 'advisor'
         : 'report';
   const currentTab = selectedMilestoneTab || activeCampaignKey;
-  const scoreText = (val: any) => (val === null || val === undefined || val === '' ? '—' : Number(val).toFixed(1));
   const activeCampaignTitle = openCampaign?.label || 'Đăng ký nguyện vọng';
   const showRegistrationTask = activeCampaignKey === 'registration' || registrationWindowStatus === 'open';
   const showConfirmationTask = activeCampaignKey === 'confirmation' && hasRegistered;
@@ -1158,45 +1138,7 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
                 </div>
               )}
 
-              {/* Score Section */}
-              <div className="pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Kết quả đánh giá học phần</span>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/grades')}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
-                  >
-                    Bảng điểm chi tiết →
-                  </button>
-                </div>
-                {myGrade?.final_score !== null && myGrade?.final_score !== undefined ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="text-xs text-slate-500 font-medium">Tổng kết</div>
-                      <div className="text-2xl font-bold text-slate-900 mt-0.5">{Number(myGrade.final_score).toFixed(1)}</div>
-                      <div className="text-[11px] text-emerald-600 font-semibold">{getLetterGrade(myGrade.final_score).letter} · GPA {getLetterGrade(myGrade.final_score).gpa}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="text-xs text-slate-500 font-medium">Quá trình (20%)</div>
-                      <div className="text-base font-semibold text-slate-900 mt-1">{scoreText(myGrade.progress_score)}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="text-xs text-slate-500 font-medium">Báo cáo (20%)</div>
-                      <div className="text-base font-semibold text-slate-900 mt-1">{scoreText(myGrade.report_score)}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="text-xs text-slate-500 font-medium">Đánh giá của DN/GVHD (nếu thực tập ở Trường) (60%)</div>
-                      <div className="text-base font-semibold text-slate-900 mt-1">{scoreText(myGrade.company_score)}</div>
-                    </div>
 
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-500 font-medium">
-                    Báo cáo đang trong quá trình chấm điểm.
-                  </div>
-                )}
-              </div>
 
               {/* Clean, accurate note */}
               <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-100 text-xs text-blue-900 leading-relaxed font-medium">
