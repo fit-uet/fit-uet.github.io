@@ -77,7 +77,7 @@ export function AppRoutes({
       <Route path="/chat" element={<GuardedRoute allowed={chatAllowed}><ChatView token={token} user={user} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
       <Route path="/chat/group/:groupLecturerId" element={<GuardedRoute allowed={chatAllowed}><ChatView token={token} user={user} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
       <Route path="/chat/:studentUserId/:lecturerId" element={<GuardedRoute allowed={chatAllowed}><ChatView token={token} user={user} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
-      <Route path="/notifications" element={<MyNotifications token={token} onChanged={onUnreadNotificationsChanged} />} />
+      <Route path="/notifications" element={<MyNotifications token={token} user={user} onChanged={onUnreadNotificationsChanged} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

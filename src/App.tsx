@@ -225,7 +225,13 @@ function App() {
                             <Link to="/notifications" onClick={() => setIsNotificationOpen(false)} className="text-xs font-semibold text-blue-600 hover:underline">Xem tất cả</Link>
                           </div>
                           <div className="max-h-[70vh] overflow-y-auto">
-                            <MyNotifications token={token} compact onChanged={setUnreadNotifications} />
+                            <MyNotifications
+                              token={token}
+                              user={user}
+                              compact
+                              onChanged={setUnreadNotifications}
+                              onClose={() => setIsNotificationOpen(false)}
+                            />
                           </div>
                         </div>
                       </>

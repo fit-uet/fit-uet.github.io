@@ -149,6 +149,15 @@ commonRouter.get('/api/notifications/my', requireAuth, async (req: any, res: any
       `,
       args: [userId, email, personalEmail, personalEmail],
     })).rows as any[];
+    const userRole = String(req.user.role || 'student').toLowerCase();
+    const filteredPersonalRows = personalRows.filter((row: any) => {
+      if (userRole !== 'admin') {
+        if (row.type === 'faq_question_created' || row.type === 'advisor_quota_exceeded') {
+          return false;
+        }
+      }
+      return true;
+    });
     const systemRows = (await db.execute({
       sql: `
         SELECT s.id, 'system' as source, s.type, s.subject, s.body, 'system' as status, NULL as error, s.created_at, NULL as sent_at, r.read_at
@@ -161,7 +170,7 @@ commonRouter.get('/api/notifications/my', requireAuth, async (req: any, res: any
       `,
       args: [req.user.id, req.user.role || 'student'],
     })).rows as any[];
-    const rows = [...personalRows, ...systemRows]
+    const rows = [...filteredPersonalRows, ...systemRows]
       .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
       .slice(0, 100);
     const unread = rows.filter(row => !row.read_at).length;
@@ -309,6 +318,30 @@ commonRouter.get('/api/plan', async (req: any, res: any) => {
 });
 
 // FAQ Q&A for authenticated users
+commonRouter.get('/api/faq/questions/public', requireAuth, async (req: any, res: any) => {
+  try {
+    const role = req.query.role ? String(req.query.role).trim() : null;
+    let sql = `
+      SELECT id, role, question, answer, created_at, answered_at
+      FROM faq_questions
+      WHERE status = 'answered'
+        AND answer IS NOT NULL
+        AND trim(answer) != ''
+    `;
+    const args: any[] = [];
+    if (role && (role === 'student' || role === 'lecturer')) {
+      sql += ` AND role = ?`;
+      args.push(role);
+    }
+    sql += ` ORDER BY answered_at DESC, id DESC LIMIT 200`;
+
+    const rows = (await db.execute({ sql, args })).rows;
+    res.json(rows);
+  } catch (e: any) {
+    res.status(503).json({ error: 'Không tải được danh sách câu hỏi FAQ công khai.', detail: e.message });
+  }
+});
+
 commonRouter.get('/api/faq/questions/my', requireAuth, async (req: any, res: any) => {
   try {
     const rows = (await db.execute({

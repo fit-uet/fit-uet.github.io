@@ -1659,6 +1659,15 @@ async function route(request: Request, env: Env, ctx?: any) {
       `,
       args: [userId, email, personalEmail, personalEmail],
     })).rows as any[];
+    const userRole = String(user.role || 'student').toLowerCase();
+    const filteredPersonalRows = personalRows.filter((row: any) => {
+      if (userRole !== 'admin') {
+        if (row.type === 'faq_question_created' || row.type === 'advisor_quota_exceeded') {
+          return false;
+        }
+      }
+      return true;
+    });
     const systemRows = (await database.execute({
       sql: `
         SELECT s.id, 'system' as source, s.type, s.subject, s.body, 'system' as status, NULL as error, s.created_at, NULL as sent_at, r.read_at
@@ -1671,7 +1680,7 @@ async function route(request: Request, env: Env, ctx?: any) {
       `,
       args: [user.id, user.role || 'student'],
     })).rows as any[];
-    const rows = [...personalRows, ...systemRows]
+    const rows = [...filteredPersonalRows, ...systemRows]
       .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
       .slice(0, 100);
     return json({ rows, unread: rows.filter(row => !row.read_at).length });
@@ -4850,6 +4859,26 @@ async function route(request: Request, env: Env, ctx?: any) {
       { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('faq_lecturer_md', ?)", args: [String(body.faq_lecturer_md || '')] },
     ]);
     return json({ success: true });
+  }
+
+  if (method === 'GET' && path === '/api/faq/questions/public') {
+    const role = url.searchParams.get('role');
+    let sql = `
+      SELECT id, role, question, answer, created_at, answered_at
+      FROM faq_questions
+      WHERE status = 'answered'
+        AND answer IS NOT NULL
+        AND trim(answer) != ''
+    `;
+    const args: any[] = [];
+    if (role && (role === 'student' || role === 'lecturer')) {
+      sql += ` AND role = ?`;
+      args.push(role);
+    }
+    sql += ` ORDER BY answered_at DESC, id DESC LIMIT 200`;
+
+    const rows = (await database.execute({ sql, args })).rows;
+    return json(rows);
   }
 
   if (method === 'GET' && path === '/api/faq/questions/my') {
