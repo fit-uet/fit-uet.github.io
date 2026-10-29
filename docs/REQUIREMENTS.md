@@ -257,3 +257,11 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 Không bật luồng Dự án trên production trước khi các kiểm tra quyền lớp, file và điểm đạt nghiệm thu. Mốc thời gian cụ thể của HKI 2026–2027 do Khoa cấu hình; tên học kỳ không tự suy ra hạn nộp/chấm từ lịch cũ trong Excel.
 
 Các tiêu chí TC ở trên là bộ nghiệm thu nghiệp vụ, không đồng nghĩa mọi tích hợp đã được kiểm thử trên tài khoản thật. Bản Express hiện giữ bảng Thực tập cũ làm nguồn ghi duy nhất cho đợt legacy, bổ sung dữ liệu lớp/lần học cho đợt mới; xem [phạm vi và giới hạn thực tế](IMPLEMENTATION_STATUS.md#ranh-gioi-cua-ban-cai-dat) trước khi lập biên bản nghiệm thu.
+
+## Đính chính danh sách Dự án theo STT
+
+Theo xác nhận của Khoa, chỉ tiếp nhận **dòng có giá trị STT** trong hai sheet `DACN`, `DAKH`. Dòng thiếu hoặc chỉ có khoảng trắng ở STT không tạo/cập nhật lần học, kể cả có MSSV hoặc GVHD; thiếu cột STT phải báo lỗi. Các dòng đủ điều kiện vẫn gộp theo MSSV + Mã LMH. Không dùng việc có GVHD làm điều kiện thay thế STT: sinh viên có STT nhưng chưa phân công vẫn được tiếp nhận.
+
+Với nguồn HKI 2026–2027 đã đối soát: **215 DACN + 193 DAKH = 408 lần học, 405 sinh viên duy nhất**. Ba sinh viên học cả hai môn có hai hồ sơ. Số 535/532 trong các báo cáo nhập cũ bao gồm các dòng không STT và là số lịch sử trước đính chính. Không tự xóa sinh viên chỉ vì vắng file nhập sau này; đây là đợt đối soát có nguồn, backup và xác nhận riêng.
+
+Bản xem trước import hiển thị số dòng bỏ qua do thiếu STT. Tổng quan không dùng tỷ lệ lần học/sinh viên; tiến độ báo cáo và điểm Dự án tính theo lần học. Thực tập giữ các chỉ số cũ.

@@ -498,3 +498,13 @@ test('legacy reports share one title and toolbar, preserve adviser filters and U
     await page.screenshot({path:`${screenshots}/compact-legacy-reports.png`,fullPage:true});expect(errors).toEqual([]);
   }finally{await context.close();}
 });
+
+test('project overview explains enrollment counts and import preview skips rows without STT',async({browser})=>{
+ const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
+ try{
+  await page.goto(`/#/campaigns/${c.campaignId}`);await expect(page.getByText('hồ sơ học phần',{exact:true})).toBeVisible();await expect(page.getByText('101%',{exact:true})).toHaveCount(0);await expect(page.getByText('200%',{exact:true})).toHaveCount(0);
+  await feature(page,'students');await page.getByRole('button',{name:'Import danh sách',exact:true}).click();
+  const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([['STT','Mã SV','Họ và tên','Lớp khóa học','Mã LMH'],[1,'24029998','Có số thứ tự','CS1','INT3132 1'],['','24029999','Không có số thứ tự','CS1','INT3132 1']]),'DACN');
+  await page.locator('input[type=file]').setInputFiles({name:'roster.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:XLSX.write(book,{type:'buffer',bookType:'xlsx'})});await page.getByRole('button',{name:'Xem trước',exact:true}).click();await expect(page.getByText('1 sinh viên/lớp',{exact:true})).toBeVisible();await expect(page.getByText('1 dòng bỏ qua vì thiếu STT',{exact:true})).toBeVisible();await page.getByRole('checkbox',{name:'Chỉ hiện dòng cần xử lý',exact:true}).uncheck();await expect(page.getByText('Có số thứ tự',{exact:true})).toBeVisible();await expect(page.getByText('Không có số thứ tự',{exact:true})).toHaveCount(0);expect(errors).toEqual([]);
+ }finally{await context.close();}
+});

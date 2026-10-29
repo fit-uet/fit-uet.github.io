@@ -152,7 +152,7 @@ Thông báo thủ công có hai chế độ: website kèm email theo quota hoặ
 
 Cron dùng `POST /api/cron/process-email-queue` và `POST /api/cron/export-to-sheet` với header X-Cron-Secret. Nút gửi hàng đợi là công cụ kích hoạt bổ sung. Theo dõi queued/failed, lỗi provider và workflow để xác định việc gửi thực tế; lịch trên không phải bảo đảm thời điểm thực thi tuyệt đối của dịch vụ bên ngoài.
 
-Sao lưu database và manifest/file R2 trước tác vụ bảo trì dữ liệu, kiểm tra khả năng khôi phục. Đã ánh xạ 691 hồ sơ Thực tập hợp lệ vào Hè 2025–2026 và tiếp nhận 535 lần học Dự án HKI 2026–2027 vào Turso; 208 hồ sơ TT thiếu học phần được giữ để đối soát. Xem [quy trình phát hành](docs/PRODUCTION_RELEASE.md).
+Sao lưu database và manifest/file R2 trước tác vụ bảo trì dữ liệu, kiểm tra khả năng khôi phục. Đã ánh xạ 691 hồ sơ Thực tập hợp lệ vào Hè 2025–2026 và tiếp nhận 408 lần học Dự án HKI 2026–2027 theo điều kiện STT vào Turso; 208 hồ sơ TT thiếu học phần được giữ để đối soát. Xem [quy trình phát hành](docs/PRODUCTION_RELEASE.md).
 
 ## Xử lý sự cố thường gặp
 
