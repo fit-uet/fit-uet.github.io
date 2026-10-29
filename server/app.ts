@@ -13,6 +13,7 @@ import { adminRouter } from './routes/admin.routes';
 import { academicRouter } from './academic/routes';
 import { legacyAcademicWriteGuard } from './academic/legacyGuard';
 import { healthRouter } from './routes/health.routes';
+import { emailDiagnosticsRouter } from './routes/emailDiagnostics.routes';
 
 export async function createApp(options: { vite?: import('vite').InlineConfig } = {}) {
   const app = express();
@@ -45,6 +46,7 @@ export async function createApp(options: { vite?: import('vite').InlineConfig } 
   app.use(chatRouter);
   app.use(cronRouter);
   app.use(adminRouter);
+  app.use(emailDiagnosticsRouter);
 
   // Global Error Handling Middleware
   app.use((err: any, req: any, res: any, next: any) => {

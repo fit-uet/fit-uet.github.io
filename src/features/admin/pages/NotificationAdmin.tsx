@@ -17,6 +17,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { API_BASE, saveXlsx, PaginationControls, PageDescriptionTooltip, usePaginatedProxy, PaginatedQuery, PaginatedResult } from '../../../shared';
+import { EmailConnectionCheck } from '../components/EmailConnectionCheck';
 
 export function NotificationAdmin({ token }: { token: string }) {
   const navigate = useNavigate();
@@ -478,6 +479,8 @@ export function NotificationAdmin({ token }: { token: string }) {
           </div>
         </div>
       )}
+
+      <EmailConnectionCheck token={token} />
 
       {/* Manual Composer Inset Group (Collapsible) */}
       {showManualComposer && (

@@ -3,6 +3,31 @@ import { mkdir, readFile } from 'node:fs/promises';
 import * as XLSX from 'xlsx';
 
 const screenshots = 'scratch/academic-ui-results/previews';
+
+test('Khoa checks mail connectivity without sending messages and sees the server IP restriction', async ({ browser }) => {
+  const { page, context, errors } = await session(browser, 'admin');
+  const providerRequests: string[] = [];
+  try {
+    await context.route('**/api/admin/notifications?*', route => route.fulfill({ json: { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } }));
+    await context.route('**/api/admin/notifications/stats', route => route.fulfill({ json: { provider: 'brevo', daily_cap: 250, sent_today: 0, remaining_today: 250, statuses: {} } }));
+    let checks = 0;
+    await context.route('**/api/admin/email/diagnostics', route => {
+      providerRequests.push(route.request().method()); checks++;
+      return route.fulfill({ json: checks === 1
+        ? { provider: 'brevo', status: 'ip_blocked', checkedAt: '2026-10-29T04:00:00Z', message: 'Brevo chưa cho phép IP đi ra của máy chủ này.', blockedIp: '192.0.2.44', sender: 'sender@example.org' }
+        : { provider: 'brevo', status: 'connected', checkedAt: '2026-10-29T04:01:00Z', message: 'Máy chủ đã kết nối Brevo thành công. Chưa gửi thư.' } });
+    });
+    page.on('request', request => { if (request.method() !== 'GET' && request.url().includes('/api/admin/')) providerRequests.push('unexpected-write'); });
+    await page.goto('/#/system/notifications');
+    await page.getByRole('button', { name: 'Kiểm tra kết nối email', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Brevo chưa cho phép IP');
+    await expect(page.getByRole('status')).toContainText('192.0.2.44');
+    await page.getByRole('button', { name: 'Kiểm tra kết nối email', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('đã kết nối Brevo thành công');
+    await expect(page.getByText('IP máy chủ cần được cho phép:')).toHaveCount(0);
+    expect(providerRequests).toEqual(['GET', 'GET']); expect(errors).toEqual([]);
+  } finally { await context.close(); }
+});
 async function session(browser: Browser, role: 'admin' | 'student' | 'lecturer' | 'reviewer', mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } });
   await context.route('**/*', route => { const url = new URL(route.request().url()); return ['127.0.0.1', 'localhost'].includes(url.hostname) || url.protocol === 'blob:' || url.protocol === 'data:' ? route.continue() : route.abort(); });

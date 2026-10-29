@@ -56,14 +56,14 @@ Mã không thay/xóa bảng nghiệp vụ hoặc file TT cũ. Các màn TT cũ l
 | --- | --- |
 | `npm run lint` | TypeScript frontend, Express, Worker và scripts |
 | `npm run test:academic` | 45 kiểm thử schema/campaign, học lại/nhiều lớp, import, quyền, GVNX, điểm/phiên bản, chat, FAQ, thông báo, HTTP PDF/XLSX và CLI backup |
-| `npm run test:academic:ui` | 8 luồng Chromium: quản trị lớp/GVNX, SV nộp/hai GV chấm/ẩn điểm, khóa/mở lại, mobile, chat xuyên lớp/đính kèm, hai hồ sơ, export, xem trước thông báo và cache khi đổi nhóm |
+| `npm run test:academic:ui` | 9 luồng Chromium: quản trị lớp/GVNX, SV nộp/hai GV chấm/ẩn điểm, khóa/mở lại, mobile, chat xuyên lớp/đính kèm, hai hồ sơ, export, xem trước thông báo, cache khi đổi nhóm và kiểm tra kết nối email |
 | `npm run test:academic:d1` | Schema/command trigger trên D1 cục bộ của Wrangler: tiếp nhận, chặn revision cũ và rollback toàn bộ khi lỗi ràng buộc muộn |
 | `npm run build` | Bundle frontend và server |
-| `npm run test:staging` | 11 kiểm thử sao lưu/đối soát/WAL, readiness, cấu hình, cron, hộp thư staging, backup Turso và chờ đúng phiên bản phát hành |
+| `npm run test:staging` | 16 kiểm thử sao lưu/đối soát/WAL, readiness, cấu hình, cron, hộp thư staging, backup Turso, chờ đúng phiên bản phát hành và chẩn đoán email không gửi thư |
 
 Các kiểm thử dùng database riêng và file tạm. Kiểm thử HTTP so sánh byte PDF tải về, kiểm tra quyền trước cả 304 và xác nhận SV không nhận payload điểm. Kiểm thử giao diện chặn truy cập các domain ngoài localhost. Ảnh/trace khi chạy lưu trong `scratch/academic-ui-results` (gitignore).
 
-Kiểm thử trên D1 local không thay cho nghiệm thu D1 REST remote. Đã kiểm kê/tải sao lưu đủ 664 tệp R2 thật. Chưa xác thực Google OAuth thật, luồng upload R2 qua UI, quyền nội dung Drive, provider email hoặc hiệu năng trên dữ liệu production. Build còn cảnh báo bundle JavaScript lớn; đây chưa phải kết quả đo hiệu năng.
+Kiểm thử trên D1 local không thay cho nghiệm thu D1 REST remote. Đã kiểm kê/tải sao lưu đủ 664 tệp R2 thật; người quản lý xác nhận Google OAuth thật đăng nhập được sau phát hành. Chưa nghiệm thu luồng upload R2 qua UI, quyền nội dung Drive, nhận thư từ provider email hoặc hiệu năng trên dữ liệu production. Build còn cảnh báo bundle JavaScript lớn; đây chưa phải kết quả đo hiệu năng.
 
 <a id="ranh-gioi-cua-ban-cai-dat"></a>
 
