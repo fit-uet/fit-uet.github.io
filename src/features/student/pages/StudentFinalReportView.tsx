@@ -1,19 +1,8 @@
+import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Upload,
-  Download,
-  RefreshCw,
-  FileText,
-  Building2,
-  Calendar,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  FileCheck,
-} from 'lucide-react';
+import { Upload, Download, RefreshCw, FileText, CheckCircle2, ExternalLink, FileCheck } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { API_BASE, CACHE_TTL, cachedJsonFetch, PageDescriptionTooltip } from '../../../shared';
 import { Badge } from '../../../shared/ui';
@@ -149,10 +138,19 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
       : finalInternship.company_name
     : 'Chưa xác nhận';
 
+  const headerActions = (<a
+          href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-white text-slate-700 border border-black/[0.08] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+        >
+          <ExternalLink size={14} className="text-slate-400" /> Tải mẫu báo cáo của Khoa
+        </a>);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Navigation & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <button
             onClick={() => navigate('/')}
@@ -168,15 +166,8 @@ export function StudentFinalReportView({ token, user }: { token: string; user: a
             <PageDescriptionTooltip description="Nộp 01 file báo cáo PDF hoàn chỉnh (đã scan gộp trang Phiếu đánh giá có dấu mộc công ty) để GVHD chấm và nhập điểm." />
           </h2>
         </div>
-        <a
-          href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-white text-slate-700 border border-black/[0.08] px-3.5 py-2 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-        >
-          <ExternalLink size={14} className="text-slate-400" /> Tải mẫu báo cáo của Khoa
-        </a>
-      </div>
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       {/* Two-Column Apple Workspace Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

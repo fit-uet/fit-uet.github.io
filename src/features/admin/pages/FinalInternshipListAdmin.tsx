@@ -1,8 +1,9 @@
+import { CampaignLegacyHeader, CampaignStandalone, useCampaignExtraFilters } from '../../academic/CampaignLayoutContext';
 import { useLegacyPager } from '../../academic/useLegacyPager';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { useLegacyPage, useLegacyFilter, useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
-import { useNavigate } from 'react-router-dom';
+import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, Download, ArrowUpDown, Search, RefreshCw, Trash2 } from 'lucide-react';
 import { API_BASE, saveXlsx, paginationBounds, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
@@ -13,9 +14,9 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useLegacySearch();
   const legacyMembership = useLegacyMembership();
-  const [typeFilter, setTypeFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useLegacyFilter('status');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'confirmed_at', direction: 'desc' });
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useLegacyPage();
   const pageSize = 25;
   const paging = useLegacyPager(token, '/api/admin/final-internships', { page: currentPage, q: searchTerm, status: typeFilter, courseCode: initialCourseCode, sort: sortConfig?.key, direction: sortConfig?.direction });
 
@@ -60,6 +61,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
     type === 'school' ? 'Tại trường' : type === 'partner' ? 'Đối tác' : 'Công ty';
 
   const requestSort = (key: string) => {
+    setCurrentPage(1);
     setSortConfig(prev => ({
       key,
       direction: prev?.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
@@ -106,7 +108,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
   }, [rows, searchTerm, typeFilter, sortConfig, initialCourseCode, legacyMembership]);
 
   useEffect(() => {
-    setCurrentPage(1);
+    if (!paging.enabled) setCurrentPage(1);
   }, [searchTerm, typeFilter, sortConfig]);
 
   const pagination = paginationBounds(paging.page?.total ?? filteredRows.length, currentPage, pageSize);
@@ -138,11 +140,29 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
     await saveXlsx('danh_sach_xac_nhan_thuc_tap.xlsx', headers, data, 'Xác nhận TT');
   };
 
+  useCampaignExtraFilters([{key:'status',label:'Loại thực tập',options:[{value:'company',label:'Công ty'},{value:'school',label:'Tại trường'},{value:'partner',label:'Đối tác'}]}]);
+
   if (loading) return <div className="text-center py-20 text-gray-500">Đang tải danh sách xác nhận thực tập...</div>;
+
+  const headerActions = (<div className="flex flex-wrap items-center gap-2.5">
+          <CampaignStandalone><button
+            onClick={fetchRows}
+            className="bg-white hover:bg-[#f8fafc] text-[#0f172a] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <RefreshCw size={14} /> Tải lại
+          </button></CampaignStandalone>
+          <button
+            onClick={exportXlsx}
+            disabled={filteredRows.length === 0}
+            className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={14} /> Xuất XLSX
+          </button>
+        </div>);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <button
             onClick={() => navigate('/admin')}
@@ -155,22 +175,8 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
             <PageDescriptionTooltip description="Sinh viên đã xác nhận nơi thực tập chính thức để lấy điểm học phần." />
           </h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={fetchRows}
-            className="bg-white hover:bg-[#f8fafc] text-[#0f172a] border border-black/[0.08] px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <RefreshCw size={14} /> Tải lại
-          </button>
-          <button
-            onClick={exportXlsx}
-            disabled={filteredRows.length === 0}
-            className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download size={14} /> Xuất XLSX
-          </button>
-        </div>
-      </div>
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
         <div className="bg-white p-4.5 rounded-2xl border border-black/[0.08] shadow-xs flex flex-col">
@@ -195,7 +201,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
         </div>
       </div>
 
-      <div className="bg-white border border-black/[0.08] rounded-2xl shadow-xs p-3.5 flex flex-col md:flex-row gap-2.5">
+      <CampaignStandalone><div className="bg-white border border-black/[0.08] rounded-2xl shadow-xs p-3.5 flex flex-col md:flex-row gap-2.5">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
           <input
@@ -215,7 +221,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
           <option value="school">Tại trường</option>
           <option value="partner">Đối tác</option>
         </select>
-      </div>
+      </div></CampaignStandalone>
 
       <div className="bg-white border border-black/[0.08] rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">

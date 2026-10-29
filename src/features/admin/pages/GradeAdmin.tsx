@@ -1,31 +1,11 @@
+import { CampaignLegacyHeader, CampaignStandalone, CampaignToolbarActions, useCampaignExtraFilters } from '../../academic/CampaignLayoutContext';
 import { useLegacyPager } from '../../academic/useLegacyPager';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { useLegacyPage, useLegacyFilter, useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
-import { useNavigate } from 'react-router-dom';
+import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import { useState, useEffect, useMemo } from 'react';
-import {
-  CheckCircle2,
-  Download,
-  Search,
-  Trash2,
-  Lock,
-  Unlock,
-  AlertCircle,
-  Mail,
-  X,
-  Loader2,
-  Send,
-  Copy,
-  FileSpreadsheet,
-  ChevronLeft,
-  Clock,
-  Users,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-} from 'lucide-react';
+import { CheckCircle2, Download, Search, Trash2, Lock, Unlock, Mail, X, Loader2, Send, Copy, FileSpreadsheet, ChevronLeft, Clock, Users, Check, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import {
   API_BASE,
   saveXlsx,
@@ -43,10 +23,10 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useLegacySearch();
   const legacyMembership = useLegacyMembership();
-  const [statusFilter, setStatusFilter] = useState('');
-  const [courseCodeFilter, setCourseCodeFilter] = useState('');
-  const [advisorFilter, setAdvisorFilter] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useLegacyFilter('status');
+  const [courseCodeFilter, setCourseCodeFilter] = useLegacyFilter('courseCode');
+  const [advisorFilter, setAdvisorFilter] = useLegacyFilter('advisor');
+  const [currentPage, setCurrentPage] = useLegacyPage();
   const [lockingBatch, setLockingBatch] = useState(false);
   const pageSize = 25;
   const paging = useLegacyPager(token, '/api/admin/grades', { page: currentPage, q: searchTerm, status: statusFilter, courseCode: initialCourseCode || courseCodeFilter, advisor: advisorFilter });
@@ -245,7 +225,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
   });
 
   useEffect(() => {
-    setCurrentPage(1);
+    if (!paging.enabled) setCurrentPage(1);
   }, [searchTerm, statusFilter, courseCodeFilter, advisorFilter]);
 
   const pagination = paginationBounds(paging.page?.total ?? filtered.length, currentPage, pageSize);
@@ -489,6 +469,8 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
     }
   };
 
+  useCampaignExtraFilters([{key:'advisor',label:'GVHD chính',options:advisorOptions.map(name=>({value:name,label:name}))},{key:'status',label:'Trạng thái điểm',options:[{value:'missing',label:'Chưa có'},{value:'submitted',label:'Đã nộp'}]}]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
@@ -498,33 +480,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
     );
   }
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
-      {/* Apple Large Title & Navigation Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <button
-            onClick={() => navigate('/admin')}
-            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
-          >
-            <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-            Quản trị hệ thống
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#1b7f37]/10 text-[#1b7f37] flex items-center justify-center shadow-inner shrink-0">
-              <CheckCircle2 size={22} />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
-                Bảng điểm thực tập
-                <PageDescriptionTooltip description="Tổng hợp điểm 20% định kỳ, 20% báo cáo, 60% đánh giá công ty/GVHD. Hỗ trợ khóa điểm, xuất danh sách theo bộ lọc và nhắc nhở giảng viên nộp điểm." />
-              </h1>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Actions Toolbar */}
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+  const headerActions = (<div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button
             onClick={() => {
               const allIds = pendingLecturers.map((l) => Number(l.lecturer_id));
@@ -570,8 +526,53 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
             <Download size={14} className="text-[#64748b]" />
             Xuất XLSX ({filtered.length})
           </button>
+        </div>);
+
+  const bulkActions = (<><button
+            onClick={() => handleLockAll(true)}
+            disabled={lockingBatch}
+            title="Khóa toàn bộ điểm của các sinh viên đã nộp để niêm phong sổ điểm"
+            className="bg-[#fee2e2] text-[#d70015] border border-[#fecaca] hover:bg-[#fecaca] px-3.5 py-2 rounded-full text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
+          >
+            <Lock size={13} /> Khóa tất cả đã nộp
+          </button>
+<button
+            onClick={() => handleLockAll(false)}
+            disabled={lockingBatch}
+            title="Mở khóa cho toàn bộ bảng điểm"
+            className="bg-white text-slate-700 border border-black/[0.08] hover:bg-slate-50 px-3.5 py-2 rounded-full text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
+          >
+            <Unlock size={13} /> Mở khóa tất cả
+          </button></>);
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+      {/* Apple Large Title & Navigation Toolbar */}
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <button
+            onClick={() => navigate('/admin')}
+            className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-[#64748b] bg-white border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-[#0f172a] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer mb-3"
+          >
+            <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            Quản trị hệ thống
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#1b7f37]/10 text-[#1b7f37] flex items-center justify-center shadow-inner shrink-0">
+              <CheckCircle2 size={22} />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
+                Bảng điểm thực tập
+                <PageDescriptionTooltip description="Tổng hợp điểm 20% định kỳ, 20% báo cáo, 60% đánh giá công ty/GVHD. Hỗ trợ khóa điểm, xuất danh sách theo bộ lọc và nhắc nhở giảng viên nộp điểm." />
+              </h1>
+            </div>
+          </div>
         </div>
-      </div>
+
+        {/* Top Actions Toolbar */}
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       {/* KPI Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -627,7 +628,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
       </div>
 
       {/* Search & Filter Pill Bar + Batch Lock Actions */}
-      <div className="bg-white border border-black/[0.06] rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center justify-between gap-3">
+      <CampaignStandalone><div className="bg-white border border-black/[0.06] rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative flex-1 w-full md:w-auto">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64748b]" size={14} />
           <input
@@ -673,25 +674,9 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
             <option value="submitted">Đã nộp</option>
           </select>
 
-          <button
-            onClick={() => handleLockAll(true)}
-            disabled={lockingBatch}
-            title="Khóa toàn bộ điểm của các sinh viên đã nộp để niêm phong sổ điểm"
-            className="bg-[#fee2e2] text-[#d70015] border border-[#fecaca] hover:bg-[#fecaca] px-3.5 py-2 rounded-full text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
-          >
-            <Lock size={13} /> Khóa tất cả đã nộp
-          </button>
-
-          <button
-            onClick={() => handleLockAll(false)}
-            disabled={lockingBatch}
-            title="Mở khóa cho toàn bộ bảng điểm"
-            className="bg-white text-slate-700 border border-black/[0.08] hover:bg-slate-50 px-3.5 py-2 rounded-full text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
-          >
-            <Unlock size={13} /> Mở khóa tất cả
-          </button>
+          {bulkActions}
         </div>
-      </div>
+      </div></CampaignStandalone><CampaignToolbarActions>{bulkActions}</CampaignToolbarActions>
 
       {/* Grade Table */}
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">

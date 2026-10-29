@@ -1,3 +1,4 @@
+import { feature, applyFilters } from './navigation';
 import { test, expect } from '@playwright/test';
 import { mkdir,readFile } from 'node:fs/promises';
 import * as XLSX from 'xlsx';
@@ -21,10 +22,10 @@ test('restored role screens on a prepared local copy of production data', async 
       await page.goto(`${origin.origin}/#/campaigns/2026-2027-1:project`);
       await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Sinh viên phụ trách' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
       if (role === 'admin') {
-        await expect(page.getByText('8 lớp · 532 sinh viên · 535 lần học', { exact: true })).toBeVisible();
+        await expect(page.getByText('Số lần học', {exact:true})).toBeVisible();
         await page.getByRole('region', { name: 'Chức năng quản lý' }).getByRole('button', { name: /^Bảng điểm/ }).click();
         await expect(page.getByRole('columnheader', { name: 'GVHD (60%)' })).toBeVisible();
-        await page.getByLabel('Lớp học phần', { exact: true }).selectOption({ label: 'INT3132 1' });
+        await applyFilters(page, {'Lớp học phần': {label:'INT3132 1'}});
         await expect(page.getByText('80 lần học · 80 sinh viên', { exact: true })).toBeVisible();
       }
       if (role === 'student') {
@@ -91,7 +92,25 @@ test('legacy reports export all pages and assigned legacy students remain availa
     const wb=XLSX.read(await readFile((await download.path())!),{type:'buffer'});expect(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])).toHaveLength(records.total);
     await page.goto(origin.origin+'/__local_staging/login?email='+encodeURIComponent(process.env.ACADEMIC_ACCEPTANCE_LECTURER!));await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
     await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=students');await expect(page.locator('tbody tr').first()).toBeVisible();expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(25);
-    await page.getByLabel('Chức năng',{exact:true}).selectOption('chat');await expect(page.locator('textarea[placeholder="Nhập tin nhắn..."]')).toBeVisible();expect(page.url()).toContain('campaigns/2025-2026-summer:internship');
+    await feature(page,'chat');await expect(page.locator('textarea[placeholder="Nhập tin nhắn..."]')).toBeVisible();expect(page.url()).toContain('campaigns/2025-2026-summer:internship');
+    expect(errors).toEqual([]);
+  }finally{await context.close();}
+});
+
+test('legacy assignment subviews retain their own operations without expanding the common heading',async({browser})=>{
+  const base=process.env.ACADEMIC_ACCEPTANCE_BASE;test.skip(!base,'Requires a prepared private local copy.');
+  const origin=new URL(base!);expect(origin.protocol).toBe('http:');expect(['127.0.0.1','localhost']).toContain(origin.hostname);
+  const context=await browser.newContext({viewport:{width:768,height:1000}});await context.route('**/*',r=>new URL(r.request().url()).origin===origin.origin||/^(blob|data):/.test(r.request().url())?r.continue():r.abort());
+  const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  try{
+    await page.goto(origin.origin+'/__local_staging/login');await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    for(const view of ['assignments','requests','quotas']){
+      await page.setViewportSize({width:768,height:1000});await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=assignments&view='+view);
+      await expect(page.getByRole('tab',{name:/Chỉ tiêu & Quota/})).toBeVisible();await expect(page.locator('main h1')).toHaveCount(1);expect((await page.getByTestId('campaign-chrome').boundingBox())!.height).toBeLessThanOrEqual(88);
+      await expect(page.getByTestId('campaign-list-toolbar')).toHaveCount(view==='quotas'?0:1);
+      if(view==='assignments')for(const name of ['Tự phân công','Đồng bộ dữ liệu cũ','Xuất XLSX'])await expect(page.getByRole('button',{name,exact:true})).toBeVisible();
+      await page.setViewportSize({width:320,height:740});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    }
     expect(errors).toEqual([]);
   }finally{await context.close();}
 });

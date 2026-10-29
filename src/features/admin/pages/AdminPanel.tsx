@@ -1,8 +1,9 @@
+import { CampaignLegacyHeader, useCampaignExtraFilters } from '../../academic/CampaignLayoutContext';
 import { useLegacyPager } from '../../academic/useLegacyPager';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { useLegacyPage, useLegacyFilter, useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
-import { useNavigate } from 'react-router-dom';
+import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, CheckCircle2, Download, ArrowUpDown, Search, Building2, RefreshCw, Save, Plus, X, ChevronDown, FileText, Edit2, Clock, Send, Trash2, UserX } from 'lucide-react';
 import { saveAs } from 'file-saver';
@@ -18,8 +19,8 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useLegacySearch();
   const legacyMembership = useLegacyMembership();
-  const [filterCourse, setFilterCourse] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCourse, setFilterCourse] = useLegacyFilter('courseCode');
+  const [filterStatus, setFilterStatus] = useLegacyFilter('status');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [exportingUnconfirmed, setExportingUnconfirmed] = useState(false);
@@ -56,7 +57,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   const [addOtherContact, setAddOtherContact] = useState({ contact_name: '', contact_phone: '', contact_email: '' });
   const [editCompanyQuery, setEditCompanyQuery] = useState('');
   const [editOtherContact, setEditOtherContact] = useState({ contact_name: '', contact_phone: '', contact_email: '' });
-  const [registrationPage, setRegistrationPage] = useState(1);
+  const [registrationPage, setRegistrationPage] = useLegacyPage();
   const registrationPageSize = 25;
   const paging = useLegacyPager(token, '/api/admin/registrations', {page:registrationPage,q:searchTerm,courseCode:initialCourseCode || filterCourse,status:filterStatus,sort:sortConfig?.key,direction:sortConfig?.direction});
 
@@ -536,6 +537,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   };
 
   const requestSort = (key: string) => {
+    setRegistrationPage(1);
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -904,7 +906,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
     return matchTerm && matchCourse && matchStatus;
   });
   useEffect(() => {
-    setRegistrationPage(1);
+    if (!paging.enabled) setRegistrationPage(1);
   }, [searchTerm, filterCourse, filterStatus, sortConfig]);
   const registrationPagination = paginationBounds(paging.page?.total ?? filteredRegistrations.length, registrationPage, registrationPageSize);
   const paginatedRegistrations = paging.page ? filteredRegistrations : filteredRegistrations.slice(
@@ -937,21 +939,11 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   const addingIsOtherCompany = addingCompany?.name === 'Công ty khác';
   const addingIsSchoolInternship = addingCompany?.name === 'Trường Đại học Công nghệ';
 
+  useCampaignExtraFilters([{key:'status',label:'Trạng thái đăng ký',options:[{value:'pending',label:'Chờ duyệt'},{value:'approved',label:'Đã duyệt'},{value:'rejected',label:'Từ chối'}]}]);
+
   if (loading) return <div className="text-center py-20 text-slate-500">Đang tải dữ liệu...</div>;
 
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="bg-white p-4 border border-slate-200 rounded-2xl shadow-sm space-y-4">
-        {/* Row 1: Operations */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/')} className="bg-white text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer mr-2">
-              &larr; {user?.role === 'admin' ? 'Quay lại Quản trị' : 'Quay lại trang chủ'}
-            </button>
-            <h2 className="text-sm font-extrabold text-slate-800 ml-2 hidden md:block">Danh sách Đăng ký Thực tập</h2>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+  const headerActions = (<div className="flex flex-wrap items-center gap-2">
             <button
               onClick={openAddRegistration}
               className="bg-[#034ea1] text-white px-3.5 py-2 rounded-xl hover:bg-[#023a7a] text-xs font-semibold shadow-sm flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer active:scale-[0.98]"
@@ -1031,7 +1023,21 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
               {savingToSheet ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
               {savingToSheet ? 'Đang lưu...' : 'Lưu Google Sheets'}
             </button>
+          </div>);
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <CampaignLegacyHeader actions={headerActions}><div className="bg-white p-4 border border-slate-200 rounded-2xl shadow-sm space-y-4">
+        {/* Row 1: Operations */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/')} className="bg-white text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer mr-2">
+              &larr; {user?.role === 'admin' ? 'Quay lại Quản trị' : 'Quay lại trang chủ'}
+            </button>
+            <h2 className="text-sm font-extrabold text-slate-800 ml-2 hidden md:block">Danh sách Đăng ký Thực tập</h2>
           </div>
+
+          {headerActions}
         </div>
 
         {/* Row 2: Search & Filters */}
@@ -1081,7 +1087,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
             )}
           </div>
         </div>
-      </div>
+      </div></CampaignLegacyHeader>
 
       {savingToSheet && (
         <div aria-live="polite" className="mb-6 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">

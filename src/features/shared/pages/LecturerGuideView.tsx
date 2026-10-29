@@ -1,3 +1,4 @@
+import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import {useCampaignEditor} from '../../academic/CampaignEditorContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -24,16 +25,22 @@ export function LecturerGuideView({ token, user }: { token: string; user: any })
       .finally(() => setLoading(false));
   }, [token,editor?.campaign.id,editor?.campaign.revision]);
 
+  const headerActions = (<>{user?.role === 'admin' && (
+          <button onClick={() => navigate('/admin/lecturer-guide')} className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
+            <Edit2 size={14} /> Cài đặt hướng dẫn
+          </button>
+        )}</>);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button onClick={() => navigate('/')} className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer mb-2 active:scale-[0.98]">&larr; Quay lại trang chủ</button>
         {user?.role === 'admin' && (
           <button onClick={() => navigate('/admin/lecturer-guide')} className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
             <Edit2 size={14} /> Cài đặt hướng dẫn
           </button>
         )}
-      </div>
+      </div></CampaignLegacyHeader>
       <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 max-w-none prose prose-blue prose-sm sm:prose-base">
         {loading ? (
           <div className="animate-pulse space-y-4">

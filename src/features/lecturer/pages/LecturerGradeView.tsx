@@ -1,11 +1,12 @@
+import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useLegacyPager } from '../../academic/useLegacyPager';
 import { PaginationControls } from '../../../shared';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { useLegacyPage, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
-import { useNavigate } from 'react-router-dom';
+import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import { useState, useEffect, useMemo } from 'react';
-import { CheckCircle2, RefreshCw, FileText, Download, ChevronLeft, Award, Clock, AlertCircle, Sparkles, Lock } from 'lucide-react';
+import { RefreshCw, FileText, Download, ChevronLeft, Award, Clock, AlertCircle, Lock } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { API_BASE, PageDescriptionTooltip, CACHE_TTL, cachedJsonFetch } from '../../../shared';
 import { ReportReviewPanel, type ReviewTarget } from './ReportReviewPanel';
@@ -23,7 +24,7 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({});
 
-  const [currentPage,setCurrentPage] = useState(1);
+  const [currentPage,setCurrentPage] = useLegacyPage();
   const paging = useLegacyPager(token, '/api/lecturer/grades', {page:currentPage,courseCode:initialCourseCode});
   const fetchGrades = () => {
     setLoadingGrades(true);
@@ -293,7 +294,7 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
           </div>
         )}
         {/* Apple Large Title & Navigation Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <CampaignLegacyHeader><div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <button
               onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/')}
@@ -333,7 +334,7 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
             <RefreshCw size={13} className={loadingGrades ? 'animate-spin text-[#034ea1]' : 'text-[#64748b]'} />
             Tải lại
           </button>
-        </div>
+        </div></CampaignLegacyHeader>
 
         {/* Apple KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">

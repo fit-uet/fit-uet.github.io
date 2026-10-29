@@ -31,3 +31,24 @@ test('legacy course filters match canonical codes against stored full names with
   assert.equal(matchesCourseCode(null, 'INT4002'), false);
   assert.equal(matchesCourseCode(null, ''), true);
 });
+
+test('compact navigation keeps every permitted function reachable on desktop and mobile', async () => {
+  const {campaignNavigation} = await import('../../src/features/academic/campaignPresentation');
+  for (const role of ['admin','lecturer','student']) for (const internship of [false,true]) {
+    const modules = campaignModules(role==='admin', role==='student', internship);
+    for (const wide of [true,false]) {
+      const nav = campaignNavigation(modules, role, internship, wide);
+      const ids = [...nav.primary,...nav.more].map(m=>m.id);
+      assert.equal(new Set(ids).size, modules.length);
+      assert.deepEqual([...ids].sort(), modules.map(m=>m.id).sort());
+      if (!wide) assert.equal(nav.primary.length, 2);
+      if (role==='student') assert.equal(nav.primary[0].label, 'Hồ sơ');
+    }
+  }
+  const {campaignSwitchQuery} = await import('../../src/features/academic/campaignPresentation');
+  const query = new URLSearchParams('tab=grades&view=lecturer&classId=old&q=An&page=7&topicStatus=pending&enrollmentId=other&panel=grades');
+  assert.equal(campaignSwitchQuery(query,campaignModules(false,false,true),true).toString(),'tab=grades&view=lecturer');
+  assert.equal(campaignSwitchQuery(query,campaignModules(false,true,false),false).toString(),'');
+  assert.equal(campaignQuery(new URLSearchParams('tab=reports&advisor=Alpha&page=4'),{tab:'students'}).has('advisor'),false);
+  assert.equal(campaignQuery(new URLSearchParams('tab=reports&advisor=Alpha&page=4'),{advisor:'Beta'}).has('page'),false);
+});

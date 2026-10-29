@@ -1,9 +1,10 @@
+import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useLegacyPager } from '../../academic/useLegacyPager';
 import { PaginationControls } from '../../../shared';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
-import { matchesCourseCode } from '../../../shared/utils/format';
-import { useNavigate } from 'react-router-dom';
+import { useLegacyPage, useLegacyMembership } from '../../academic/LegacyListScope';
+
+import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import { useState, useEffect } from 'react';
 import { Users, CheckCircle2, Download, FileText, MessageCircle, GraduationCap } from 'lucide-react';
 import { saveAs } from 'file-saver';
@@ -19,7 +20,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
   const [updatingContactIds, setUpdatingContactIds] = useState<Record<string, boolean>>({});
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useLegacyPage();
   const paging = useLegacyPager(token, '/api/lecturer/students', {page:currentPage,courseCode:initialCourseCode});
   const fetchStudents = async () => {
     setLoadingStudents(true);
@@ -195,35 +196,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
     await saveXlsx(`sinh_vien_phu_trach_${safeName}.xlsx`, headers, rows, 'Sinh viên phụ trách');
   };
 
-  return (
-    <>
-      {reviewIndex !== null && students[reviewIndex] && (
-        <ReportReviewPanel
-          target={studentToReviewTarget(students[reviewIndex])}
-          token={token}
-          onClose={() => setReviewIndex(null)}
-          onReportStatusChange={() => {
-            fetchStudents();
-          }}
-          onGradeChange={() => {
-            fetchStudents();
-          }}
-          currentIndex={reviewIndex}
-          totalCount={students.length}
-          onPrev={() => setReviewIndex((i) => (i !== null && i > 0 ? i - 1 : i))}
-          onNext={() => setReviewIndex((i) => (i !== null && i < students.length - 1 ? i + 1 : i))}
-          hasPrev={reviewIndex > 0}
-          hasNext={reviewIndex < students.length - 1}
-        />
-      )}
-      <div className="max-w-6xl mx-auto space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Sinh viên phụ trách</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Học phần Thực tập</p>
-        </div>
-        <div className="flex items-center gap-2">
+  const headerActions = (<div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => navigate('/plan')}
             className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
@@ -251,8 +224,38 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
           >
             <CheckCircle2 size={14} /> Chấm điểm thực tập
           </button>
+        </div>);
+
+  return (
+    <>
+      {reviewIndex !== null && students[reviewIndex] && (
+        <ReportReviewPanel
+          target={studentToReviewTarget(students[reviewIndex])}
+          token={token}
+          onClose={() => setReviewIndex(null)}
+          onReportStatusChange={() => {
+            fetchStudents();
+          }}
+          onGradeChange={() => {
+            fetchStudents();
+          }}
+          currentIndex={reviewIndex}
+          totalCount={students.length}
+          onPrev={() => setReviewIndex((i) => (i !== null && i > 0 ? i - 1 : i))}
+          onNext={() => setReviewIndex((i) => (i !== null && i < students.length - 1 ? i + 1 : i))}
+          hasPrev={reviewIndex > 0}
+          hasNext={reviewIndex < students.length - 1}
+        />
+      )}
+      <div className="max-w-6xl mx-auto space-y-6">
+      {/* Page Header */}
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Sinh viên phụ trách</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Học phần Thực tập</p>
         </div>
-      </div>
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       {/* Thống kê sinh viên phụ trách */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

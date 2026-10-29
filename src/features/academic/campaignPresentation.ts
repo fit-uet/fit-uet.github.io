@@ -44,11 +44,32 @@ export function campaignQuery(current: URLSearchParams, patch: Record<string, st
   const next = new URLSearchParams(current);
   if ('tab' in patch && patch.tab !== current.get('tab')) {
     for (const key of ['status', 'page', 'enrollmentId', 'panel']) next.delete(key);
+    if (!['reports', 'grades'].includes(patch.tab)) next.delete('advisor');
     if (current.get('view') !== 'lecturer') next.delete('view');
-  } else if (['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'q'].some(key => key in patch)) next.delete('page');
+  } else if (['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'advisor', 'q'].some(key => key in patch)) next.delete('page');
   for (const [key, value] of Object.entries(patch)) value ? next.set(key, value) : next.delete(key);
   return next;
 }
 
 export const panelForPage = (page: string): EnrollmentPanelMode => ['assignments', 'reports', 'grades'].includes(page) ? page as EnrollmentPanelMode : 'profile';
 export const lecturerNames = (e: EnrollmentView, lecturers: LecturerInfo[], role: string) => e.assignments.filter(a => a.role === role).map(a => lecturers.find(l => l.id === a.lecturerId)?.name || 'Giảng viên').join('; ') || 'Chưa phân công';
+
+export function campaignNavigation(modules: ReturnType<typeof campaignModules>, role: string, internship: boolean, wide = true) {
+  const primaryIds = role === 'admin'
+    ? ['overview', 'students', ...(internship ? ['registrations', 'final-internships'] : []), 'assignments', 'reports', 'grades']
+    : role === 'student' ? ['students', 'chat', ...(internship ? ['reports'] : [])] : ['students', 'reports', 'grades', 'chat'];
+  const visible = primaryIds.filter(id => modules.some(m => m.id === id)).slice(0, wide ? undefined : 2);
+  const labels: Record<string, string> = { students: role === 'student' ? 'Hồ sơ' : 'Sinh viên', reports: 'Báo cáo' };
+  return {
+    primary: visible.map(id => ({ ...modules.find(m => m.id === id)!, label: labels[id] || modules.find(m => m.id === id)!.title })),
+    more: modules.filter(m => !visible.includes(m.id)),
+  };
+}
+
+export function campaignSwitchQuery(current: URLSearchParams, modules: ReturnType<typeof campaignModules>, preserveTeaching: boolean) {
+  const next = new URLSearchParams();
+  const tab = current.get('tab') || '';
+  if (modules.some(m => m.id === tab)) next.set('tab', tab);
+  if (preserveTeaching && current.get('view') === 'lecturer') next.set('view', 'lecturer');
+  return next;
+}

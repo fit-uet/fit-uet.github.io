@@ -1,3 +1,4 @@
+import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import {useCampaignNavigate as useNavigate} from '../../academic/useCampaignNavigate';
@@ -52,10 +53,28 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
   const charCount = rules.length;
   const lineCount = rules.split('\n').length;
 
+  const headerActions = (<div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setRules(DEFAULT_REGISTRATION_RULES)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+          >
+            <RotateCcw size={13} className="text-[#64748b]" />
+            Khôi phục mặc định
+          </button>
+          <button
+            onClick={saveRules}
+            disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+            Lưu quy định
+          </button>
+        </div>);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Apple Large Title & Navigation Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <button
             onClick={() => navigate('/admin')}
@@ -81,24 +100,8 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            onClick={() => setRules(DEFAULT_REGISTRATION_RULES)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
-          >
-            <RotateCcw size={13} className="text-[#64748b]" />
-            Khôi phục mặc định
-          </button>
-          <button
-            onClick={saveRules}
-            disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-            Lưu quy định
-          </button>
-        </div>
-      </div>
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       {/* Sub Navigation Bar for Settings */}
       <AdminSettingsSubNav />

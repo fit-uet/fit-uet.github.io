@@ -1,3 +1,4 @@
+import { CampaignLegacyHeader, useCampaignRefresh } from '../../academic/CampaignLayoutContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -18,6 +19,8 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
     setQuestions(rows);
     setAnswerDrafts(Object.fromEntries(rows.map((row: any) => [Number(row.id), row.answer || ''])));
   };
+
+  useCampaignRefresh(fetchFaqQuestions);
 
   useEffect(() => {
     fetchFaqQuestions()
@@ -52,7 +55,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <CampaignLegacyHeader><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <button
             onClick={() => navigate('/admin')}
@@ -74,7 +77,7 @@ export function FAQQuestionsAdmin({ token }: { token: string }) {
         >
           <RefreshCw size={14} className="text-slate-500" /> Tải lại
         </button>
-      </div>
+      </div></CampaignLegacyHeader>
 
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-2">

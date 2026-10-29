@@ -1,22 +1,10 @@
+import { CampaignLegacyHeader, useCampaignRefresh } from '../../academic/CampaignLayoutContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
-import {
-  RefreshCw,
-  Edit2,
-  Send,
-  CircleHelp,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  MessageSquare,
-  CheckCircle2,
-  HelpCircle,
-  X,
-  Sparkles,
-} from 'lucide-react';
+import { RefreshCw, Edit2, Send, CircleHelp, Search, ChevronDown, ChevronUp, MessageSquare, X, Sparkles } from 'lucide-react';
 import {
   API_BASE,
   DEFAULT_STUDENT_FAQ,
@@ -78,6 +66,8 @@ export function FAQView({ user, token }: { user: any; token: string }) {
       fetchPublicFaqQuestions().catch(() => setPublicQuestions([])),
     ]).finally(() => setLoading(false));
   }, [token]);
+
+  useCampaignRefresh(() => { fetchMyFaqQuestions(); fetchPublicFaqQuestions(); });
 
   const submitQuestion = async () => {
     const question = newQuestion.trim();
@@ -147,10 +137,19 @@ export function FAQView({ user, token }: { user: any; token: string }) {
     }
   };
 
+  const headerActions = (<><div className="flex items-center gap-2">
+          <a
+            href="#public-faq"
+            className="text-xs font-semibold text-[#034ea1] bg-blue-50/80 hover:bg-blue-100 border border-blue-200/60 px-3 py-1.5 rounded-xl transition-all"
+          >
+            Xem câu hỏi đã giải đáp ({publicQuestions.length}) &darr;
+          </a>
+        </div></>);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between gap-3">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex items-center justify-between gap-3">
         <button
           onClick={() => navigate('/')}
           className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-[0.98]"
@@ -165,7 +164,7 @@ export function FAQView({ user, token }: { user: any; token: string }) {
             Xem câu hỏi đã giải đáp ({publicQuestions.length}) &darr;
           </a>
         </div>
-      </div>
+      </div></CampaignLegacyHeader>
 
       {/* Card 1: Static Handbook FAQ (Markdown) */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">

@@ -1,3 +1,4 @@
+import { CampaignLegacyHeader, useCampaignRefresh } from '../../academic/CampaignLayoutContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
@@ -99,6 +100,8 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
       setLoadingMessages(false);
     }
   };
+
+  useCampaignRefresh(() => { fetchThreads(); fetchMessages(false); });
 
   useEffect(() => {
     setLoadingThreads(true);
@@ -278,7 +281,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <CampaignLegacyHeader><div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#034ea1] flex items-center justify-center">
@@ -295,7 +298,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
         >
           <RefreshCw size={14} className={`text-slate-500 ${loadingThreads ? 'animate-spin' : ''}`} /> Tải lại
         </button>
-      </div>
+      </div></CampaignLegacyHeader>
 
       {error && <div className="rounded-xl border border-red-200/80 bg-[#fee2e2] p-4 text-xs font-medium text-[#d70015]">{error}</div>}
 

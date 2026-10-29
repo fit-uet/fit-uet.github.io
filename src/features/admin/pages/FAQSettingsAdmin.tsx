@@ -1,3 +1,4 @@
+import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import ReactMarkdown from 'react-markdown';
@@ -100,10 +101,19 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
   const charCount = currentContent.length;
   const lineCount = currentContent.split('\n').length;
 
+  const headerActions = (<button
+          onClick={saveFaq}
+          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
+        >
+          {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+          Lưu thay đổi FAQ
+        </button>);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Apple Large Title & Navigation Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <button
             onClick={() => navigate('/admin')}
@@ -129,15 +139,8 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
         </div>
 
         {/* Primary Save Button */}
-        <button
-          onClick={saveFaq}
-          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
-        >
-          {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-          Lưu thay đổi FAQ
-        </button>
-      </div>
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       {/* Sub Navigation Bar for Settings */}
       <AdminSettingsSubNav />

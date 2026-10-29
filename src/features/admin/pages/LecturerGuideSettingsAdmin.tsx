@@ -1,3 +1,4 @@
+import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import ReactMarkdown from 'react-markdown';
@@ -64,9 +65,17 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
 
   if (loading) return <div className="text-center py-20 text-slate-500 font-medium">Đang tải nội dung hướng dẫn...</div>;
 
+  const headerActions = (<button
+          onClick={handleSaveGuide}
+          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+          className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Lưu hướng dẫn
+        </button>);
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <button
             onClick={() => navigate('/admin')}
@@ -82,14 +91,8 @@ export function LecturerGuideSettingsAdmin({ token }: { token: string }) {
             <PageDescriptionTooltip description="Chỉnh nội dung hướng dẫn hiển thị cho giảng viên bằng Markdown." />
           </h2>
         </div>
-        <button
-          onClick={handleSaveGuide}
-          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
-          className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-        >
-          {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Lưu hướng dẫn
-        </button>
-      </div>
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       {/* Sub Navigation Bar for Settings */}
       <AdminSettingsSubNav />

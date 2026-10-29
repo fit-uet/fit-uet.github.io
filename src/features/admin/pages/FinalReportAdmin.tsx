@@ -1,8 +1,9 @@
+import { CampaignLegacyHeader, CampaignStandalone, useCampaignExtraFilters } from '../../academic/CampaignLayoutContext';
 import { useLegacyPager } from '../../academic/useLegacyPager';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { useLegacyPage, useLegacyFilter, useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
-import { useNavigate } from 'react-router-dom';
+import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import { useState, useEffect, useMemo } from 'react';
 import { Download, Search, FileText, ChevronLeft, CheckCircle2, AlertCircle, Clock, FileCheck, Mail, X, Loader2, Send } from 'lucide-react';
 import { saveAs } from 'file-saver';
@@ -14,9 +15,9 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useLegacySearch();
   const legacyMembership = useLegacyMembership();
-  const [statusFilter, setStatusFilter] = useState('');
-  const [courseCodeFilter, setCourseCodeFilter] = useState('');
-  const [advisorFilter, setAdvisorFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useLegacyFilter('status');
+  const [courseCodeFilter, setCourseCodeFilter] = useLegacyFilter('courseCode');
+  const [advisorFilter, setAdvisorFilter] = useLegacyFilter('advisor');
   const [showRemindModal, setShowRemindModal] = useState(false);
   const [reminding, setReminding] = useState(false);
   const [pendingRows, setPendingRows] = useState<any[]>([]);
@@ -24,7 +25,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
   const [remindSuccess, setRemindSuccess] = useState<string | null>(null);
   const [customRemindNote, setCustomRemindNote] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useLegacyPage();
   const pageSize = 25;
   const paging = useLegacyPager(token, '/api/admin/reports/final', { page: currentPage, q: searchTerm, status: statusFilter, courseCode: initialCourseCode || courseCodeFilter, advisor: advisorFilter });
 
@@ -124,7 +125,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
   });
 
   useEffect(() => {
-    setCurrentPage(1);
+    if (!paging.enabled) setCurrentPage(1);
   }, [searchTerm, statusFilter, courseCodeFilter, advisorFilter]);
 
   const pagination = paginationBounds(paging.page?.total ?? filtered.length, currentPage, pageSize);
@@ -203,6 +204,8 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
     }
   };
 
+  useCampaignExtraFilters([{key:'advisor',label:'GVHD chính',options:advisorOptions.map(name=>({value:name,label:name}))},{key:'status',label:'Trạng thái báo cáo',options:[{value:'missing',label:'Chưa nộp'},{value:'submitted',label:'Đã nộp (Chờ duyệt)'},{value:'needs_revision',label:'Cần nộp lại'},{value:'accepted',label:'Đã duyệt'}]}]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#64748b]">
@@ -212,10 +215,28 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
     );
   }
 
+  const headerActions = (<div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={openReminders}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#b45309] bg-amber-50 border border-amber-200 hover:bg-amber-100 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            title="Gửi email nhắc nhở sinh viên chưa nộp báo cáo hoặc cần nộp lại"
+          >
+            <Mail size={14} className="text-amber-600" />
+            Nhắc SV chưa nộp ({(paging.summary?.report_missing ?? rows.filter(r=>!r.report_status||r.report_status==='missing').length) + (paging.summary?.report_needs_revision ?? rows.filter(r=>r.report_status==='needs_revision').length)})
+          </button>
+          <button
+            onClick={exportXlsx}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
+          >
+            <Download size={14} className="text-[#64748b]" />
+            Xuất XLSX ({filtered.length})
+          </button>
+        </div>);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
       {/* Apple Large Title & Navigation Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <CampaignLegacyHeader actions={headerActions}><div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <button
             onClick={() => navigate('/admin')}
@@ -239,24 +260,8 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
         </div>
 
         {/* Top Actions */}
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          <button
-            onClick={openReminders}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#b45309] bg-amber-50 border border-amber-200 hover:bg-amber-100 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap shadow-xs"
-            title="Gửi email nhắc nhở sinh viên chưa nộp báo cáo hoặc cần nộp lại"
-          >
-            <Mail size={14} className="text-amber-600" />
-            Nhắc SV chưa nộp ({(paging.summary?.report_missing ?? rows.filter(r=>!r.report_status||r.report_status==='missing').length) + (paging.summary?.report_needs_revision ?? rows.filter(r=>r.report_status==='needs_revision').length)})
-          </button>
-          <button
-            onClick={exportXlsx}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#f8fafc] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
-          >
-            <Download size={14} className="text-[#64748b]" />
-            Xuất XLSX ({filtered.length})
-          </button>
-        </div>
-      </div>
+        {headerActions}
+      </div></CampaignLegacyHeader>
 
       {/* Apple Executive KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -310,7 +315,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
       </div>
 
       {/* Apple Search & Filter Pill Bar */}
-      <div className="bg-white border border-black/[0.06] rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center justify-between gap-3">
+      <CampaignStandalone><div className="bg-white border border-black/[0.06] rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative flex-1 w-full md:w-auto">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#64748b]" size={14} />
           <input
@@ -358,7 +363,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
             <option value="accepted">Đã duyệt</option>
           </select>
         </div>
-      </div>
+      </div></CampaignStandalone>
 
       {/* Apple Inset Grouped Table */}
       <div className="bg-white border border-black/[0.06] rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">

@@ -1,3 +1,4 @@
+import { CampaignStandalone } from '../../academic/CampaignLayoutContext';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, type ReactNode } from 'react';
 import {
@@ -59,7 +60,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <CampaignStandalone><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Tổng quan Quản trị</h1>
           <p className="text-xs text-slate-500 mt-0.5">{presentation?.subtitle || 'Học phần Thực tập'}</p>
@@ -79,9 +80,9 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
             <Settings size={14} className="text-slate-500" /> Cài đặt hệ thống
           </button>
         </div>
-      </div>
+      </div></CampaignStandalone>
 
-      {presentation?.context}
+      <CampaignStandalone>{presentation?.context}</CampaignStandalone>
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
