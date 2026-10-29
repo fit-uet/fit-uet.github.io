@@ -97,3 +97,13 @@ test('a rejected row cannot free quota for another row or pollute its audit befo
  const good=await saveProjectRows(alpha,a.c.campaignId,{rows:[{enrollmentId:before.id,expectedRevision:before.revision,topic:{title:'Tên mới'}}]});assert.equal(good.results[0].ok,true);
  const audit=(await db.execute("SELECT payload FROM academic_commands WHERE action='lecturer.project.bulk' ORDER BY rowid DESC LIMIT 1")).rows[0];assert.equal(JSON.parse(String(audit.payload)).before.enrollments[0].topic,before.topic);
 });
+test('schema startup never marks failed topic metadata migration as ready',async()=>{
+ const {initAcademicSchema}=await import('../../server/academic/schema');await db.execute('DELETE FROM academic_schema_migrations WHERE version IN (3,4)');
+ const failing={...db,execute:async(input:any)=>{if(typeof input==='string'&&input.startsWith("SELECT 'revision' kind"))throw Error('Migration read blocked');return db.execute(input);}};
+ await assert.rejects(initAcademicSchema(failing),/Migration read blocked/);assert.equal((await db.execute('SELECT version FROM academic_schema_migrations WHERE version IN (3,4)')).rows.length,0);
+});
+test('transient cohort read errors cannot grant legacy access to a deleted project-only account',async()=>{
+ const {isListedStudentCohortException}=await import('../../server/services/cohorts');const {setDb}=await import('../../server/db');const original=db;let calls=0;
+ setDb({...original,execute:async(input:any)=>{calls++;if(calls===1)throw Error('reads are blocked');return {rows:[{id:1}]} as any;}});
+ try{await assert.rejects(isListedStudentCohortException('24020001@vnu.edu.vn'),/reads are blocked/);assert.equal(calls,1);}finally{setDb(original);}
+});
