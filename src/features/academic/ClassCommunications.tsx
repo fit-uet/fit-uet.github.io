@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { MessageCircle, Users } from 'lucide-react';
 import type { AcademicClassSummary, EnrollmentView, LecturerInfo } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
 import { academicApi, academicDownload } from './client';
@@ -23,8 +24,8 @@ export function ClassChat({ token, user, data }: { token: string; user: any; dat
   useEffect(() => { const abort = new AbortController(); setMessages([]); load(abort.signal); const timer = window.setInterval(() => load(abort.signal), 30_000); return () => { abort.abort(); window.clearInterval(timer); }; }, [load]);
   const run = async (fn: () => Promise<unknown>) => { setBusy(true); try { await fn(); await load(); } catch (error) { setError(error.message); } finally { setBusy(false); } };
   const writable = data.class.status === 'active';
-  return <section className="bg-white border rounded-xl p-5 space-y-4"><h3 className="font-semibold">Trao đổi trong nhóm môn</h3>
-    {!threads.length ? <p className="text-sm text-slate-500">Chưa có nhóm hướng dẫn để trao đổi. GVNX sử dụng phần nhận xét/yêu cầu sửa trong hồ sơ.</p> : <>
+  return <section className="bg-white border border-slate-200 rounded-xl overflow-hidden"><h3 className="font-semibold p-5 border-b border-slate-100">Trao đổi trong nhóm môn</h3>
+    {!threads.length ? <p className="text-sm text-slate-500">Chưa có nhóm hướng dẫn để trao đổi. GVNX sử dụng phần nhận xét/yêu cầu sửa trong hồ sơ.</p> : <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]"><aside aria-label="Danh sách cuộc trò chuyện" className="hidden lg:block border-r border-slate-200 bg-slate-50/50 p-3 space-y-2">{threads.map(thread => <button key={thread.id} className={`w-full text-left rounded-xl p-3 flex gap-2 text-xs ${thread.id === target?.id ? 'bg-blue-50 border border-blue-200 text-[#034ea1]' : 'border border-transparent hover:bg-slate-100 text-slate-700'}`} onClick={() => setSelected(thread.id)}>{thread.id.startsWith('group:') ? <Users size={16} className="shrink-0" /> : <MessageCircle size={16} className="shrink-0" />}<span>{thread.label}</span></button>)}</aside><div className="min-w-0 p-5 space-y-4">
       <FormField label="Cuộc trò chuyện"><select className={academicInput} value={target?.id || ''} onChange={e => setSelected(e.target.value)}>{threads.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}</select></FormField>
       {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
       <div className="space-y-3 max-h-96 overflow-y-auto p-3 bg-slate-50 rounded-lg">{messages.map(m => <div key={m.id} className={`p-3 rounded-lg text-sm ${Number(m.sender_id) === Number(user.id) ? 'bg-blue-50 ml-6' : 'bg-white mr-6 border'}`}>
@@ -36,7 +37,7 @@ export function ClassChat({ token, user, data }: { token: string; user: any; dat
         <FormField label="Tin nhắn"><textarea name="body" className={academicInput} placeholder="Tin nhắn cho nhóm / giảng viên" maxLength={10000} disabled={!writable} /></FormField>
         <FormField label="Đính kèm (tối đa 10 MB)"><input className="text-sm max-w-full" type="file" name="file" disabled={!writable} /></FormField><Button type="submit" disabled={busy || !writable}>Gửi</Button>
       </form>{data.class.legacy && <p className="text-sm text-slate-500">Hội thoại Thực tập cũ được đọc từ nguồn gốc trong cùng nhóm học kỳ.</p>}
-    </>}
+    </div></div>}
   </section>;
 }
 

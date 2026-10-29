@@ -1,3 +1,5 @@
+import { useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, RefreshCw, FileText, Download, ChevronLeft, Award, Clock, AlertCircle, Sparkles, Lock } from 'lucide-react';
@@ -10,6 +12,7 @@ type ScoreField = typeof SCORE_FIELDS[number];
 
 export function LecturerGradeView({ token, user, initialCourseCode = '' }: { token: string; user: any; initialCourseCode?: string }) {
   const navigate = useNavigate();
+  const legacyMembership = useLegacyMembership();
   const [grades, setGrades] = useState<any[]>([]);
   const [gradeEdits, setGradeEdits] = useState<Record<string, any>>({});
   const [campaign, setCampaign] = useState<any>(null);
@@ -23,7 +26,7 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
       .then((res) => res.json())
       .then((data) => {
         const list = Array.isArray(data) ? data : [];
-        setGrades(list.filter(row => !initialCourseCode || row.course_code === initialCourseCode));
+        setGrades(list.filter(row => legacyStudentInScope(legacyMembership, row.student_id) && (!initialCourseCode || matchesCourseCode(row.course_code, initialCourseCode))));
         setGradeEdits(
           Object.fromEntries(
             list.map((row: any) => [
@@ -52,7 +55,7 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
     }).then((data) => {
       if (data && !data.error) setCampaign(data);
     });
-  }, [token]);
+  }, [token, initialCourseCode, legacyMembership]);
 
   const isRowGraded = (row: any) =>
     row.grade_status === 'submitted' ||

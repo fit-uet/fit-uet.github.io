@@ -54,8 +54,8 @@ export function AppRoutes({
       <Route path="/classes/:classId" element={<AcademicClassPage token={token} user={user} />} />
       <Route path="/internship" element={<ContextRedirect token={token} tab="students" internshipOnly={true} />} />
       <Route path="/internship/legacy" element={<GuardedRoute allowed={isStudent(user) && user.legacy_internship_access !== 0}><UnmappedLegacyInternship token={token} user={user} setUser={setUser} onAuthExpired={onAuthExpired} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
-      <Route path="/lecturer" element={<ContextRedirect token={token} tab="students" internshipOnly={false} />} />
-      <Route path="/lecturer/grades" element={<ContextRedirect token={token} tab="grades" internshipOnly={false} />} />
+      <Route path="/lecturer" element={<ContextRedirect token={token} tab="students" internshipOnly={false} view={isAdmin(user) && isLecturer(user) ? 'lecturer' : undefined} />} />
+      <Route path="/lecturer/grades" element={<ContextRedirect token={token} tab="grades" internshipOnly={false} view={isAdmin(user) && isLecturer(user) ? 'lecturer' : undefined} />} />
 
       <Route path="/admin" element={<ContextRedirect token={token} tab="overview" internshipOnly={false} />} />
       <Route path="/admin/registrations" element={<ContextRedirect token={token} tab="registrations" internshipOnly={true} />} />
@@ -78,7 +78,7 @@ export function AppRoutes({
       <Route path="/admin/lecturer-guide" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
       <Route path="/admin/registration-rules" element={<ContextRedirect token={token} tab="plan" internshipOnly={true} />} />
 
-      <Route path="/reports/final" element={<ContextRedirect token={token} tab="students" internshipOnly={true} />} />
+      <Route path="/reports/final" element={<ContextRedirect token={token} tab="students" internshipOnly={false} />} />
       <Route path="/company/:id" element={<CompanyDetail user={user} token={token} />} />
       <Route path="/plan" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
       <Route path="/lecturer-guide" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />

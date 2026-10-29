@@ -1,3 +1,5 @@
+import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, Download, ArrowUpDown, Search, RefreshCw, Trash2 } from 'lucide-react';
@@ -7,7 +9,8 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useLegacySearch();
+  const legacyMembership = useLegacyMembership();
   const [typeFilter, setTypeFilter] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'confirmed_at', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,7 +72,8 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
     const term = searchTerm.trim().toLowerCase();
     const includesTerm = (value: any) => String(value || '').toLowerCase().includes(term);
     let result = rows.filter(item => {
-      if (initialCourseCode && item.course_code !== initialCourseCode) return false;
+      if (!legacyStudentInScope(legacyMembership, item.student_id)) return false;
+      if (initialCourseCode && !matchesCourseCode(item.course_code, initialCourseCode)) return false;
       const matchType = typeFilter ? item.internship_type === typeFilter : true;
       const matchTerm = !term ||
         includesTerm(item.student_id) ||
@@ -95,7 +99,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
       });
     }
     return result;
-  }, [rows, searchTerm, typeFilter, sortConfig]);
+  }, [rows, searchTerm, typeFilter, sortConfig, initialCourseCode, legacyMembership]);
 
   useEffect(() => {
     setCurrentPage(1);

@@ -1,3 +1,5 @@
+import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { Download, Search, FileText, ChevronLeft, CheckCircle2, AlertCircle, Clock, FileCheck, Mail, X, Loader2, Send } from 'lucide-react';
@@ -8,9 +10,10 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useLegacySearch();
+  const legacyMembership = useLegacyMembership();
   const [statusFilter, setStatusFilter] = useState('');
-  const [courseCodeFilter, setCourseCodeFilter] = useState(initialCourseCode);
+  const [courseCodeFilter, setCourseCodeFilter] = useState('');
   const [advisorFilter, setAdvisorFilter] = useState('');
   const [showRemindModal, setShowRemindModal] = useState(false);
   const [reminding, setReminding] = useState(false);
@@ -90,7 +93,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
     const term = searchTerm.trim().toLowerCase();
     const status = row.report_status || 'missing';
     const matchStatus = statusFilter ? status === statusFilter : true;
-    const matchCourse = (!initialCourseCode || row.course_code === initialCourseCode) && (courseCodeFilter ? row.course_code === courseCodeFilter : true);
+    const matchCourse = legacyStudentInScope(legacyMembership, row.student_id) && (!initialCourseCode || matchesCourseCode(row.course_code, initialCourseCode)) && (courseCodeFilter ? matchesCourseCode(row.course_code, courseCodeFilter) : true);
     const matchAdvisor = advisorFilter ? (row.primary_advisors || '').includes(advisorFilter) : true;
     const matchTerm =
       !term ||

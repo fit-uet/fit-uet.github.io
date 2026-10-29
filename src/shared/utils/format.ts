@@ -5,6 +5,12 @@ export const formatCourseCode = (code?: string): string => {
   return parts[parts.length - 1] || '';
 };
 
+export function matchesCourseCode(value: unknown, filter: string) {
+  if (!filter) return true;
+  const code = (input: unknown) => String(input || '').toUpperCase().match(/\bINT\d{4}\b/)?.[0] || String(input || '').trim().toUpperCase();
+  return code(value) === code(filter);
+}
+
 export const cleanStudentName = (rawName?: string, studentId?: string, email?: string): string => {
   if (!rawName) return '';
   let name = String(rawName).trim();

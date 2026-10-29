@@ -15,6 +15,7 @@
 | [Staging cục bộ](docs/LOCAL_STAGING.md) | Database bản sao có lưu dữ liệu, đối soát, giao diện localhost và các bước nghiệm thu |
 | [Phát hành production](docs/PRODUCTION_RELEASE.md) | Sao lưu Turso/R2, diễn tập, chờ backend đúng phiên bản trước phát hành Pages và khôi phục |
 | [Thiết kế giao diện](docs/UI_DESIGN_SYSTEM.md) | UI primitives, tokens và quy chuẩn trình bày |
+| [Bố cục giao diện cũ](docs/UI_RESTORATION.md) | Tổng quan theo vai trò, các màn riêng, bộ lọc nhóm/kỳ và nghiệm thu giao diện |
 
 Hệ thống dùng Năm học → Học kỳ → Nhóm môn → Lớp học phần → Lần học. Dự án gồm INT3132/INT3131, tiếp nhận SV qua Excel, GVHD 60% và GVNX 40%. Quy tắc và giới hạn đầy đủ nằm trong đặc tả.
 

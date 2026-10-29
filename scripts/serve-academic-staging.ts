@@ -3,6 +3,9 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, realpath } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 const args = process.argv.slice(2);
+const port = Number(args.find(x => x.startsWith('--port='))?.slice(7) || 4319);
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Port không hợp lệ.');
+
 const input = args.find(x => x.startsWith('--directory='))?.slice('--directory='.length);
 if (!input) throw new Error('Dùng npm run academic:stage:serve -- --directory=/path/to/prepared-staging');
 const directory = await realpath(resolve(input));
@@ -11,7 +14,7 @@ const path = await realpath(join(directory, 'staging.db'));
 if (!report.preserved || !report.sourceUnchanged || path !== report.databasePath) throw new Error('Chỉ chạy thư mục bản sao đã đối soát đạt bằng academic:stage.');
 process.env.APP_ENV = 'local-staging'; process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = randomBytes(48).toString('base64url'); process.env.EMAIL_PROVIDER = 'none';
-process.env.STAGING_RUN_JOBS = 'false'; process.env.VITE_API_BASE_URL = ''; process.env.CORS_ORIGIN = 'http://127.0.0.1:4319';
+process.env.STAGING_RUN_JOBS = 'false'; process.env.VITE_API_BASE_URL = ''; process.env.CORS_ORIGIN = `http://127.0.0.1:${port}`;
 for (const k of Object.keys(process.env)) if (/^(?:R2_|CLOUDFLARE_|GOOGLE_SERVICE_|GOOGLE_PRIVATE_|BREVO_|RESEND_)/.test(k)) delete process.env[k];
 const { createClient } = await import('@libsql/client'); const { setDb } = await import('../server/db');
 const { libsqlDatabase } = await import('../server/academic/libsql');
@@ -42,11 +45,9 @@ app.post('/api/auth/google', (_req, res) => res.status(409).json({ error: 'Stagi
 const projectRoot = process.cwd(); const storage = join(directory, '.storage'); await mkdir(storage, { recursive: true, mode: 0o700 });
 app.use(await createApp({ vite: { root: projectRoot, configFile: false, envDir: false, cacheDir: join(directory, '.vite'), plugins: [react(), tailwindcss()], server: {
   hmr: { server },
-  fs: { deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/*.db*', '**/*.sqlite*', '**/.storage/**', '**/report.json', '**/import-preview.json', '**/REPORT.md', '**/*.xlsx'] },
+  fs: { deny: ['.env', '.env.*', '**/*.env', '*.{crt,pem}', '**/.git/**', '**/*.db*', '**/*.sqlite*', '**/.storage/**', '**/report.json', '**/import-preview.json', '**/REPORT.md', '**/*.xlsx'] },
 }, define: { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify('') } } }));
 process.chdir(directory);
-const port = Number(args.find(x => x.startsWith('--port='))?.slice(7) || 4319);
-if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Port không hợp lệ.');
 server.listen(port, '127.0.0.1', () => console.log(`Local staging: http://127.0.0.1:${port}/__local_staging/login`));
 server.on('error', error => { console.error(error.message); client.close(); process.exitCode = 1; });
 const close = () => { server.close(() => { client.close(); process.exit(0); }); setTimeout(() => process.exit(0), 3000).unref(); };

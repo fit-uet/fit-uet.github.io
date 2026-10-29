@@ -1,3 +1,5 @@
+import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, CheckCircle2, Download, ArrowUpDown, Search, Building2, RefreshCw, Save, Plus, X, ChevronDown, FileText, Edit2, Clock, Send, Trash2, UserX } from 'lucide-react';
@@ -13,8 +15,9 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   const [adminStudents, setAdminStudents] = useState<any[]>([]);
   const [adminLecturerNames, setAdminLecturerNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCourse, setFilterCourse] = useState(initialCourseCode);
+  const [searchTerm, setSearchTerm] = useLegacySearch();
+  const legacyMembership = useLegacyMembership();
+  const [filterCourse, setFilterCourse] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -891,7 +894,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
       (reg.class_name || '').toLowerCase().includes(term) ||
       (reg.review_comment || '').toLowerCase().includes(term)
     );
-    const matchCourse = (!initialCourseCode || reg.course_code === initialCourseCode) && (filterCourse ? reg.course_code === filterCourse : true);
+    const matchCourse = legacyStudentInScope(legacyMembership, reg.student_id) && (!initialCourseCode || matchesCourseCode(reg.course_code, initialCourseCode)) && (filterCourse ? matchesCourseCode(reg.course_code, filterCourse) : true);
     const matchStatus = filterStatus ? reg.status === filterStatus : true;
     return matchTerm && matchCourse && matchStatus;
   });

@@ -68,6 +68,8 @@ Bản staging hiện có tại `.staging/academic-LCsr6X` đã được sao lưu
 
 ## Nghiệm thu
 
-Backend kiểm tra 45 kiểm thử học vụ bao phủ tám lớp cùng nhóm, một người/hai lần học, cấu hình/lưu trữ chung, độc lập nhóm/kỳ, lọc sai lớp, export hơn 25 dòng, quyền chấm/ẩn điểm, xung đột/idempotency migration, chat hợp nhất và lịch sử legacy. Trình duyệt kiểm tra tạo nhóm/lớp, nộp/chấm/khóa/mở lại, mobile, FAQ/thông báo, xuất XLSX đúng lớp, chọn hai hồ sơ và chat xuyên lớp cùng GVHD.
+Backend kiểm tra 48 kiểm thử học vụ bao phủ tám lớp cùng nhóm, một người/hai lần học, cấu hình/lưu trữ chung, độc lập nhóm/kỳ, lọc sai lớp, export hơn 25 dòng, quyền chấm/ẩn điểm, xung đột/idempotency migration, chat hợp nhất và lịch sử legacy. Trình duyệt kiểm tra tạo nhóm/lớp, nộp/chấm/khóa/mở lại, mobile, FAQ/thông báo, xuất XLSX đúng lớp, chọn hai hồ sơ và chat xuyên lớp cùng GVHD.
 
 Tiếp tục dùng các lệnh `test:academic`, `test:academic:ui`, `test:academic:d1`, `test:staging`, `lint` và `build`. Cần đối soát bản sao dữ liệu production trước khi nghiệm thu vận hành thực tế; database local gốc hiện trống hồ sơ TT.
+
+Các màn trong nhóm dùng bố cục trước mở rộng theo [UI_RESTORATION.md](UI_RESTORATION.md), giữ nguyên nguồn dữ liệu và cách chọn học kỳ/nhóm môn.

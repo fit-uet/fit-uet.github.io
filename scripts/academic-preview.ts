@@ -22,10 +22,12 @@ const { newEnrollment } = await import('../server/academic/domain');
 const { createSemester, createClass, updateClass } = await import('../server/academic/service');
 const { updateCampaign } = await import('../server/academic/campaigns');
 const { academicRouter } = await import('../server/academic/routes');
+const { legacyPreview, applyLegacy } = await import('../server/academic/legacy');
 const projectRoot = process.cwd();
 const storageRoot = await mkdtemp(join(tmpdir(), 'academic-preview-'));
 const admin = { id: 1, email: 'admin@vnu.edu.vn', name: 'Khoa', role: 'admin' as const };
 const client = await createAcademicFixture();
+await database.db.executeMultiple("UPDATE users SET is_lecturer=1 WHERE id=1; INSERT INTO lecturers(id,name,email,work_unit) VALUES(99,'TS. Khoa','admin@vnu.edu.vn','Bộ môn C');");
 await createSemester(admin, 2026, '1');
 for (const code of ['INT3132', 'INT3131']) {
   const c = await createClass(admin, { semesterId: '2026-2027-1', courseCode: code, section: '1' });
@@ -36,11 +38,35 @@ for (const code of ['INT3132', 'INT3131']) {
   const enrollments = ['24020001', '24020002', '24020003'].map((id, i) => {
     const e = newEnrollment(active, { studentId: id, name: ['Sinh viên An', 'Sinh viên Bình', 'Sinh viên Chi'][i], className: 'QH-2024-I/CQ-I-CS1' });
     e.topic = ['Ứng dụng quản lý học vụ', 'Hệ thống tìm kiếm tài liệu', 'Phân tích dữ liệu học tập'][i];
-    e.assignments = [{ id: randomUUID(), lecturerId: i + 1, role: 'primary', assignedAt: new Date().toISOString() }]; return e;
+    e.assignments = [{ id: randomUUID(), lecturerId: i + 1, role: 'primary', assignedAt: new Date().toISOString() }, ...(i === 1 ? [{ id: randomUUID(), lecturerId: 99, role: 'co' as const, assignedAt: new Date().toISOString() }] : [])]; return e;
   });
   await commit(s, admin.id, 'admin.fixture.seed', { enrollments, users: enrollments.map(e => ({ studentId: e.studentId, email: e.email, name: e.name, dob: '', className: e.className })) });
 }
+await database.db.executeMultiple(`INSERT INTO users(id,email,name,role,student_id,course_code,legacy_internship_access) VALUES
+  (300,'23029901@vnu.edu.vn','Sinh viên TT Một','student','23029901','Thực tập Doanh nghiệp INT4002',1),
+  (301,'23029902@vnu.edu.vn','Sinh viên TT Hai','student','23029902','Thực tập Chuyên ngành INT3508',1),
+  (302,'23029903@vnu.edu.vn','Sinh viên chờ học phần','student','23029903',NULL,1);
+  INSERT INTO advisor_assignments(id,user_id,lecturer_id,role) VALUES(300,300,1,'primary'),(301,301,2,'primary');`);
+const legacyPlan = await legacyPreview(admin); await applyLegacy(admin, legacyPlan.id);
 const app = express(); app.use(express.json());
+// Visual references render the preserved pre-project pages only in this isolated fixture.
+app.get('/__academic_preview/baseline', async (req, res) => {
+  const role = ['student', 'lecturer'].includes(String(req.query.role)) ? String(req.query.role) : 'admin';
+  const email = role === 'student' ? '23029901@vnu.edu.vn' : role === 'lecturer' ? 'alpha@vnu.edu.vn' : admin.email;
+  const user = (await database.db.execute({ sql: 'SELECT * FROM users WHERE email=?', args: [email] })).rows[0];
+  const component = role === 'student' ? 'Dashboard' : role === 'lecturer' ? 'LecturerHome' : 'AdminDashboard';
+  const token = jwt.sign({ email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+  const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tham chiếu giao diện 726271c</title></head><body><div id="root"></div><script type="module">
+    import React from 'react';
+    import {createRoot} from 'react-dom/client';
+    import {HashRouter} from 'react-router-dom';
+    import {${component}} from '/src/features/${role}/pages/${component}.tsx';
+    import '/src/index.css';
+    const user=${JSON.stringify(user)};localStorage.setItem('user',JSON.stringify(user));
+    createRoot(document.getElementById('root')).render(React.createElement(HashRouter,null,React.createElement('div',{className:'feature-page feature-page--${role} p-6'},React.createElement(${component},{user,token:${JSON.stringify(token)},setUser:()=>{},onAuthExpired:()=>{}}))));
+  </script></body></html>`;
+  res.type('html').send(await vite.transformIndexHtml(`/__academic_preview/baseline-${role}.html`, html));
+});
 app.get('/__academic_preview/login', async (req, res) => {
   const roles = { admin: 'admin@vnu.edu.vn', student: '24020001@vnu.edu.vn', lecturer: 'alpha@vnu.edu.vn', reviewer: 'beta@vnu.edu.vn' };
   const email = roles[String(req.query.role)] || roles.admin;

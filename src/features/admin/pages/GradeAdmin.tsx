@@ -1,3 +1,5 @@
+import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -37,9 +39,10 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useLegacySearch();
+  const legacyMembership = useLegacyMembership();
   const [statusFilter, setStatusFilter] = useState('');
-  const [courseCodeFilter, setCourseCodeFilter] = useState(initialCourseCode);
+  const [courseCodeFilter, setCourseCodeFilter] = useState('');
   const [advisorFilter, setAdvisorFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [lockingBatch, setLockingBatch] = useState(false);
@@ -226,7 +229,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
     const term = searchTerm.trim().toLowerCase();
     const status = row.grade_status || 'missing';
     const matchStatus = statusFilter ? status === statusFilter : true;
-    const matchCourse = (!initialCourseCode || row.course_code === initialCourseCode) && (courseCodeFilter ? row.course_code === courseCodeFilter : true);
+    const matchCourse = legacyStudentInScope(legacyMembership, row.student_id) && (!initialCourseCode || matchesCourseCode(row.course_code, initialCourseCode)) && (courseCodeFilter ? matchesCourseCode(row.course_code, courseCodeFilter) : true);
     const matchAdvisor = advisorFilter ? (row.primary_advisors || '').includes(advisorFilter) : true;
     const matchTerm =
       !term ||

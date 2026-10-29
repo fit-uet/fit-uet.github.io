@@ -1,3 +1,5 @@
+import { useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Users, CheckCircle2, Download, FileText, MessageCircle, GraduationCap } from 'lucide-react';
@@ -7,6 +9,7 @@ import { API_BASE, saveXlsx, formatCourseCode, cleanStudentName } from '../../..
 import { ReportReviewPanel, type ReviewTarget } from './ReportReviewPanel';
 
 export function LecturerHome({ user, token, initialCourseCode = '' }: { user: any, token: string; initialCourseCode?: string }) {
+  const legacyMembership = useLegacyMembership();
   const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
@@ -22,7 +25,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
       });
       const data = await res.json().catch(() => []);
       if (!res.ok) throw new Error(data?.error || 'Không tải được danh sách sinh viên phụ trách.');
-      setStudents(Array.isArray(data) ? data.filter(row => !initialCourseCode || row.course_code === initialCourseCode) : []);
+      setStudents(Array.isArray(data) ? data.filter(row => legacyStudentInScope(legacyMembership, row.student_id) && (!initialCourseCode || matchesCourseCode(row.course_code, initialCourseCode))) : []);
     } catch (e) {
       setStudents([]);
     } finally {
@@ -43,7 +46,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
   useEffect(() => {
     fetchStudents();
     fetchGrades();
-  }, [token]);
+  }, [token, initialCourseCode, legacyMembership]);
 
   const formatBytes = (bytes: number) => {
     if (!bytes) return '-';

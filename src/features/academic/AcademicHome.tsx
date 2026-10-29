@@ -9,7 +9,7 @@ import { CampaignMigration } from './CampaignMigration';
 const inputClass = 'border border-slate-300 rounded-md px-3 py-2 text-sm bg-white w-full';
 export function AcademicHome({ token, user }: { token: string; user: any }) {
   const [classes, setClasses] = useState<CampaignSummary[]>([]); const [semesters, setSemesters] = useState<AcademicSemester[]>([]);
-  const [selected, setSelected] = useState(() => sessionStorage.getItem('academic:semester') || ''); const [group, setGroup] = useState('all'); const [manage, setManage] = useState(false);
+  const [selected, setSelected] = useState(() => sessionStorage.getItem('academic:semester') || ''); const [group, setGroup] = useState(() => sessionStorage.getItem('academic:group') || 'all'); const [manage, setManage] = useState(false);
   const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true); const [message, setMessage] = useState(''); const [legacy, setLegacy] = useState<any>(null);
   const [unmappedLegacy, setUnmappedLegacy] = useState(false);
   const admin = user.role === 'admin';
@@ -29,7 +29,7 @@ export function AcademicHome({ token, user }: { token: string; user: any }) {
   return <div className="max-w-7xl mx-auto space-y-6">
     <PageHeader title="Học kỳ và nhóm môn" description="Thực tập · Dự án công nghệ · Dự án khoa học" icon={<BookOpen size={22} />} actions={<><Button onClick={() => load()} leadingIcon={<RefreshCw size={15} />}>Tải lại</Button>{admin && <Button variant="primary" onClick={() => setManage(!manage)}>{manage ? 'Đóng quản lý' : 'Quản lý học kỳ / nhóm môn'}</Button>}</>} />
     <div className="flex flex-wrap gap-3 items-end"><FormField label="Học kỳ"><select aria-label="Học kỳ" className={inputClass} value={selected} onChange={e => { setSelected(e.target.value); sessionStorage.setItem('academic:semester', e.target.value); }}><option value="">Tất cả học kỳ</option>{semesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></FormField>
-      <FormField label="Nhóm môn"><select className={inputClass} value={group} onChange={e => setGroup(e.target.value)}><option value="all">Tất cả nhóm môn</option><option value="internship">Thực tập</option><option value="project">Dự án</option></select></FormField>
+      <FormField label="Nhóm môn"><select className={inputClass} value={group} onChange={e => { setGroup(e.target.value); sessionStorage.setItem('academic:group', e.target.value); }}><option value="all">Tất cả nhóm môn</option><option value="internship">Thực tập</option><option value="project">Dự án</option></select></FormField>
       {admin && selected && <Button disabled={busy} onClick={() => run(() => academicDownload(token, `/api/admin/semesters/${selected}/grades/export.xlsx?group=${group}`, `bang-diem-${selected}.xlsx`))}>Xuất điểm học kỳ</Button>}
 
     </div>

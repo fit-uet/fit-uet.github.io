@@ -11,7 +11,7 @@ function RoleSwitchButton({ user, onNavigate }: { user: any; onNavigate?: () => 
   const location = useLocation();
   if (!user || user.role !== 'admin' || !user.is_lecturer) return null;
 
-  const isLecturerView = location.pathname.startsWith('/lecturer');
+  const isLecturerView = location.pathname.startsWith('/lecturer') || (location.pathname.startsWith('/campaigns/') && new URLSearchParams(location.search).get('view') === 'lecturer');
 
   if (isLecturerView) {
     return (
@@ -193,12 +193,12 @@ function App() {
               {user ? (
                 <div className="flex items-center gap-3">
                   <Link to="/classes" className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-2 py-2 hover:bg-white/10" title="Học kỳ và nhóm môn"><GraduationCap size={18} /><span className="hidden md:inline">Nhóm môn</span></Link>
-                  {!!((user.role === 'student' && user.legacy_internship_access !== 0) || user.role === 'lecturer' || user.is_lecturer) && (
+                  {!!(user.role === 'student' || user.role === 'lecturer' || user.is_lecturer) && (
                     <Link
                       to="/chat"
                       onClick={() => { setIsMenuOpen(false); setIsNotificationOpen(false); }}
                       className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl hover:bg-white/10 transition-colors text-white"
-                      title="Trao đổi Thực tập đợt cũ"
+                      title={user.role === 'student' ? 'Trao đổi GVHD' : 'Trao đổi sinh viên'}
                     >
                       <MessageCircle size={18} />
                       {unreadChats > 0 && (
@@ -272,13 +272,13 @@ function App() {
                             <UserIcon size={15} className="text-blue-600" /> Cập nhật hồ sơ
                           </Link>
                           <Link to="/classes" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium border-b border-slate-50"><GraduationCap size={15} className="text-blue-600" /> Học kỳ và nhóm môn</Link>
-                          {user.role === 'student' && user.legacy_internship_access !== 0 && (
+                          {user.role === 'student' && (
                             <>
                               <Link to="/plan" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <FileText size={15} className="text-blue-600" /> Kế hoạch triển khai
                               </Link>
                               <Link to="/reports/final" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
-                                <FileText size={15} className="text-blue-600" /> Báo cáo thực tập
+                                <FileText size={15} className="text-blue-600" /> Báo cáo học phần
                               </Link>
                             </>
                           )}
@@ -294,7 +294,7 @@ function App() {
                                 <CircleHelp size={15} className="text-slate-500" /> Hướng dẫn sử dụng
                               </Link>
                               <Link to="/lecturer/grades" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
-                                <CheckCircle2 size={15} className="text-emerald-600" /> Chấm điểm thực tập
+                                <CheckCircle2 size={15} className="text-emerald-600" /> Chấm điểm học phần
                               </Link>
                             </>
                           )}
@@ -315,7 +315,7 @@ function App() {
                                     <CircleHelp size={15} className="text-slate-500" /> Hướng dẫn sử dụng
                                   </Link>
                                   <Link to="/lecturer/grades" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
-                                    <CheckCircle2 size={15} className="text-emerald-600" /> Chấm điểm thực tập
+                                    <CheckCircle2 size={15} className="text-emerald-600" /> Chấm điểm học phần
                                   </Link>
                                 </>
                               )}

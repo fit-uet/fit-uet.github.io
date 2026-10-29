@@ -1,3 +1,5 @@
+import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
+import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { Users, Upload, Download, ArrowUpDown, Search, RefreshCw, Save, Plus, Trash2, FileText, Settings } from 'lucide-react';
@@ -11,7 +13,8 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [advisorRequests, setAdvisorRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useLegacySearch();
+  const legacyMembership = useLegacyMembership();
   const [selectedLecturers, setSelectedLecturers] = useState<Record<string, string>>({});
   const [selectedRoles, setSelectedRoles] = useState<Record<string, 'primary' | 'co'>>({});
   const [assigningKey, setAssigningKey] = useState<string | null>(null);
@@ -57,7 +60,8 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
     .filter(item => item.id && item.name);
 
   const filteredRows = rows.filter(row => {
-    if (initialCourseCode && row.course_code !== initialCourseCode) return false;
+      if (!legacyStudentInScope(legacyMembership, row.student_id)) return false;
+    if (initialCourseCode && !matchesCourseCode(row.course_code, initialCourseCode)) return false;
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
     const primaryText = parseAssignments(row.primary_assignments).map(a => `${a.name} ${a.email || ''}`).join(' ').toLowerCase();

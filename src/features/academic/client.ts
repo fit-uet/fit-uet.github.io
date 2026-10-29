@@ -8,7 +8,16 @@ export function clearAcademicCache() {
 export async function academicApi<T = any>(token: string, path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
   const multipart = body instanceof FormData;
   const response = await fetch(`${API_BASE}${path}`, { method, headers: { Authorization: `Bearer ${token}`, ...(!multipart && body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body === undefined ? undefined : multipart ? body : JSON.stringify(body), signal });
-  const result = await response.json().catch(() => ({}));
+  let result: any;
+  try { result = await response.json(); }
+  catch (error) {
+    if (signal?.aborted || error?.name === 'AbortError') throw new DOMException('Aborted', 'AbortError');
+    if (response.ok) throw new Error('Phản hồi từ hệ thống không hợp lệ. Vui lòng tải lại.');
+    result = {};
+  }
+  // Aborting a response while its JSON body is being read must never turn it
+  // into a successful empty result that overwrites the newly selected scope.
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   if (!response.ok) {
     if (response.status === 401) { clearAcademicCache(); window.dispatchEvent(new Event('auth-expired')); }
     if (response.status === 403) clearAcademicCache();

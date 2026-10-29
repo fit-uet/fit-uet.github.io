@@ -8,6 +8,8 @@ Ngày cập nhật: **29/10/2026**. Bản mở rộng dùng backend **Express** 
 
 **Mô hình quản lý đã đổi sang học kỳ → nhóm môn.** Cấu hình/trạng thái dùng chung, các danh sách lọc/xuất theo lớp; Thực tập cũ mở trong cùng giao diện. Đã có schema v2, migration có backup và kiểm thử riêng: [GROUP_MANAGEMENT.md](GROUP_MANAGEMENT.md).
 
+**Giao diện dùng lại bố cục trước mở rộng (`726271c`):** Khoa có tổng quan/thẻ chức năng, các màn danh sách riêng; GV xem PDF và chấm trong cửa sổ, SV có thẻ hồ sơ và nộp bài. Vẫn giữ lựa chọn nhóm/kỳ, dữ liệu và API học vụ; xem [UI_RESTORATION.md](UI_RESTORATION.md).
+
 ## Chạy thử độc lập với dữ liệu đang vận hành
 
 ```bash
@@ -55,15 +57,15 @@ Mã không thay/xóa bảng nghiệp vụ hoặc file TT cũ. Các màn TT cũ l
 | Lệnh | Phạm vi |
 | --- | --- |
 | `npm run lint` | TypeScript frontend, Express, Worker và scripts |
-| `npm run test:academic` | 45 kiểm thử schema/campaign, học lại/nhiều lớp, import, quyền, GVNX, điểm/phiên bản, chat, FAQ, thông báo, HTTP PDF/XLSX và CLI backup |
-| `npm run test:academic:ui` | 9 luồng Chromium: quản trị lớp/GVNX, SV nộp/hai GV chấm/ẩn điểm, khóa/mở lại, mobile, chat xuyên lớp/đính kèm, hai hồ sơ, export, xem trước thông báo, cache khi đổi nhóm và kiểm tra kết nối email |
+| `npm run test:academic` | 48 kiểm thử schema/campaign, học lại/nhiều lớp, import, quyền, GVNX, điểm/phiên bản, chat, FAQ, thông báo, HTTP PDF/XLSX và CLI backup |
+| `npm run test:academic:ui` | 13 luồng Chromium và một luồng nghiệm thu tùy chọn trên bản sao production: quản trị lớp/GVNX, SV nộp/hai GV chấm/ẩn điểm, khóa/mở lại, mobile, chat xuyên lớp/đính kèm, hai hồ sơ, export, xem trước thông báo, cache khi đổi nhóm và kiểm tra kết nối email |
 | `npm run test:academic:d1` | Schema/command trigger trên D1 cục bộ của Wrangler: tiếp nhận, chặn revision cũ và rollback toàn bộ khi lỗi ràng buộc muộn |
 | `npm run build` | Bundle frontend và server |
 | `npm run test:staging` | 16 kiểm thử sao lưu/đối soát/WAL, readiness, cấu hình, cron, hộp thư staging, backup Turso, chờ đúng phiên bản phát hành và chẩn đoán email không gửi thư |
 
 Các kiểm thử dùng database riêng và file tạm. Kiểm thử HTTP so sánh byte PDF tải về, kiểm tra quyền trước cả 304 và xác nhận SV không nhận payload điểm. Kiểm thử giao diện chặn truy cập các domain ngoài localhost. Ảnh/trace khi chạy lưu trong `scratch/academic-ui-results` (gitignore).
 
-Kiểm thử trên D1 local không thay cho nghiệm thu D1 REST remote. Đã kiểm kê/tải sao lưu đủ 664 tệp R2 thật; người quản lý xác nhận Google OAuth thật đăng nhập được sau phát hành. Chưa nghiệm thu luồng upload R2 qua UI, quyền nội dung Drive, nhận thư từ provider email hoặc hiệu năng trên dữ liệu production. Build còn cảnh báo bundle JavaScript lớn; đây chưa phải kết quả đo hiệu năng.
+Kiểm thử trên D1 local không thay cho nghiệm thu D1 REST remote. Đã kiểm kê/tải sao lưu đủ 664 tệp R2 thật; người quản lý xác nhận Google OAuth thật đăng nhập được sau phát hành. Người quản lý đã xác nhận nhận email nghiệm thu từ production. Chưa nghiệm thu luồng upload R2 qua UI, quyền nội dung Drive hoặc hiệu năng trên dữ liệu production. Build còn cảnh báo bundle JavaScript lớn; đây chưa phải kết quả đo hiệu năng.
 
 <a id="ranh-gioi-cua-ban-cai-dat"></a>
 
