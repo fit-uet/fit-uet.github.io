@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
-import { db } from '../db';
+import { db, isDbQuotaError, isTransientLibsqlError } from '../db';
 import { GOOGLE_CLIENT_ID, JWT_SECRET } from '../config';
 import { cleanStudentName } from '../services/helpers';
 import { assertStudentCohortAllowed } from '../services/cohorts';
@@ -136,6 +136,23 @@ authRouter.post('/api/auth/google', async (req, res) => {
         error: 'Không xác thực được tài khoản Google. Vui lòng thử đăng nhập lại; nếu vẫn lỗi, cần kiểm tra OAuth Client ID của frontend và API.',
       });
     }
-    res.status(500).json({ error: 'Đăng nhập thất bại do lỗi hệ thống. Vui lòng thử lại sau.' });
+    if (isDbQuotaError(err)) {
+      console.error('[auth/google] Database read quota exceeded / blocked:', message);
+      return res.status(503).json({
+        error: 'Hệ thống cơ sở dữ liệu tạm thời vượt quá hạn mức truy vấn (Turso read quota exceeded). Quản trị viên cần kiểm tra và nâng hạn mức trên Turso Dashboard hoặc chuyển sang cơ sở dữ liệu dự phòng.',
+        code: 'DB_QUOTA_EXCEEDED',
+      });
+    }
+    if (isTransientLibsqlError(err) || /database|libsql|d1 http error|sqlite/i.test(message)) {
+      console.error('[auth/google] Database connection error:', message);
+      return res.status(503).json({
+        error: 'Không thể kết nối đến cơ sở dữ liệu hệ thống. Vui lòng thử lại sau vài phút hoặc liên hệ quản trị viên.',
+        code: 'DB_CONNECTION_ERROR',
+      });
+    }
+    res.status(500).json({
+      error: `Đăng nhập thất bại do lỗi hệ thống (${message || 'Lỗi không xác định'}). Vui lòng thử lại sau.`,
+      code: 'INTERNAL_ERROR',
+    });
   }
 });

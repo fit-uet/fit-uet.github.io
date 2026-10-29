@@ -49,10 +49,43 @@ function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [user, setUser] = useState<any>(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [systemAlert, setSystemAlert] = useState<{ message: string; details?: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadChats, setUnreadChats] = useState(0);
+
+  useEffect(() => {
+    if (token) return;
+    let isCancelled = false;
+    const checkSystem = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/ready`, { cache: 'no-store' });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (!isCancelled) {
+            if (data.database === 'quota_blocked' || /quota|blocked/i.test(data.databaseError || data.error || '')) {
+              setSystemAlert({
+                message: 'Cơ sở dữ liệu tạm thời vượt quá hạn mức truy vấn (Turso read quota exceeded).',
+                details: 'Quản trị viên cần kiểm tra và nâng hạn mức trên Turso Dashboard hoặc chuyển sang cơ sở dữ liệu dự phòng để tiếp tục.',
+              });
+            } else if (res.status === 503) {
+              setSystemAlert({
+                message: 'Hệ thống đang bảo trì hoặc đang khởi động.',
+                details: 'Vui lòng thử lại sau giây lát hoặc liên hệ quản trị viên.',
+              });
+            }
+          }
+        } else {
+          if (!isCancelled) setSystemAlert(null);
+        }
+      } catch {
+        // Silently ignore ping error before user interaction
+      }
+    };
+    checkSystem();
+    return () => { isCancelled = true; };
+  }, [token]);
 
   const handleLoginSuccess = async (credentialResponse: any) => {
     setLoginError(null);
@@ -65,7 +98,7 @@ function App() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setLoginError(data.error || 'Đăng nhập thất bại. Vui lòng thử lại sau.');
+        setLoginError(data.error || (res.status === 503 ? 'Cơ sở dữ liệu tạm thời không khả dụng hoặc vượt hạn mức truy vấn.' : 'Đăng nhập thất bại. Vui lòng thử lại sau.'));
         return;
       }
 
@@ -74,7 +107,7 @@ function App() {
       setToken(data.token);
       setUser(data.user);
     } catch (e) {
-      setLoginError('Đăng nhập thất bại. Vui lòng thử lại sau.');
+      setLoginError('Không thể kết nối đến máy chủ API. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.');
     }
   };
 
@@ -325,20 +358,40 @@ function App() {
           {/* Main Content */}
           <main className="app-main flex-1 px-6 py-8">
             {!token ? (
-              <div className="max-w-md mx-auto mt-16 bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 text-center">
+              <div className="max-w-md mx-auto mt-12 bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 text-center">
                 <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-blue-100/60 shadow-xs">
                   <LogIn className="text-[#034ea1]" size={26} />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Đăng nhập</h2>
                 <p className="text-slate-500 text-xs mb-6 leading-relaxed">
-                  Hệ thống quản lý Thực tập và Dự án FIT UET.<br />
+                  Hệ thống quản lý Thực tập và Dự án Khoa CNTT UET.<br />
                   Yêu cầu đăng nhập bằng VNU mail <strong className="text-[#034ea1] font-semibold">@vnu.edu.vn</strong>
                 </p>
+
+                {systemAlert && (
+                  <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-left text-xs text-amber-900 flex items-start gap-2.5">
+                    <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={16} />
+                    <div className="flex-1">
+                      <p className="font-bold">{systemAlert.message}</p>
+                      {systemAlert.details && <p className="mt-1 text-amber-800 leading-relaxed">{systemAlert.details}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {loginError && (
+                  <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-left text-xs text-rose-900 flex items-start gap-2.5">
+                    <AlertTriangle className="text-rose-600 shrink-0 mt-0.5" size={16} />
+                    <div className="flex-1">
+                      <p className="font-bold">Đăng nhập không thành công</p>
+                      <p className="mt-1 text-rose-800 leading-relaxed">{loginError}</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-center border border-slate-100 p-4 bg-slate-50/70 rounded-xl">
                   <GoogleLogin
                     onSuccess={handleLoginSuccess}
-                    onError={() => setLoginError('Lỗi đăng nhập từ Google.')}
+                    onError={() => setLoginError('Lỗi xác thực từ Google. Vui lòng kiểm tra lại quyền truy cập hoặc thử lại.')}
                     useOneTap
                     shape="pill"
                   />

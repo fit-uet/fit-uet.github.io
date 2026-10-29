@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '../db';
+import { db, isDbQuotaError } from '../db';
 
 export const healthRouter = Router();
 const metadata = () => ({ environment: process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development'), release: (process.env.APP_RELEASE || process.env.RENDER_GIT_COMMIT || 'local').slice(0, 40) });
@@ -16,6 +16,12 @@ healthRouter.get('/api/ready', async (_req, res) => {
   } catch (err: any) {
     const errMsg = String(err?.message || err);
     console.error('[ready error]:', errMsg);
-    res.status(503).json({ status: 'unavailable', ...metadata() });
+    const isQuota = isDbQuotaError(err);
+    res.status(503).json({
+      status: 'unavailable',
+      database: isQuota ? 'quota_blocked' : 'unavailable',
+      ...(isQuota ? { error: 'Cơ sở dữ liệu tạm thời vượt quá hạn mức truy vấn đọc (Turso read quota exceeded).' } : {}),
+      ...metadata()
+    });
   }
 });
