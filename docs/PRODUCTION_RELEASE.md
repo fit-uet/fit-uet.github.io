@@ -33,7 +33,7 @@ npm run build
 
 Push commit đã kiểm tra lên `main` sẽ kích hoạt Render và workflow GitHub Pages. Workflow dùng Node 24 và lockfile, kiểm tra type/nghiệp vụ, build giao diện, rồi chờ backend xác nhận **đúng SHA commit** mới publish Pages. Nếu backend chưa sẵn sàng, workflow thất bại và giao diện đang chạy được giữ lại. Khi Render đã phục hồi, chạy lại workflow trên cùng commit.
 
-Render Blueprint khai báo `/api/ready` làm health check. Với service đã tạo thủ công, kiểm tra mục Health Check Path trong Dashboard vì sửa Blueprint không đồng nghĩa đã cập nhật service đó. Cơ chế [deploy của Render](https://render.com/docs/deploys) và [health check](https://render.com/docs/health-checks) được mô tả trong tài liệu chính thức.
+Render Blueprint khai báo `/api/health` để theo dõi tiến trình; pipeline phát hành vẫn bắt buộc `/api/ready` đúng schema và commit. Với service đã tạo thủ công, kiểm tra mục Health Check Path trong Dashboard vì sửa Blueprint không đồng nghĩa đã cập nhật service đó. Cơ chế [deploy của Render](https://render.com/docs/deploys) và [health check](https://render.com/docs/health-checks) được mô tả trong tài liệu chính thức.
 
 ```bash
 npm run production:check -- --api=https://internship-api-dplz.onrender.com --release=<sha-commit-day-du>

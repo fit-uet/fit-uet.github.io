@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
-    healthCheckPath: /api/ready
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: "24"

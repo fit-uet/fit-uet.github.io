@@ -49,7 +49,7 @@ authRouter.post('/api/auth/google', async (req, res) => {
     const studentId = defaultRole === 'student' ? email.split('@')[0] : null;
     const displayName = defaultRole === 'student' ? cleanStudentName(rawDisplayName, studentId, email) : rawDisplayName;
     const picture = payload.picture || null;
-    let user = (await db.execute({ sql: 'SELECT * FROM users WHERE email = ?', args: [email] })).rows[0] as any;
+    let user = (await db.execute({ sql: 'SELECT * FROM users WHERE lower(email) = ?', args: [email] })).rows[0] as any;
     if (!user && studentId) {
       user = (await db.execute({
         sql: "SELECT * FROM users WHERE role = 'student' AND student_id = ?",
@@ -59,20 +59,32 @@ authRouter.post('/api/auth/google', async (req, res) => {
     const effectiveRole = user?.role || defaultRole;
     let admittedProject = false;
     if (effectiveRole === 'student' && !isLecturerInDb && email !== adminEmail) {
-      admittedProject = !!(await db.execute({
-        sql: `SELECT e.id FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id
-          WHERE lower(json_extract(e.data,'$.email'))=? AND COALESCE(json_extract(e.data,'$.status'),'active')='active'
-            AND json_extract(c.data,'$.courseCode') IN ('INT3131','INT3132')
-            AND json_extract(c.data,'$.status') IN ('active','archived') LIMIT 1`, args: [email],
-      })).rows[0];
+      try {
+        admittedProject = !!(await db.execute({
+          sql: `SELECT e.id FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id
+            WHERE lower(json_extract(e.data,'$.email'))=? AND COALESCE(json_extract(e.data,'$.status'),'active')='active'
+              AND json_extract(c.data,'$.courseCode') IN ('INT3131','INT3132')
+              AND json_extract(c.data,'$.status') IN ('active','archived') LIMIT 1`, args: [email],
+        })).rows[0];
+      } catch (admitErr) {
+        console.warn('[auth/google] Warning checking project enrollment:', admitErr);
+      }
       if (!admittedProject) await assertStudentCohortAllowed(email);
     }
     if (!user) {
-      const result = await db.execute({
-        sql: 'INSERT INTO users (email, name, picture, role, student_id, is_lecturer, legacy_internship_access) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        args: [email, displayName, picture, defaultRole, studentId, isLecturerInDb ? 1 : 0, admittedProject ? 0 : 1]
-      });
-      user = { id: Number(result.lastInsertRowid), email, name: displayName, picture, role: defaultRole, student_id: studentId, dob: null, class_name: null, is_lecturer: isLecturerInDb ? 1 : 0, legacy_internship_access: admittedProject ? 0 : 1 };
+      try {
+        const result = await db.execute({
+          sql: 'INSERT INTO users (email, name, picture, role, student_id, is_lecturer, legacy_internship_access) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          args: [email, displayName, picture, defaultRole, studentId, isLecturerInDb ? 1 : 0, admittedProject ? 0 : 1]
+        });
+        user = { id: Number(result.lastInsertRowid), email, name: displayName, picture, role: defaultRole, student_id: studentId, dob: null, class_name: null, is_lecturer: isLecturerInDb ? 1 : 0, legacy_internship_access: admittedProject ? 0 : 1 };
+      } catch (insertErr: any) {
+        if (/UNIQUE constraint failed: users\.email/i.test(insertErr?.message || '')) {
+          user = (await db.execute({ sql: 'SELECT * FROM users WHERE lower(email) = ?', args: [email] })).rows[0] as any;
+        } else {
+          throw insertErr;
+        }
+      }
     } else {
       let nextRole = user.role;
       if (isLecturerInDb) {
@@ -108,6 +120,7 @@ authRouter.post('/api/auth/google', async (req, res) => {
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, picture: user.picture, role: user.role, student_id: user.student_id, dob: user.dob, class_name: user.class_name, course_code: user.course_code, is_lecturer: user.is_lecturer, legacy_internship_access: user.legacy_internship_access ?? 1 } });
   } catch (err: any) {
     const message = String(err?.message || '');
+    console.error('[auth/google error]:', message, err?.stack || '');
     if (message.includes('không được phép đăng nhập/đăng ký')) {
       return res.status(403).json({ error: message });
     }
@@ -116,7 +129,7 @@ authRouter.post('/api/auth/google', async (req, res) => {
         error: 'Tài khoản này bị trùng mã sinh viên với một hồ sơ khác trong hệ thống. Vui lòng liên hệ quản trị viên để gộp hoặc sửa hồ sơ sinh viên.',
       });
     }
-    const isGoogleTokenError = /token|jwt|audience|recipient|issuer|signature|login ticket|No pem found/i.test(message);
+    const isGoogleTokenError = /token|jwt|audience|recipient|issuer|signature|login ticket|No pem found|clock skew|used too early|expired|segments/i.test(message);
     if (isGoogleTokenError) {
       console.error('Google authentication failed:', message);
       return res.status(401).json({

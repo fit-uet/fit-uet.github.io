@@ -32,15 +32,29 @@ export async function isListedStudentCohortException(email: string) {
   const normalizedEmail = String(email || '').trim().toLowerCase();
   const studentId = normalizedEmail.split('@')[0] || '';
   if (!studentId) return false;
-  const row = (await db.execute({
-    sql: `SELECT id FROM users
-          WHERE role = 'student'
-            AND COALESCE(legacy_internship_access, 1) = 1
-            AND (lower(email) = ? OR student_id = ?)
-          LIMIT 1`,
-    args: [normalizedEmail, studentId],
-  })).rows[0];
-  return Boolean(row);
+  try {
+    const row = (await db.execute({
+      sql: `SELECT id FROM users
+            WHERE role = 'student'
+              AND COALESCE(legacy_internship_access, 1) = 1
+              AND (lower(email) = ? OR student_id = ?)
+            LIMIT 1`,
+      args: [normalizedEmail, studentId],
+    })).rows[0];
+    return Boolean(row);
+  } catch (error) {
+    // Older internship-only schemas lack the flag; transient database failures
+    // must not admit a deleted project account through the legacy exception.
+    if (!/no such column:.*legacy_internship_access/i.test(String(error))) throw error;
+    const row = (await db.execute({
+      sql: `SELECT id FROM users
+            WHERE role = 'student'
+              AND (lower(email) = ? OR student_id = ?)
+            LIMIT 1`,
+      args: [normalizedEmail, studentId],
+    })).rows[0];
+    return Boolean(row);
+  }
 }
 
 export async function assertStudentCohortAllowed(email: string) {

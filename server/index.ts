@@ -11,16 +11,17 @@ export async function startServer() {
   assertStagingConfig();
   await initDb();
   await initAcademicSchema(db);
-  await deliverAcademicOutbox();
-  await drainProjectCleanup();
-  await seedCompaniesIfEmpty();
-
   const app = await createApp();
   const PORT = Number(process.env.PORT) || 3000;
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
+
+  // Chạy các tác vụ cập nhật ban đầu nền sau khi server đã lắng nghe cổng
+  deliverAcademicOutbox().catch(err => console.error('[deliverAcademicOutbox error]:', err?.message || err));
+  drainProjectCleanup().catch(err => console.error('[project cleanup error]:', err?.message || err));
+  seedCompaniesIfEmpty().catch(err => console.error('[seedCompaniesIfEmpty error]:', err?.message || err));
 
   // Tự động kiểm tra và xả hàng đợi email theo quota ngày (mỗi 30 phút và 10 giây sau khi khởi động)
   const runAutoQueueDrain = async () => {
