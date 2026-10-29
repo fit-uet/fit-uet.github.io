@@ -25,7 +25,9 @@ export async function legacyRows(req: any, sql: string, args: any[] = [], option
   if(q.advisor && sql.includes('primary_advisors')){filters.push(`instr(COALESCE(primary_advisors,''),?)>0`);values.push(String(q.advisor));}
   const statusColumn=options.status || (sql.includes('grade_status')?'grade_status':sql.includes('report_status')?'report_status':sql.includes('internship_type')?'internship_type':null);
   if(q.status==='unassigned'&&sql.includes('primary_assignments')){filters.push(`COALESCE(primary_assignments,'')=''`);}else if(q.status&&statusColumn){if(q.status==='unassigned'&&sql.includes('primary_assignments'))filters.push(`COALESCE(primary_assignments,'')=''`);else{filters.push(`COALESCE(${statusColumn},'${statusColumn==='grade_status'?'missing':'missing'}')=?`);values.push(String(q.status));}}
-  const sortMap:Record<string,string>={student_id:'student_id',student_name:name};
+  const sortMap:Record<string,string>={student_id:'student_id',student_name:name,student:`COALESCE(${name},'')||' '||COALESCE(student_id,'')`};
+  if(req.path==='/api/admin/advisor-assignments')sortMap.primary_assignments='primary_assignment_names';
+  if(req.path==='/api/admin/advisor-requests')Object.assign(sortMap,{lecturer:"COALESCE(lecturer_name,lecturer_name_text,'')||' '||COALESCE(co_lecturer_name,co_lecturer_name_text,'')",request_status:"COALESCE(status,'')||' '||COALESCE(quota_status,'')",student_note:'student_note'});
   for (const key of ['email','class_name','course_code','confirmed_at','internship_type','internship_place','report_submitted_at','grade_status','school_lecturer','dob','phone','personal_email','company_name','note','created_at','sent_to_company_at','status','review_comment']) if(sql.includes(key))sortMap[key]=key;
   if(req.path==='/api/admin/final-internships')sortMap.internship_place="CASE WHEN company_name='Công ty khác' THEN other_company_name ELSE company_name END";
   Object.assign(sortMap,options.sort);const sort=sortMap[String(q.sort)]||'student_id';const direction=q.direction==='desc'?'DESC':'ASC';

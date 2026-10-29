@@ -1380,6 +1380,7 @@ adminRouter.get('/api/admin/advisor-assignments', requireAuth, requireAdmin, asy
                  ELSE c.name
                END as internship_place,
                GROUP_CONCAT(CASE WHEN aa.role = 'primary' THEN aa.id || '|' || COALESCE(l.name, 'Giảng viên đã bị xóa') || '|' || COALESCE(l.email, '') || '|' || COALESCE(aa.note, '') END) as primary_assignments,
+               GROUP_CONCAT(CASE WHEN aa.role='primary' THEN COALESCE(l.name,'Giảng viên đã bị xóa') END,'; ') as primary_assignment_names,
                GROUP_CONCAT(CASE WHEN aa.role = 'co' THEN aa.id || '|' || COALESCE(l.name, 'Giảng viên đã bị xóa') || '|' || COALESCE(l.email, '') || '|' || COALESCE(aa.note, '') END) as co_assignments
         FROM participants p
         JOIN users u ON u.id = p.user_id

@@ -101,3 +101,9 @@ test('unread count endpoint logic returns counts without notification bodies or 
   const filtered=await campaignExport(admin,campaignId,'students',{classId:firstClass,q:'đỗ ánh'});assert.equal(filtered.length,1);
   const ctx=await readCommunicationContext(sv,firstClass);assert.equal(ctx.s.enrollments.length,2);assert.ok(ctx.s.enrollments.every(e=>e.email===sv.email&&!('evaluations' in e)&&!('versions' in e)));
  });
+
+ test('legacy adviser sorting selects the correct global page rather than sorting one page locally',async()=>{
+  const req:any={path:'/api/admin/advisor-assignments',query:{pagination:'1',limit:'1',sort:'primary_assignments',direction:'asc'}};
+  const sql="SELECT id user_id,student_id,name student_name,email,class_name,CASE WHEN student_id='24020079' THEN 'Alpha' ELSE 'Zulu' END primary_assignment_names, '1|GV|gv@vnu.edu.vn|' primary_assignments FROM users WHERE role='student'";
+  const rows=await legacyRows(req,sql);assert.equal(rows[0].student_id,'24020079');assert.equal(req.legacyPage.total,80);
+ });

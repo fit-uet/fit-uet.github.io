@@ -14,7 +14,7 @@ type DashboardPresentation = {
   onNavigate: (path:string) => void;
   actions?: ReactNode;
   context?: ReactNode;
-  extraModules?: {title:string;path:string;onClick:()=>void;icon?:ReactNode}[];
+  extraModules?: {title:string;path:string;onClick:()=>void;icon?:React.ReactElement}[];
 };
 export function AdminDashboard({ token, presentation }: { token: string; user?: any; presentation?: DashboardPresentation }) {
   const routeNavigate = useNavigate(); const navigate = presentation?.onNavigate || routeNavigate;
