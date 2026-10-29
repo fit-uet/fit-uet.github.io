@@ -34,6 +34,78 @@ export function EnrollmentPanel({ token, user, courseClass: c, enrollment: e, le
   const base = `/api/enrollments/${e.id}`;
   return <section className="bg-white border border-slate-200 rounded-xl p-5 space-y-5">
     <div className="flex flex-wrap justify-between items-start gap-3"><div><h3 className="font-semibold text-lg">{e.name}</h3><p className="text-xs text-slate-500 mt-1">{e.studentId} · {e.className} · {c.code}</p></div><span className="text-xs bg-slate-100 rounded px-2 py-1">{e.status === 'withdrawn' ? 'Đã rút' : requiresResubmission ? 'Cần nộp lại theo đề tài mới' : current.state === 'submitted' ? 'Đã nộp bộ bài' : 'Chưa hoàn tất nộp bài'}</span></div>
+    {project && owner && (
+      <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-3 shadow-xs">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-1 flex items-center justify-between">
+          <span>Tiến độ học phần Dự án</span>
+          <span className="text-slate-400 font-normal">Học kỳ {c.semesterId}</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            {
+              step: '1',
+              title: 'Khai báo đề tài',
+              done: Boolean(e.topic),
+              active: !e.topic,
+              statusText: e.topic ? 'Đã khai báo' : 'Cần khai báo',
+              sub: e.topic || 'Chưa gửi tên đề tài',
+            },
+            {
+              step: '2',
+              title: 'GVHD duyệt đề tài',
+              done: e.topicReview?.status === 'approved',
+              active: Boolean(e.topic) && e.topicReview?.status !== 'approved',
+              statusText: e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa có',
+              sub: e.topicReview?.status === 'approved' ? 'Đã được thông qua' : e.topic ? 'Đang đợi GVHD duyệt' : 'Chưa gửi đề tài',
+            },
+            {
+              step: '3',
+              title: 'Nộp bộ bài',
+              done: current.state === 'submitted' && !requiresResubmission,
+              active: e.topicReview?.status === 'approved' && (current.state !== 'submitted' || requiresResubmission),
+              statusText: requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã nộp đủ' : 'Chưa nộp',
+              sub: current.state === 'submitted' ? `Phiên bản ${current.number}` : 'PDF, Slide & Demo',
+            },
+            {
+              step: '4',
+              title: 'Đánh giá & Hoàn tất',
+              done: Boolean(e.lockedAt || e.finalScore != null),
+              active: current.state === 'submitted' && e.finalScore == null && !requiresResubmission,
+              statusText: e.lockedAt ? 'Đã khóa điểm' : e.finalScore != null ? 'Đã có điểm' : current.state === 'submitted' ? 'Chờ chấm' : 'Chưa có',
+              sub: e.finalScore != null ? `Điểm: ${e.finalScore.toFixed(1)}` : 'Chờ GVHD & GVNX',
+            },
+          ].map(s => (
+            <div
+              key={s.step}
+              className={`p-2.5 rounded-lg border text-xs transition-colors ${
+                s.done
+                  ? 'bg-emerald-50/70 border-emerald-200 text-slate-800'
+                  : s.active
+                  ? 'bg-blue-50/80 border-blue-200 text-slate-900 shadow-xs'
+                  : 'bg-white border-slate-200/80 text-slate-500'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Bước {s.step}</span>
+                <span
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                    s.done
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : s.active
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {s.statusText}
+                </span>
+              </div>
+              <p className="font-semibold text-slate-800 truncate">{s.title}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5 truncate" title={s.sub}>{s.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
     {error && <p role="alert" className="bg-rose-50 text-rose-800 p-3 rounded-lg text-sm">{error}</p>}{notice && <p role="status" className="text-emerald-700 text-sm">{notice}</p>}
     {c.legacy && <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-blue-900">Hồ sơ Thực tập Hè 2025–2026 được đọc từ dữ liệu hiện có. Các tác vụ Thực tập được giữ trong các mục quản lý của nhóm môn này.</div>}
     {showProfile && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3"><div className="bg-slate-50 border border-slate-100 rounded-xl p-4"><p className="text-[11px] uppercase font-semibold text-slate-500">Học phần</p><p className="font-semibold text-sm text-[#034ea1] mt-2">{c.courseName}</p><p className="text-xs text-slate-500 mt-1">{c.code}</p></div><div className="bg-slate-50 border border-slate-100 rounded-xl p-4"><p className="text-[11px] uppercase font-semibold text-slate-500">Giảng viên hướng dẫn</p><p className="font-semibold text-sm mt-2">{e.assignments.filter(a => a.role === 'primary').map(a => lecturers.find(l => l.id === a.lecturerId)?.name).join('; ') || 'Chưa phân công'}</p></div><div className="bg-slate-50 border border-slate-100 rounded-xl p-4"><p className="text-[11px] uppercase font-semibold text-slate-500">Báo cáo</p><p className="font-semibold text-sm mt-2">{requiresResubmission ? 'Cần nộp lại theo đề tài mới' : current.state === 'submitted' ? 'Đã hoàn tất bài nộp' : 'Chưa hoàn tất bài nộp'}</p><p className="text-xs text-slate-500 mt-1">Phiên bản {current.number}</p></div><div className="bg-slate-50 border border-slate-100 rounded-xl p-4"><p className="text-[11px] uppercase font-semibold text-slate-500">Hạn nộp bài</p><p className="font-semibold text-sm mt-2">{c.settings.submissionCloseAt ? new Date(c.settings.submissionCloseAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'Theo thông báo của Khoa'}</p></div></div>}

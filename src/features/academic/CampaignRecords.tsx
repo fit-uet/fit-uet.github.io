@@ -1,14 +1,14 @@
 import { CampaignToolbarActions } from './CampaignLayoutContext';
 import type { ReactNode } from 'react';
 import { FileText, Download, Eye, UserCheck, CheckCircle2 } from 'lucide-react';
-import { Button } from '../../shared/ui';
+import { Button, Badge, type BadgeVariant } from '../../shared/ui';
 import type { LecturerInfo } from '../../shared/academic';
 import { TOPIC_STATUS_NAMES } from '../../shared/academic';
 import { gradeNames, lecturerNames, type CampaignRecord, type CampaignRecordPage, type EnrollmentPanelMode } from './campaignPresentation';
 
 export function RecordBadge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'success' | 'warning' | 'danger' }) {
-  const styles = { neutral: 'text-slate-600 bg-slate-100 border-slate-200', success: 'text-emerald-700 bg-emerald-50 border-emerald-200', warning: 'text-amber-800 bg-amber-50 border-amber-200', danger: 'text-rose-700 bg-rose-50 border-rose-200' };
-  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${styles[tone]}`}>{children}</span>;
+  const variant: BadgeVariant = tone === 'danger' ? 'error' : tone;
+  return <Badge variant={variant} size="sm">{children}</Badge>;
 }
 export function CampaignRecords({ page, tab, project, lecturer, lecturers, query, editQuery, open, exportFile, busy, extraActions }: { page: CampaignRecordPage | null; tab: string; project: boolean; lecturer: boolean; lecturers: LecturerInfo[]; query: URLSearchParams; editQuery: (patch: Record<string, string>) => void; open: (record: CampaignRecord, mode?: EnrollmentPanelMode) => void; exportFile: () => void; busy: boolean; extraActions?:ReactNode }) {
   const studentCell = (e: CampaignRecord) => <div><button className="font-semibold text-[#034ea1] hover:underline text-left" onClick={() => open(e, 'profile')}>{e.name}</button><p className="text-xs text-slate-500 mt-1">{e.studentId} · {e.className || 'Chưa có lớp khóa học'}</p></div>;
