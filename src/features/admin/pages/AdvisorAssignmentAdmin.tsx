@@ -5,7 +5,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, xlsxArrayBuffer, readSpreadsheetRows, paginationBounds, PaginationControls, PageDescriptionTooltip, SegmentedControl, formatCourseCode, cleanStudentName } from '../../../shared';
 
-export function AdvisorAssignmentAdmin({ token, view = 'assignments' }: { token: string, view?: 'assignments' | 'requests' | 'quotas' }) {
+export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = 'assignments' }: { token: string, initialCourseCode?: string, view?: 'assignments' | 'requests' | 'quotas' }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [lecturers, setLecturers] = useState<any[]>([]);
@@ -57,6 +57,7 @@ export function AdvisorAssignmentAdmin({ token, view = 'assignments' }: { token:
     .filter(item => item.id && item.name);
 
   const filteredRows = rows.filter(row => {
+    if (initialCourseCode && row.course_code !== initialCourseCode) return false;
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
     const primaryText = parseAssignments(row.primary_assignments).map(a => `${a.name} ${a.email || ''}`).join(' ').toLowerCase();

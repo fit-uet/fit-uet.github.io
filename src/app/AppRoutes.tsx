@@ -6,6 +6,11 @@ import { AdminDashboard, AdminPanel, FinalInternshipListAdmin, AdvisorAssignment
 import { CompanyDetail, PlanView, LecturerGuideView, FAQView, ChatView, Profile } from '../features/shared';
 import { MyNotifications } from '../shared';
 import { canReviewRegistrations, isAdmin, isLecturer, isStudent } from '../auth/access';
+import { AcademicHome } from '../features/academic/AcademicHome';
+import { ContextRedirect } from '../features/academic/ContextRedirect';
+import { CampaignPage } from '../features/academic/CampaignWorkspace';
+import { AcademicClassPage } from '../features/academic/CourseWorkspace';
+import { UnmappedLegacyInternship } from '../features/academic/UnmappedLegacyInternship';
 
 type AppRoutesProps = {
   user: any;
@@ -43,40 +48,47 @@ export function AppRoutes({
   return (
     <div className={`feature-page feature-page--${roleClass}`}>
       <Routes>
-      <Route path="/" element={home} />
-      <Route path="/lecturer" element={lecturerOnly(<LecturerHome user={user} token={token} />)} />
-      <Route path="/lecturer/grades" element={lecturerOnly(<LecturerGradeView token={token} user={user} />)} />
+      <Route path="/" element={<AcademicHome token={token} user={user} />} />
+      <Route path="/classes" element={<AcademicHome token={token} user={user} />} />
+      <Route path="/campaigns/:campaignId" element={<CampaignPage token={token} user={user} />} />
+      <Route path="/classes/:classId" element={<AcademicClassPage token={token} user={user} />} />
+      <Route path="/internship" element={<ContextRedirect token={token} tab="students" internshipOnly={true} />} />
+      <Route path="/internship/legacy" element={<GuardedRoute allowed={isStudent(user) && user.legacy_internship_access !== 0}><UnmappedLegacyInternship token={token} user={user} setUser={setUser} onAuthExpired={onAuthExpired} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
+      <Route path="/lecturer" element={<ContextRedirect token={token} tab="students" internshipOnly={false} />} />
+      <Route path="/lecturer/grades" element={<ContextRedirect token={token} tab="grades" internshipOnly={false} />} />
 
-      <Route path="/admin" element={adminOnly(<AdminDashboard token={token} user={user} />)} />
-      <Route path="/admin/registrations" element={<GuardedRoute allowed={canReviewRegistrations(user)}><AdminPanel token={token} user={user} /></GuardedRoute>} />
-      <Route path="/admin/final-internships" element={adminOnly(<FinalInternshipListAdmin token={token} />)} />
+      <Route path="/admin" element={<ContextRedirect token={token} tab="overview" internshipOnly={false} />} />
+      <Route path="/admin/registrations" element={<ContextRedirect token={token} tab="registrations" internshipOnly={true} />} />
+      <Route path="/admin/final-internships" element={<ContextRedirect token={token} tab="final-internships" internshipOnly={true} />} />
       <Route path="/admin/students" element={adminOnly(<StudentRegistry token={token} />)} />
       <Route path="/admin/lecturers" element={adminOnly(<LecturerRegistry token={token} />)} />
-      <Route path="/admin/advisors" element={adminOnly(<AdvisorAssignmentAdmin token={token} view="assignments" />)} />
-      <Route path="/admin/advisors/requests" element={adminOnly(<AdvisorAssignmentAdmin token={token} view="requests" />)} />
-      <Route path="/admin/advisors/quotas" element={adminOnly(<AdvisorAssignmentAdmin token={token} view="quotas" />)} />
-      <Route path="/admin/reports" element={adminOnly(<FinalReportAdmin token={token} />)} />
-      <Route path="/admin/grades" element={adminOnly(<GradeAdmin token={token} />)} />
-      <Route path="/admin/notifications" element={adminOnly(<NotificationAdmin token={token} />)} />
+      <Route path="/admin/advisors" element={<ContextRedirect token={token} tab="assignments" internshipOnly={false} />} />
+      <Route path="/admin/advisors/requests" element={<ContextRedirect token={token} tab="assignments" view="requests" internshipOnly={true} />} />
+      <Route path="/admin/advisors/quotas" element={<ContextRedirect token={token} tab="assignments" view="quotas" internshipOnly={true} />} />
+      <Route path="/admin/reports" element={<ContextRedirect token={token} tab="reports" internshipOnly={false} />} />
+      <Route path="/admin/grades" element={<ContextRedirect token={token} tab="grades" internshipOnly={false} />} />
+      <Route path="/admin/notifications" element={<ContextRedirect token={token} tab="announcements" internshipOnly={false} />} />
       <Route path="/admin/companies" element={adminOnly(<CompanyRegistry token={token} />)} />
       <Route path="/admin/approved-companies" element={adminOnly(<ApprovedCompanyRegistry token={token} />)} />
       <Route path="/admin/admins" element={adminOnly(<AdminRegistry token={token} />)} />
-      <Route path="/admin/settings" element={adminOnly(<AdminSettings token={token} />)} />
-      <Route path="/admin/faq" element={adminOnly(<FAQSettingsAdmin token={token} />)} />
-      <Route path="/admin/faq-questions" element={adminOnly(<FAQQuestionsAdmin token={token} />)} />
-      <Route path="/admin/plan" element={adminOnly(<PlanSettingsAdmin token={token} />)} />
-      <Route path="/admin/lecturer-guide" element={adminOnly(<LecturerGuideSettingsAdmin token={token} />)} />
-      <Route path="/admin/registration-rules" element={adminOnly(<RegistrationRulesSettingsAdmin token={token} />)} />
+      <Route path="/admin/settings" element={<ContextRedirect token={token} tab="settings" internshipOnly={false} />} />
+      <Route path="/admin/faq" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
+      <Route path="/admin/faq-questions" element={<ContextRedirect token={token} tab="questions" internshipOnly={false} />} />
+      <Route path="/admin/plan" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
+      <Route path="/admin/lecturer-guide" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
+      <Route path="/admin/registration-rules" element={<ContextRedirect token={token} tab="plan" internshipOnly={true} />} />
 
-      <Route path="/reports/final" element={studentOnly(<StudentFinalReportView token={token} user={user} />)} />
+      <Route path="/reports/final" element={<ContextRedirect token={token} tab="students" internshipOnly={true} />} />
       <Route path="/company/:id" element={<CompanyDetail user={user} token={token} />} />
-      <Route path="/plan" element={<PlanView user={user} />} />
-      <Route path="/lecturer-guide" element={lecturerOnly(<LecturerGuideView token={token} user={user} />)} />
-      <Route path="/faq" element={<FAQView user={user} token={token} />} />
+      <Route path="/plan" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
+      <Route path="/lecturer-guide" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
+      <Route path="/faq" element={<ContextRedirect token={token} tab="questions" internshipOnly={false} />} />
+      <Route path="/system/settings" element={adminOnly(<AdminSettings token={token} />)} />
+      <Route path="/system/notifications" element={adminOnly(<NotificationAdmin token={token} />)} />
       <Route path="/profile" element={<Profile user={user} setUser={setUser} token={token} />} />
-      <Route path="/chat" element={<GuardedRoute allowed={chatAllowed}><ChatView token={token} user={user} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
-      <Route path="/chat/group/:groupLecturerId" element={<GuardedRoute allowed={chatAllowed}><ChatView token={token} user={user} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
-      <Route path="/chat/:studentUserId/:lecturerId" element={<GuardedRoute allowed={chatAllowed}><ChatView token={token} user={user} onUnreadChanged={onUnreadChatsChanged} /></GuardedRoute>} />
+      <Route path="/chat" element={<GuardedRoute allowed={chatAllowed}><ContextRedirect token={token} tab="chat" /></GuardedRoute>} />
+      <Route path="/chat/group/:groupLecturerId" element={<GuardedRoute allowed={chatAllowed}><ContextRedirect token={token} tab="chat" internshipOnly /></GuardedRoute>} />
+      <Route path="/chat/:studentUserId/:lecturerId" element={<GuardedRoute allowed={chatAllowed}><ContextRedirect token={token} tab="chat" internshipOnly /></GuardedRoute>} />
       <Route path="/notifications" element={<MyNotifications token={token} user={user} onChanged={onUnreadNotificationsChanged} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

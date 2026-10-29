@@ -33,13 +33,13 @@ import {
   cleanStudentName,
 } from '../../../shared';
 
-export function GradeAdmin({ token }: { token: string }) {
+export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; initialCourseCode?: string }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [courseCodeFilter, setCourseCodeFilter] = useState('');
+  const [courseCodeFilter, setCourseCodeFilter] = useState(initialCourseCode);
   const [advisorFilter, setAdvisorFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [lockingBatch, setLockingBatch] = useState(false);
@@ -226,7 +226,7 @@ export function GradeAdmin({ token }: { token: string }) {
     const term = searchTerm.trim().toLowerCase();
     const status = row.grade_status || 'missing';
     const matchStatus = statusFilter ? status === statusFilter : true;
-    const matchCourse = courseCodeFilter ? row.course_code === courseCodeFilter : true;
+    const matchCourse = (!initialCourseCode || row.course_code === initialCourseCode) && (courseCodeFilter ? row.course_code === courseCodeFilter : true);
     const matchAdvisor = advisorFilter ? (row.primary_advisors || '').includes(advisorFilter) : true;
     const matchTerm =
       !term ||

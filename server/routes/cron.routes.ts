@@ -4,8 +4,14 @@ import { rowsToSettings, isWithinLocalWindow } from '../services/helpers';
 import { exportRegistrationsToGoogleSheets } from '../services/googleSheets';
 import { sendQueuedNotificationBatch } from '../services/email';
 import { checkAndQueueScheduledReminders } from '../services/autoReminders';
+import { queueAcademicReminders } from '../academic/outbox';
+import { stagingJobsEnabled } from '../staging/config';
 
 export const cronRouter = Router();
+cronRouter.use('/api/cron', (_req, res, next) => {
+  if (!stagingJobsEnabled()) return res.status(409).json({ error: 'Cron staging đang tắt. Chỉ bật STAGING_RUN_JOBS sau khi kiểm tra đích Sheets và hộp thư nghiệm thu.' });
+  next();
+});
 
 cronRouter.post('/api/cron/export-to-sheet', async (req: any, res: any) => {
   const expectedSecret = process.env.CRON_SECRET;
@@ -60,6 +66,7 @@ cronRouter.post('/api/cron/process-email-queue', async (req: any, res: any) => {
     await checkAndQueueScheduledReminders(db).catch(err => {
       console.error('Lỗi khi quét email nhắc nhở tự động:', err?.message || err);
     });
+    await queueAcademicReminders().catch(err => console.error('[academic reminders]', err.message));
 
     // 2. Xử lý xả hàng đợi email theo quota ngày
     const provider = process.env.EMAIL_PROVIDER || (process.env.BREVO_API_KEY ? 'brevo' : process.env.RESEND_API_KEY ? 'resend' : '');

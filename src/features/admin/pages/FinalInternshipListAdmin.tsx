@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, Download, ArrowUpDown, Search, RefreshCw, Trash2 } from 'lucide-react';
 import { API_BASE, saveXlsx, paginationBounds, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
 
-export function FinalInternshipListAdmin({ token }: { token: string }) {
+export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { token: string; initialCourseCode?: string }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +69,7 @@ export function FinalInternshipListAdmin({ token }: { token: string }) {
     const term = searchTerm.trim().toLowerCase();
     const includesTerm = (value: any) => String(value || '').toLowerCase().includes(term);
     let result = rows.filter(item => {
+      if (initialCourseCode && item.course_code !== initialCourseCode) return false;
       const matchType = typeFilter ? item.internship_type === typeFilter : true;
       const matchTerm = !term ||
         includesTerm(item.student_id) ||

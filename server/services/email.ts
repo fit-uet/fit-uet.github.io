@@ -1,5 +1,7 @@
 import { db } from '../db';
+import { allowedAcademicQueue } from '../academic/notificationAccess';
 import { DB_BATCH_SIZE } from '../config';
+import { stagingEmailRecipient } from '../staging/config';
 
 export function parseEmailAddress(value: string | undefined) {
   const raw = String(value || '').trim();
@@ -42,6 +44,11 @@ export async function sendNotificationEmail(notificationId: number, data: {
 }) {
   const from = process.env.EMAIL_FROM || process.env.NOTIFICATION_EMAIL_FROM;
   const provider = (process.env.EMAIL_PROVIDER || (process.env.BREVO_API_KEY ? 'brevo' : process.env.RESEND_API_KEY ? 'resend' : '')).toLowerCase();
+  if (['staging', 'local-staging'].includes(process.env.APP_ENV || '')) {
+    const recipient = stagingEmailRecipient();
+    if (provider === 'none' || !recipient) return 'queued';
+    data = { ...data, recipient_email: recipient, cc_emails: [], subject: `[STAGING] ${data.subject}` };
+  }
   if (!from || !notificationId) return 'queued';
   if ((await emailSentTodayCount()) >= emailDailySendCap()) return 'queued';
   try {
@@ -162,7 +169,7 @@ export async function sendQueuedNotificationBatch(options: { requestedLimit?: nu
     for (let offset = 0; offset < normalizedIds.length; offset += DB_BATCH_SIZE) {
       const idChunk = normalizedIds.slice(offset, offset + DB_BATCH_SIZE);
       const chunkRows = (await db.execute({
-        sql: `SELECT id, recipient_email, subject, body
+        sql: `SELECT id, recipient_email, subject, body, type, academic_class_id, academic_enrollment_id, academic_campaign_id, academic_audience_class_ids
               FROM notifications
               WHERE status = 'queued'
                 AND id IN (${idChunk.map(() => '?').join(',')})`,
@@ -173,7 +180,7 @@ export async function sendQueuedNotificationBatch(options: { requestedLimit?: nu
     rows = selectedRows.sort((a, b) => Number(a.id) - Number(b.id)).slice(0, limit);
   } else {
     rows = (await db.execute({
-      sql: `SELECT id, recipient_email, subject, body
+      sql: `SELECT id, recipient_email, subject, body, type, academic_class_id, academic_enrollment_id, academic_campaign_id, academic_audience_class_ids
             FROM notifications
             WHERE status = 'queued'
             ORDER BY created_at ASC, id ASC
@@ -184,7 +191,12 @@ export async function sendQueuedNotificationBatch(options: { requestedLimit?: nu
 
   let sent = 0;
   let failed = 0;
+  const allowed = await allowedAcademicQueue(rows);
   for (const row of rows) {
+    if (!allowed.has(Number(row.id))) {
+      await db.execute({ sql: "UPDATE notifications SET status='website_only',error='Quyền truy cập lớp đã thay đổi; đã hủy email chờ.' WHERE id=? AND status='queued'", args: [Number(row.id)] });
+      continue;
+    }
     const result = await sendNotificationEmail(Number(row.id), {
       recipient_email: row.recipient_email,
       subject: row.subject,

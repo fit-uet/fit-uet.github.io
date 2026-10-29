@@ -2,9 +2,15 @@ import { db } from './db';
 import { initDb, seedCompaniesIfEmpty } from './db/initDb';
 import { createApp } from './app';
 import { emailSentTodayCount, emailDailySendCap, sendQueuedNotificationBatch } from './services/email';
+import { initAcademicSchema } from './academic/schema';
+import { deliverAcademicOutbox } from './academic/outbox';
+import { assertStagingConfig, stagingJobsEnabled } from './staging/config';
 
 export async function startServer() {
+  assertStagingConfig();
   await initDb();
+  await initAcademicSchema(db);
+  await deliverAcademicOutbox();
   await seedCompaniesIfEmpty();
 
   const app = await createApp();
@@ -34,8 +40,10 @@ export async function startServer() {
     }
   };
 
-  setTimeout(runAutoQueueDrain, 10000);
-  setInterval(runAutoQueueDrain, 30 * 60 * 1000);
+  if (stagingJobsEnabled()) {
+    setTimeout(runAutoQueueDrain, 10000);
+    setInterval(runAutoQueueDrain, 30 * 60 * 1000);
+  }
 }
 
 startServer().catch(console.error);

@@ -5,7 +5,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, xlsxArrayBuffer, paginationBounds, CACHE_TTL, cachedJsonFetch, PaginationControls, formatCourseCode, cleanStudentName } from '../../../shared';
 
-export function AdminPanel({ token, user: propUser }: { token: string; user?: any }) {
+export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { token: string; initialCourseCode?: string; user?: any }) {
   const user = propUser || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -14,7 +14,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
   const [adminLecturerNames, setAdminLecturerNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCourse, setFilterCourse] = useState('');
+  const [filterCourse, setFilterCourse] = useState(initialCourseCode);
   const [filterStatus, setFilterStatus] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -891,7 +891,7 @@ export function AdminPanel({ token, user: propUser }: { token: string; user?: an
       (reg.class_name || '').toLowerCase().includes(term) ||
       (reg.review_comment || '').toLowerCase().includes(term)
     );
-    const matchCourse = filterCourse ? reg.course_code === filterCourse : true;
+    const matchCourse = (!initialCourseCode || reg.course_code === initialCourseCode) && (filterCourse ? reg.course_code === filterCourse : true);
     const matchStatus = filterStatus ? reg.status === filterStatus : true;
     return matchTerm && matchCourse && matchStatus;
   });

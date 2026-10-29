@@ -4,6 +4,7 @@ import { requireAuth, requireStudentOrAdmin } from '../middlewares/auth';
 import { cleanStudentName, rowsToSettings, getItCompanyNameSet } from '../services/helpers';
 import { syncLecturerUsers } from '../services/advisorSync';
 import { createNotification } from '../services/notifications';
+import { visibleAcademicNotifications } from '../academic/notificationAccess';
 import {
   DEFAULT_ALLOWED_REGISTRATION_COHORTS,
   DEFAULT_REGISTRATION_RULES,
@@ -81,6 +82,9 @@ commonRouter.put('/api/users/profile', requireAuth, async (req: any, res: any) =
   if (!name) {
     return res.status(400).json({ error: 'Họ và tên là bắt buộc.' });
   }
+  if (!isStaffProfile && student_id && String(student_id).trim() !== String(req.user.email).split('@')[0]) {
+    return res.status(400).json({ error: 'Mã sinh viên phải khớp tài khoản Google đăng nhập. Liên hệ Khoa nếu cần đối soát danh tính.' });
+  }
   if (!isStaffProfile && phone) {
     const cleanPhone = phone.replace(/[\s\-\.]/g, '');
     if (!/^(0|\+84)[35789]\d{8}$/.test(cleanPhone)) {
@@ -107,10 +111,14 @@ commonRouter.put('/api/users/profile', requireAuth, async (req: any, res: any) =
         await syncLecturerUsers();
       }
     } else {
-      const studentCleanName = cleanStudentName(name, student_id, req.user.email);
+      const verifiedStudentId = String(req.user.email).split('@')[0];
+      const studentCleanName = cleanStudentName(name, verifiedStudentId, req.user.email);
+      if (String(course_code || '') !== String(req.user.course_code || '') && (await db.execute({ sql: "SELECT id FROM academic_enrollments WHERE student_id=? AND json_extract(data,'$.legacy')=1 LIMIT 1", args: [verifiedStudentId] })).rows[0]) {
+        return res.status(409).json({ error: 'Hồ sơ Thực tập cũ đã được ánh xạ lớp. Liên hệ Khoa để đối soát khi cần sửa mã học phần; hồ sơ các lần học mới được quản lý trong từng lớp.' });
+      }
       await db.execute({
         sql: 'UPDATE users SET name = ?, student_id = ?, dob = ?, class_name = ?, course_code = ?, phone = ?, personal_email = ? WHERE id = ?',
-        args: [studentCleanName, student_id || null, dob || null, class_name || null, course_code || null, phone || null, personal_email || null, req.user.id]
+        args: [studentCleanName, verifiedStudentId, dob || null, class_name || null, course_code || null, phone || null, personal_email || null, req.user.id]
       });
     }
     const updatedUser = (await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [req.user.id] })).rows[0];
@@ -129,13 +137,13 @@ commonRouter.get('/api/notifications/my', requireAuth, async (req: any, res: any
 
     const personalRows = (await db.execute({
       sql: `
-        SELECT id, 'personal' as source, type, subject, body, status, error, created_at, sent_at, read_at
+        SELECT id, 'personal' as source, type, subject, body, status, error, created_at, sent_at, read_at, recipient_email, academic_class_id, academic_enrollment_id, academic_campaign_id, academic_audience_class_ids
         FROM (
-          SELECT id, type, subject, body, status, error, created_at, sent_at, read_at
+          SELECT id, type, subject, body, status, error, created_at, sent_at, read_at, recipient_email, academic_class_id, academic_enrollment_id, academic_campaign_id, academic_audience_class_ids
           FROM notifications
           WHERE user_id = ? AND type != 'advisor_quota_exceeded'
           UNION
-          SELECT id, type, subject, body, status, error, created_at, sent_at, read_at
+          SELECT id, type, subject, body, status, error, created_at, sent_at, read_at, recipient_email, academic_class_id, academic_enrollment_id, academic_campaign_id, academic_audience_class_ids
           FROM notifications
           WHERE user_id IS NULL
             AND (
@@ -150,7 +158,8 @@ commonRouter.get('/api/notifications/my', requireAuth, async (req: any, res: any
       args: [userId, email, personalEmail, personalEmail],
     })).rows as any[];
     const userRole = String(req.user.role || 'student').toLowerCase();
-    const filteredPersonalRows = personalRows.filter((row: any) => {
+    const scopedPersonalRows = await visibleAcademicNotifications(personalRows, email);
+    const filteredPersonalRows = scopedPersonalRows.filter((row: any) => {
       if (userRole !== 'admin') {
         if (row.type === 'faq_question_created' || row.type === 'advisor_quota_exceeded') {
           return false;
@@ -207,9 +216,9 @@ commonRouter.put('/api/notifications/my/:id/read', requireAuth, async (req: any,
       sql: `
         UPDATE notifications
         SET read_at = COALESCE(read_at, datetime('now', '+7 hours'))
-        WHERE id = ?
+        WHERE id = ? AND (user_id = ? OR (user_id IS NULL AND recipient_email = ? COLLATE NOCASE))
       `,
-      args: [Number(req.params.id)],
+      args: [Number(req.params.id), req.user.id, req.user.email],
     });
     res.json({ success: true });
   } catch (e: any) {

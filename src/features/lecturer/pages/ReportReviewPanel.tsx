@@ -57,6 +57,10 @@ interface Props {
 
 // In-memory module cache for report PDF blobs to prevent redundant downloads across review sessions
 const pdfBlobCache = new Map<number, { blob: Blob; url: string; filename?: string; timestamp: number }>();
+export function clearReportReviewCache() {
+  for (const item of pdfBlobCache.values()) URL.revokeObjectURL(item.url);
+  pdfBlobCache.clear();
+}
 
 const reportStatusLabel = (s?: string, gradeStatus?: string) =>
   gradeStatus === 'submitted' ? 'Đã nộp điểm'

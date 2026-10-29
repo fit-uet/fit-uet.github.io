@@ -10,8 +10,11 @@ import { lecturerRouter } from './routes/lecturer.routes';
 import { chatRouter } from './routes/chat.routes';
 import { cronRouter } from './routes/cron.routes';
 import { adminRouter } from './routes/admin.routes';
+import { academicRouter } from './academic/routes';
+import { legacyAcademicWriteGuard } from './academic/legacyGuard';
+import { healthRouter } from './routes/health.routes';
 
-export async function createApp() {
+export async function createApp(options: { vite?: import('vite').InlineConfig } = {}) {
   const app = express();
   app.set('trust proxy', 1);
 
@@ -32,7 +35,10 @@ export async function createApp() {
   app.use(express.json());
 
   // Mount API routers
+  app.use(healthRouter);
   app.use(authRouter);
+  app.use(academicRouter);
+  app.use(legacyAcademicWriteGuard);
   app.use(commonRouter);
   app.use(studentRouter);
   app.use(lecturerRouter);
@@ -61,7 +67,8 @@ export async function createApp() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      ...options.vite,
+      server: { ...options.vite?.server, middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);

@@ -5,6 +5,10 @@ dist/
 coverage/
 .vite/
 .wrangler/
+.storage/
+.staging/
+outputs/
+/*.xlsx
 
 # OS/editor/runtime noise
 .DS_Store
@@ -15,6 +19,7 @@ scratch/
 
 # Environment files and local credentials
 .env*
+*.env
 !.env.example
 .dev.vars
 !.dev.vars.example

@@ -6,7 +6,7 @@ import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, formatCourseCode, cleanStudentName } from '../../../shared';
 import { ReportReviewPanel, type ReviewTarget } from './ReportReviewPanel';
 
-export function LecturerHome({ user, token }: { user: any, token: string }) {
+export function LecturerHome({ user, token, initialCourseCode = '' }: { user: any, token: string; initialCourseCode?: string }) {
   const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
@@ -22,7 +22,7 @@ export function LecturerHome({ user, token }: { user: any, token: string }) {
       });
       const data = await res.json().catch(() => []);
       if (!res.ok) throw new Error(data?.error || 'Không tải được danh sách sinh viên phụ trách.');
-      setStudents(Array.isArray(data) ? data : []);
+      setStudents(Array.isArray(data) ? data.filter(row => !initialCourseCode || row.course_code === initialCourseCode) : []);
     } catch (e) {
       setStudents([]);
     } finally {

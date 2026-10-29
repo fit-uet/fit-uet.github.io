@@ -35,6 +35,7 @@ export async function isListedStudentCohortException(email: string) {
   const row = (await db.execute({
     sql: `SELECT id FROM users
           WHERE role = 'student'
+            AND COALESCE(legacy_internship_access, 1) = 1
             AND (lower(email) = ? OR student_id = ?)
           LIMIT 1`,
     args: [normalizedEmail, studentId],

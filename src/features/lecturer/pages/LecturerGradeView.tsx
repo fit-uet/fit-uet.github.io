@@ -8,7 +8,7 @@ import { ReportReviewPanel, type ReviewTarget } from './ReportReviewPanel';
 const SCORE_FIELDS = ['progress_score', 'report_score', 'company_score'] as const;
 type ScoreField = typeof SCORE_FIELDS[number];
 
-export function LecturerGradeView({ token, user }: { token: string; user: any }) {
+export function LecturerGradeView({ token, user, initialCourseCode = '' }: { token: string; user: any; initialCourseCode?: string }) {
   const navigate = useNavigate();
   const [grades, setGrades] = useState<any[]>([]);
   const [gradeEdits, setGradeEdits] = useState<Record<string, any>>({});
@@ -23,7 +23,7 @@ export function LecturerGradeView({ token, user }: { token: string; user: any })
       .then((res) => res.json())
       .then((data) => {
         const list = Array.isArray(data) ? data : [];
-        setGrades(list);
+        setGrades(list.filter(row => !initialCourseCode || row.course_code === initialCourseCode));
         setGradeEdits(
           Object.fromEntries(
             list.map((row: any) => [

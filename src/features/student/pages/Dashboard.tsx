@@ -533,10 +533,10 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
         },
         body: JSON.stringify({
           company_ids: Array.from(selectedCompanies).filter(id => id !== khacCompany?.id),
-          preferences: Array.from(selectedCompanies).flatMap((companyId) => {
+          preferences: Array.from(selectedCompanies).flatMap<{ type: 'company'; company_id: number } | { type: 'other'; name: string; role: string; contact: string; note: string }>((companyId) => {
             if (khacCompany && companyId === khacCompany.id) {
               return otherCompanies.map(c => ({
-                type: 'other',
+                type: 'other' as const,
                 name: c.name,
                 role: c.role,
                 contact: `${c.contact_name} - ${c.contact_phone} - ${c.contact_email}`,

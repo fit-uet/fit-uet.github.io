@@ -1,9 +1,11 @@
 import { rowsToSettings, cleanStudentName } from './helpers';
+import { legacyCampaignArchived } from '../academic/legacyGuard';
 
 export async function checkAndQueueScheduledReminders(dbClient: any): Promise<{
   studentCount: number;
   lecturerCount: number;
 }> {
+  if (await legacyCampaignArchived()) return { studentCount: 0, lecturerCount: 0 };
   const settings = rowsToSettings(
     (
       await dbClient.execute(`

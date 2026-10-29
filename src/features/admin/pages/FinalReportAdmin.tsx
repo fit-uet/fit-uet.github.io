@@ -4,13 +4,13 @@ import { Download, Search, FileText, ChevronLeft, CheckCircle2, AlertCircle, Clo
 import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, paginationBounds, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
 
-export function FinalReportAdmin({ token }: { token: string }) {
+export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: string; initialCourseCode?: string }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [courseCodeFilter, setCourseCodeFilter] = useState('');
+  const [courseCodeFilter, setCourseCodeFilter] = useState(initialCourseCode);
   const [advisorFilter, setAdvisorFilter] = useState('');
   const [showRemindModal, setShowRemindModal] = useState(false);
   const [reminding, setReminding] = useState(false);
@@ -90,7 +90,7 @@ export function FinalReportAdmin({ token }: { token: string }) {
     const term = searchTerm.trim().toLowerCase();
     const status = row.report_status || 'missing';
     const matchStatus = statusFilter ? status === statusFilter : true;
-    const matchCourse = courseCodeFilter ? row.course_code === courseCodeFilter : true;
+    const matchCourse = (!initialCourseCode || row.course_code === initialCourseCode) && (courseCodeFilter ? row.course_code === courseCodeFilter : true);
     const matchAdvisor = advisorFilter ? (row.primary_advisors || '').includes(advisorFilter) : true;
     const matchTerm =
       !term ||

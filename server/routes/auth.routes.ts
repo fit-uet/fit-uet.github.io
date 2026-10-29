@@ -57,15 +57,22 @@ authRouter.post('/api/auth/google', async (req, res) => {
       })).rows[0] as any;
     }
     const effectiveRole = user?.role || defaultRole;
+    let admittedProject = false;
     if (effectiveRole === 'student' && !isLecturerInDb && email !== adminEmail) {
-      await assertStudentCohortAllowed(email);
+      admittedProject = !!(await db.execute({
+        sql: `SELECT e.id FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id
+          WHERE lower(json_extract(e.data,'$.email'))=? AND json_extract(e.data,'$.status')='active'
+            AND json_extract(c.data,'$.courseCode') IN ('INT3131','INT3132')
+            AND json_extract(c.data,'$.status') IN ('active','archived') LIMIT 1`, args: [email],
+      })).rows[0];
+      if (!admittedProject) await assertStudentCohortAllowed(email);
     }
     if (!user) {
       const result = await db.execute({
-        sql: 'INSERT INTO users (email, name, picture, role, student_id, is_lecturer) VALUES (?, ?, ?, ?, ?, ?)',
-        args: [email, displayName, picture, defaultRole, studentId, isLecturerInDb ? 1 : 0]
+        sql: 'INSERT INTO users (email, name, picture, role, student_id, is_lecturer, legacy_internship_access) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        args: [email, displayName, picture, defaultRole, studentId, isLecturerInDb ? 1 : 0, admittedProject ? 0 : 1]
       });
-      user = { id: Number(result.lastInsertRowid), email, name: displayName, picture, role: defaultRole, student_id: studentId, dob: null, class_name: null, is_lecturer: isLecturerInDb ? 1 : 0 };
+      user = { id: Number(result.lastInsertRowid), email, name: displayName, picture, role: defaultRole, student_id: studentId, dob: null, class_name: null, is_lecturer: isLecturerInDb ? 1 : 0, legacy_internship_access: admittedProject ? 0 : 1 };
     } else {
       let nextRole = user.role;
       if (isLecturerInDb) {
@@ -98,7 +105,7 @@ authRouter.post('/api/auth/google', async (req, res) => {
     }
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, picture: user.picture, role: user.role, student_id: user.student_id, dob: user.dob, class_name: user.class_name, course_code: user.course_code, is_lecturer: user.is_lecturer } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, picture: user.picture, role: user.role, student_id: user.student_id, dob: user.dob, class_name: user.class_name, course_code: user.course_code, is_lecturer: user.is_lecturer, legacy_internship_access: user.legacy_internship_access ?? 1 } });
   } catch (err: any) {
     const message = String(err?.message || '');
     if (message.includes('không được phép đăng nhập/đăng ký')) {

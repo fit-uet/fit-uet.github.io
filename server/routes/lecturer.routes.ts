@@ -11,7 +11,7 @@ async function canAccessStudentReport(actor: any, userId: number) {
   if (actor.role === 'admin') return true;
   if (actor.role === 'student' && Number(actor.id) === Number(userId)) return true;
   if (actor.role !== 'lecturer') return false;
-  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE email = ? OR name = ? LIMIT 1', args: [actor.email, actor.name] })).rows[0] as any;
+  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [actor.email] })).rows[0] as any;
   if (!lecturer) return false;
   const assignment = (await db.execute({
     sql: 'SELECT id FROM advisor_assignments WHERE user_id = ? AND lecturer_id = ? LIMIT 1',
@@ -21,13 +21,10 @@ async function canAccessStudentReport(actor: any, userId: number) {
 }
 
 async function getPrimaryLecturerForUser(actor: any, userId: number) {
-  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE email = ? OR name = ? LIMIT 1', args: [actor.email, actor.name] })).rows[0] as any;
-  if (actor.role === 'admin') {
-    return lecturer ? Number(lecturer.id) : 1;
-  }
+  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [actor.email] })).rows[0] as any;
   if (!lecturer) return null;
   const assignment = (await db.execute({
-    sql: "SELECT id FROM advisor_assignments WHERE user_id = ? AND lecturer_id = ? LIMIT 1",
+    sql: "SELECT id FROM advisor_assignments WHERE user_id = ? AND lecturer_id = ? AND role = 'primary' LIMIT 1",
     args: [userId, Number(lecturer.id)],
   })).rows[0];
   return assignment ? Number(lecturer.id) : null;
@@ -85,7 +82,7 @@ async function saveGradeForStudent(userId: number, lecturerId: number, body: any
 // Lecturer: Students list
 lecturerRouter.get('/api/lecturer/students', requireAuth, async (req: any, res: any) => {
   if (req.user.role !== 'lecturer' && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
-  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE email = ? OR name = ? LIMIT 1', args: [req.user.email, req.user.name] })).rows[0] as any;
+  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [req.user.email] })).rows[0] as any;
   if (!lecturer) return res.json([]);
   const rows = (await db.execute({
     sql: `SELECT aa.id as assignment_id, aa.user_id, aa.lecturer_id, aa.role as advisor_role, aa.assigned_at, aa.note as assignment_note,
@@ -131,7 +128,7 @@ lecturerRouter.put('/api/lecturer/students/:assignmentId/contact', requireAuth, 
   if (req.user.role !== 'lecturer' && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
   const assignmentId = Number(req.params.assignmentId);
   if (!Number.isInteger(assignmentId) || assignmentId <= 0) return res.status(400).json({ error: 'Phân công không hợp lệ.' });
-  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE email = ? OR name = ? LIMIT 1', args: [req.user.email, req.user.name] })).rows[0] as any;
+  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [req.user.email] })).rows[0] as any;
   if (!lecturer) return res.status(403).json({ error: 'Không tìm thấy tài khoản giảng viên.' });
   const assignment = (await db.execute({
     sql: 'SELECT * FROM advisor_assignments WHERE id = ? AND lecturer_id = ?',
@@ -222,7 +219,7 @@ lecturerRouter.put('/api/reports/final/:userId/status', requireAuth, async (req:
 // Grades
 lecturerRouter.get('/api/lecturer/grades', requireAuth, async (req: any, res: any) => {
   if (req.user.role !== 'lecturer' && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
-  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE email = ? OR name = ? LIMIT 1', args: [req.user.email, req.user.name] })).rows[0] as any;
+  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [req.user.email] })).rows[0] as any;
   if (!lecturer) return res.json([]);
   const rows = (await db.execute({
     sql: `SELECT aa.user_id, aa.role as advisor_role, u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
@@ -260,7 +257,7 @@ lecturerRouter.get('/api/lecturer/grades', requireAuth, async (req: any, res: an
 lecturerRouter.get('/api/lecturer/grades/:userId', requireAuth, async (req: any, res: any) => {
   if (req.user.role !== 'lecturer' && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
   const userId = Number(req.params.userId);
-  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE email = ? OR name = ? LIMIT 1', args: [req.user.email, req.user.name] })).rows[0] as any;
+  const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [req.user.email] })).rows[0] as any;
   if (!lecturer && req.user.role !== 'admin') return res.json(null);
   const row = (await db.execute({
     sql: `SELECT g.* FROM grades g

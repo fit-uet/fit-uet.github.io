@@ -18,7 +18,7 @@ export function isCorsAllowed(origin: string | undefined, allowedOrigins: string
 
 export function getAllowedOrigins() {
   return Array.from(new Set([
-    'https://fit-uet.github.io',
+    ...(['staging', 'local-staging'].includes(process.env.APP_ENV || '') ? [] : ['https://fit-uet.github.io']),
     ...(process.env.CORS_ORIGIN || '').split(',')
   ].map(normalizeOrigin).filter(Boolean)));
 }

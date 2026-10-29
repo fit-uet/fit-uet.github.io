@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { LogOut, User as UserIcon, CheckCircle2, LogIn, LayoutDashboard, AlertTriangle, FileText, Bell, CircleHelp, MessageCircle, GraduationCap, Settings } from 'lucide-react';
 import { API_BASE, clearJsonCache, GOOGLE_CLIENT_ID, isAuthExpiredResponse, jwtExpiresAtMs, MyNotifications } from './shared';
 import { AppRoutes } from './app/AppRoutes';
+import { clearAcademicCache } from './features/academic/client';
+import { clearReportReviewCache } from './features/lecturer/pages/ReportReviewPanel';
 
 function RoleSwitchButton({ user, onNavigate }: { user: any; onNavigate?: () => void }) {
   const location = useLocation();
@@ -77,6 +79,8 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     clearJsonCache();
+    clearAcademicCache();
+    clearReportReviewCache();
     setToken(null);
     setUser(null);
     setUnreadNotifications(0);
@@ -188,12 +192,13 @@ function App() {
 
               {user ? (
                 <div className="flex items-center gap-3">
-                  {!!(user.role === 'student' || user.role === 'lecturer' || user.is_lecturer) && (
+                  <Link to="/classes" className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-2 py-2 hover:bg-white/10" title="Học kỳ và nhóm môn"><GraduationCap size={18} /><span className="hidden md:inline">Nhóm môn</span></Link>
+                  {!!((user.role === 'student' && user.legacy_internship_access !== 0) || user.role === 'lecturer' || user.is_lecturer) && (
                     <Link
                       to="/chat"
                       onClick={() => { setIsMenuOpen(false); setIsNotificationOpen(false); }}
                       className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl hover:bg-white/10 transition-colors text-white"
-                      title={user.role === 'student' ? 'Trao đổi GVHD' : 'Trao đổi sinh viên'}
+                      title="Trao đổi Thực tập đợt cũ"
                     >
                       <MessageCircle size={18} />
                       {unreadChats > 0 && (
@@ -266,7 +271,8 @@ function App() {
                           <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                             <UserIcon size={15} className="text-blue-600" /> Cập nhật hồ sơ
                           </Link>
-                          {user.role === 'student' && (
+                          <Link to="/classes" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium border-b border-slate-50"><GraduationCap size={15} className="text-blue-600" /> Học kỳ và nhóm môn</Link>
+                          {user.role === 'student' && user.legacy_internship_access !== 0 && (
                             <>
                               <Link to="/plan" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                                 <FileText size={15} className="text-blue-600" /> Kế hoạch triển khai
@@ -339,7 +345,7 @@ function App() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Đăng nhập</h2>
                 <p className="text-slate-500 text-xs mb-6 leading-relaxed">
-                  Hệ thống đăng ký và quản lý Thực tập FIT UET.<br />
+                  Hệ thống quản lý Thực tập và Dự án FIT UET.<br />
                   Yêu cầu đăng nhập bằng VNU mail <strong className="text-[#034ea1] font-semibold">@vnu.edu.vn</strong>
                 </p>
 

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { JWT_SECRET } from '../config';
+import { assertStudentCohortAllowed } from '../services/cohorts';
 
 export const requireAuth = async (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(' ')[1] || req.query.token;
@@ -30,6 +31,8 @@ export const requireStudent = async (req: any, res: any, next: any) => {
   if (req.user?.role !== 'student') {
     return res.status(403).json({ error: 'Student only' });
   }
+  try { await assertStudentCohortAllowed(req.user.email); }
+  catch (error) { return res.status(403).json({ error: 'Tài khoản chỉ có quyền ở các lớp được tiếp nhận. Vui lòng mở mục Học kỳ và lớp.' }); }
   next();
 };
 
@@ -43,8 +46,8 @@ export const requireStudentOrAdmin = async (req: any, res: any, next: any) => {
 export const getActorLecturer = async (actor: any) => {
   if (actor.role !== 'lecturer' && actor.role !== 'admin' && !actor.is_lecturer) return null;
   return (await db.execute({
-    sql: 'SELECT id, name, email FROM lecturers WHERE email = ? OR name = ? LIMIT 1',
-    args: [actor.email || '', actor.name || ''],
+    sql: 'SELECT id, name, email FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1',
+    args: [actor.email || ''],
   })).rows[0] as any || null;
 };
 

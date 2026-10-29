@@ -24,10 +24,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Check types and backend rules
+        run: npm run lint && npm run test:academic && npm run test:staging
 
       - name: Build frontend
         run: npx vite build --mode production
@@ -38,6 +41,11 @@ jobs:
 
       - name: Copy 404.html for SPA routing
         run: cp dist/index.html dist/404.html
+
+      - name: Wait for the matching Render backend before publishing the frontend
+        run: npm run production:check -- --attempts=60 --interval-ms=10000
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
