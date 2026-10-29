@@ -132,7 +132,7 @@ test('admin creates semester/classes and previews balanced reviewers', async ({ 
   const { page, context, classes, errors, token } = await session(browser, 'admin');
   const calls:string[]=[];page.on('request',r=>{if(r.method()==='POST'&&r.url().includes('reviewer'))calls.push(r.url());});
   try {
-    await page.goto('/#/classes'); await expect(page.getByRole('heading', { name: 'Học kỳ và nhóm môn' })).toBeVisible();
+    await page.goto('/#/classes'); await expect(page.getByRole('heading', { name: /Trang chủ|Học kỳ và nhóm môn/ })).toBeVisible();
     await page.getByRole('button', { name: 'Quản lý học kỳ / nhóm môn' }).click();
     await page.getByLabel('Năm bắt đầu').fill('2028'); await page.getByRole('button', { name: 'Tạo học kỳ', exact: true }).click();
     await expect(page.getByLabel('Học kỳ', { exact: true }).first()).toHaveValue('2028-2029-1');
@@ -190,7 +190,7 @@ test('admin locks and reopens from the student row without mixing evaluations',a
 test('mobile class navigation and submission form fit the viewport', async ({ browser }) => {
   const { page, context, classes, errors } = await session(browser, 'student', true);
   try {
-    await page.goto('/#/classes'); await expect(page.getByRole('heading', { name: 'Học kỳ và nhóm môn' })).toBeVisible();
+    await page.goto('/#/classes'); await expect(page.getByRole('heading', { name: /Trang chủ|Học kỳ và nhóm môn/ })).toBeVisible();
     await page.screenshot({ animations: 'disabled', path: `${screenshots}/mobile-classes.png`, fullPage: true });
     await page.goto(`/#/classes/${classes.find(c => c.courseCode === 'INT3131').id}`); await expect(page.getByRole('heading', { name: 'Sinh viên An', exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

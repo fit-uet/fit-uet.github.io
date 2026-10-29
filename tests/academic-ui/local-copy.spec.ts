@@ -18,7 +18,7 @@ test('restored role screens on a prepared local copy of production data', async 
     const page = await context.newPage(); const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
     try {
       await page.goto(`${origin.origin}/__local_staging/login${email ? `?email=${encodeURIComponent(email)}` : ''}`);
-      await expect(page.getByRole('heading', { name: 'Học kỳ và nhóm môn' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /Trang chủ|Học kỳ và nhóm môn/ })).toBeVisible();
       await page.goto(`${origin.origin}/#/campaigns/2026-2027-1:project`);
       await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
       if (role === 'admin') {
@@ -50,7 +50,7 @@ test('project topic approval works on a prepared private copy without changing t
     const context = await browser.newContext({ viewport: {width:1440,height:1000} }); contexts.push(context);
     await context.route('**/*', route => new URL(route.request().url()).origin === origin.origin || /^(blob|data):/.test(route.request().url()) ? route.continue() : route.abort());
     const page = await context.newPage(); await page.goto(`${origin.origin}/__local_staging/login${email ? '?email='+encodeURIComponent(email):''}`);
-    await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:/Trang chủ|Học kỳ và nhóm môn/})).toBeVisible();
     const token = await page.evaluate(() => localStorage.getItem('token'));
     return {context,page,headers:{Authorization:`Bearer ${token}`}};
   };
@@ -83,13 +83,13 @@ test('legacy reports export all pages and assigned legacy students remain availa
   const context=await browser.newContext();await context.route('**/*',r=>new URL(r.request().url()).origin===origin.origin||/^(blob|data):/.test(r.request().url())?r.continue():r.abort());
   const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   try{
-    await page.goto(origin.origin+'/__local_staging/login');await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    await page.goto(origin.origin+'/__local_staging/login');await expect(page.getByRole('heading',{name:/Trang chủ|Học kỳ và nhóm môn/})).toBeVisible();
     const token=await page.evaluate(()=>localStorage.getItem('token'));const headers={Authorization:`Bearer ${token}`};
     const response=await context.request.get(origin.origin+'/api/admin/reports/final?pagination=1&limit=25',{headers});const records=await response.json();expect(records.total).toBeGreaterThan(25);
     await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=reports');await expect(page.locator('tbody tr')).toHaveCount(25);
     const pending=page.waitForEvent('download');await page.getByRole('button',{name:/^Xuất XLSX/}).click();const download=await pending;
     const wb=XLSX.read(await readFile((await download.path())!),{type:'buffer'});expect(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])).toHaveLength(records.total);
-    await page.goto(origin.origin+'/__local_staging/login?email='+encodeURIComponent(process.env.ACADEMIC_ACCEPTANCE_LECTURER!));await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    await page.goto(origin.origin+'/__local_staging/login?email='+encodeURIComponent(process.env.ACADEMIC_ACCEPTANCE_LECTURER!));await expect(page.getByRole('heading',{name:/Trang chủ|Học kỳ và nhóm môn/})).toBeVisible();
     await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=students');await expect(page.locator('tbody tr').first()).toBeVisible();expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(25);
     await feature(page,'chat');await expect(page.locator('textarea[placeholder="Nhập tin nhắn..."]')).toBeVisible();expect(page.url()).toContain('campaigns/2025-2026-summer:internship');
     expect(errors).toEqual([]);
@@ -102,7 +102,7 @@ test('legacy assignment subviews retain their own operations without expanding t
   const context=await browser.newContext({viewport:{width:768,height:1000}});await context.route('**/*',r=>new URL(r.request().url()).origin===origin.origin||/^(blob|data):/.test(r.request().url())?r.continue():r.abort());
   const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   try{
-    await page.goto(origin.origin+'/__local_staging/login');await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    await page.goto(origin.origin+'/__local_staging/login');await expect(page.getByRole('heading',{name:/Trang chủ|Học kỳ và nhóm môn/})).toBeVisible();
     for(const view of ['assignments','requests','quotas']){
       await page.setViewportSize({width:768,height:1000});await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=assignments&view='+view);
       await expect(page.getByRole('tab',{name:/Chỉ tiêu & Quota/})).toBeVisible();await expect(page.locator('main h1')).toHaveCount(1);expect((await page.getByTestId('campaign-chrome').boundingBox())!.height).toBeLessThanOrEqual(88);

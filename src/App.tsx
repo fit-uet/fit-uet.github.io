@@ -179,7 +179,6 @@ function App() {
 
               {user ? (
                 <div className="flex items-center gap-3">
-                  <Link to="/classes" className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-2 py-2 hover:bg-white/10" title="Học kỳ và nhóm môn"><GraduationCap size={18} /><span className="hidden md:inline">Nhóm môn</span></Link>
                   {!!(user.role === 'student' || user.role === 'lecturer' || user.is_lecturer) && (
                     <Link
                       to="/chat"
@@ -258,7 +257,7 @@ function App() {
                           <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
                             <UserIcon size={15} className="text-blue-600" /> Cập nhật hồ sơ
                           </Link>
-                          <Link to="/classes" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium border-b border-slate-50"><GraduationCap size={15} className="text-blue-600" /> Học kỳ và nhóm môn</Link>
+                          <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium border-b border-slate-50"><GraduationCap size={15} className="text-blue-600" /> Trang chủ</Link>
                           {user.role === 'student' && (
                             <>
                               <Link to="/plan" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-xs font-medium transition-colors border-b border-slate-50">
