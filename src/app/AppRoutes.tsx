@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { MyNotifications } from '../shared';
+import { MyNotifications } from '../shared/components/MyNotifications';
 import { canReviewRegistrations, isAdmin, isLecturer, isStudent } from '../auth/access';
 import { ContextRedirect } from '../features/academic/ContextRedirect';
 import { AcademicClassPage } from '../features/academic/CourseWorkspace';

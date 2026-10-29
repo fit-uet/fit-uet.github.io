@@ -1,4 +1,4 @@
-import { readCampaignCatalog, readCampaignDetail, readCampaignEnrollments, readContext, readEnrollment, readCommunicationContext } from './reads';
+import { readCampaignCatalog, readCampaignDetail, readCampaignEnrollments, readContext, readEnrollment, readCommunicationContext, invalidateReadCache } from './reads';
 import { validateJsonCache } from '../services/httpCache';
 import express, { Router } from 'express';
 import * as XLSX from 'xlsx';
@@ -29,7 +29,10 @@ export function academicRoute(method: 'get' | 'post' | 'put' | 'patch' | 'delete
       const started = performance.now();
       const result = await handler(req, res);
       if (result === res) return;
-      if (method !== 'get') await deliverAcademicOutbox().catch(error => console.error('[academic outbox]', error.message));
+      if (method !== 'get') {
+        invalidateReadCache();
+        await deliverAcademicOutbox().catch(error => console.error('[academic outbox]', error.message));
+      }
       if (!res.headersSent && !res.writableEnded) res.setHeader('Server-Timing', `app;dur=${(performance.now()-started).toFixed(1)}`);
       if (!res.headersSent && !res.writableEnded && !validateJsonCache(req, res, result ?? { success: true })) res.json(result ?? { success: true });
     } catch (error) {

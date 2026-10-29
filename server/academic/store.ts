@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { COURSE_CATALOG, EMPTY_CLASS_SETTINGS, campaignKey, type AcademicClass, type AcademicSemester, type CourseEnrollment, type LecturerInfo, type CourseCampaign } from '../../src/shared/academic';
 import { hydrateLegacy } from './legacy';
+import { invalidateReadCache } from './reads';
 
 export class AcademicError extends Error {
   constructor(public status: number, public code: string, message: string, public details?: unknown) { super(message); }
@@ -73,6 +74,7 @@ export async function commit(s: Snapshot, actorId: number, action: string, chang
   if (Buffer.byteLength(payload) > 1_800_000) fail(422, 'COMMAND_TOO_LARGE', 'Lần cập nhật quá lớn để ghi an toàn. Hãy chia danh sách thành các file nhỏ hơn. Chưa có dữ liệu nào được thay đổi.');
   try {
     await db.execute({ sql: `INSERT INTO academic_commands(id,expected_revision,actor_id,action,reason,payload,created_at) VALUES(?,?,?,?,?,?,?)`, args: [commandId, s.revision, actorId, action, reason, payload, new Date().toISOString()] });
+    invalidateReadCache();
   } catch (error) {
     if (/ACADEMIC_STALE/.test(String(error))) fail(409, 'STALE_PREVIEW', 'Dữ liệu đã thay đổi. Vui lòng tải lại và xác nhận lại.');
     if (/ACADEMIC_ADMIN_REQUIRED|ACADEMIC_ROLE_CHANGED/.test(String(error))) fail(403, 'ACTOR_ROLE_CHANGED', 'Vai trò tài khoản đã thay đổi. Vui lòng đăng nhập lại.');

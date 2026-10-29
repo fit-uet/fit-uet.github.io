@@ -105,15 +105,32 @@ function applyReadSettings(s: Snapshot, rows: any[]) {
     for (const c of s.classes.filter(c=>c.campaignId===p.id)) c.settings={...p.settings};
   }
 }
+const readCache = new Map<string, { data: any; expiresAt: number }>();
+export function invalidateReadCache() {
+  readCache.clear();
+}
+
 export async function readCampaignDetail(actor: AuthenticatedUser, id: string, section = 'full') {
   if (!['base','overview','content','management','full'].includes(section)) fail(422,'INVALID_SECTION','Phần dữ liệu không hợp lệ.');
+  const cacheKey = `detail:${actor.id}:${actor.role}:${id}:${section}`;
+  const now = Date.now();
+  const cached = readCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) return structuredClone(cached.data);
   const ctx = await readContext(actor,id,section); const p = ctx.campaigns.find(p=>p.id===id)!;
   const lecturers = section === 'base' || section === 'overview' || section === 'content' ? ctx.s.lecturers.filter(l=>l.email.toLowerCase()===actor.email.toLowerCase()) : ctx.s.lecturers;
-  return { campaign:p, classes:ctx.classes, lecturers, quotas:ctx.s.quotas, stats:section==='overview'||section==='full'?ctx.counts.get(id)||{}:{} };
+  const result = { campaign:p, classes:ctx.classes, lecturers, quotas:ctx.s.quotas, stats:section==='overview'||section==='full'?ctx.counts.get(id)||{}:{} };
+  readCache.set(cacheKey, { data: structuredClone(result), expiresAt: now + 30_000 });
+  return result;
 }
 export async function readCampaignCatalog(actor: AuthenticatedUser, section = 'full') {
+  const cacheKey = `catalog:${actor.id}:${actor.role}:${actor.is_lecturer || 0}:${actor.legacy_internship_access || 0}:${section}`;
+  const now = Date.now();
+  const cached = readCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) return structuredClone(cached.data);
   const ctx=await readContext(actor,'',section);
-  return {campaigns:ctx.campaigns,semesters:ctx.s.semesters,courses:COURSE_CATALOG,legacyInternshipUnmapped:ctx.unmapped};
+  const result = {campaigns:ctx.campaigns,semesters:ctx.s.semesters,courses:COURSE_CATALOG,legacyInternshipUnmapped:ctx.unmapped};
+  readCache.set(cacheKey, { data: structuredClone(result), expiresAt: now + 30_000 });
+  return result;
 }
 export function caseInsensitiveGlob(value: string) {
   return '*' + Array.from(value.normalize('NFC')).map(c => c === '*' ? '[*]' : c === '?' ? '[?]' : c === '[' ? '[[]' : c.toLowerCase() !== c.toUpperCase() ? `[${c.toLowerCase()}${c.toUpperCase()}]` : c).join('') + '*';
