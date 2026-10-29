@@ -1,11 +1,11 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
-export function EnrollmentDialog({ children, close, title }: { children: ReactNode; close: () => void; title: string }) {
+export function EnrollmentDialog({ children, close, title, returnFocus }: { children: ReactNode; close: () => void; title: string; returnFocus?: () => HTMLElement | null }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const dismiss = useRef(close); dismiss.current = close;
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
+    const previous = returnFocus?.() || document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const element = dialog.current;

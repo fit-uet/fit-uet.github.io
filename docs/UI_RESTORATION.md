@@ -56,3 +56,9 @@ Cache RAM, lazy loading và SQL phân trang được giữ theo [PERFORMANCE.md]
 `CampaignLayoutContext` cho các màn legacy dùng chung tiêu đề và chuyển các nút nghiệp vụ gốc sang thanh thao tác qua portal. Các đường dẫn standalone giữ bố cục gốc; màn nhúng có một tiêu đề và một ô tìm kiếm. Bộ lọc GVHD chính theo tên (nguồn legacy) được giữ riêng với bộ lọc giảng viên phân công. Phân trang và bộ lọc legacy đồng bộ vào URL, không tự quay về trang 1 khi mở liên kết trang 2. Kế hoạch, hồ sơ, FAQ và chat không có bộ lọc danh sách; Thông báo có điều khiển chọn phạm vi người nhận riêng.
 
 Không đổi API, database, quy tắc nghiệp vụ hoặc cơ chế cache. Hồi quy giao diện gồm ba vai trò desktop/mobile, Apply/Hủy/Xóa, thao tác nhanh sau lọc, phân trang legacy, menu không tải trước dữ liệu, đổi nhóm/vai trò, export nhiều trang, trình soạn, PDF, duyệt đề tài và chat. Bản sao local dùng email provider `none`, không gọi Google OAuth/R2/email thật.
+
+## Phân công GV nhận xét do người phụ trách thực hiện
+
+Khoa/Quản trị viên mở **Dự án → Phân công → Phân công**, kiểm tra phương án rồi bấm **Xác nhận phân công** để lưu. Đóng cửa sổ hoặc hủy không thay đổi GVNX; mở trang, đăng nhập, import và tải lại không tự phân công. Giữ các quy tắc ưu tiên bộ môn, cân bằng DACN/DAKH, quota và chỉ bổ sung hồ sơ chưa có GVNX.
+
+Công cụ `npm run academic:reviewers-reset` mặc định chỉ xem trước. `--apply` yêu cầu nguồn database tường minh, campaign Dự án, tài khoản quản trị, revision đã đối soát, lý do và backup mới. Công cụ chặn toàn bộ tác vụ nếu có hồ sơ đã chấm/khóa, nhóm không hoạt động hoặc revision đã đổi; một lệnh ghi nguyên tử chỉ gỡ vai trò reviewer và lưu lịch sử trước/sau. Giữ GVHD, đề tài, bài nộp, điểm, quota, tệp và dữ liệu Thực tập; không gửi email/thông báo. Chạy lại sau khi gỡ xong không tạo thay đổi mới.

@@ -158,7 +158,8 @@ test('visual references and restored role pages fit desktop and mobile', async (
 });
 
 test('admin creates semester/classes and previews balanced reviewers', async ({ browser }) => {
-  const { page, context, classes, errors } = await session(browser, 'admin');
+  const { page, context, classes, errors, token } = await session(browser, 'admin');
+  const calls:string[]=[];page.on('request',r=>{if(r.method()==='POST'&&r.url().includes('reviewer'))calls.push(r.url());});
   try {
     await page.goto('/#/classes'); await expect(page.getByRole('heading', { name: 'Học kỳ và nhóm môn' })).toBeVisible();
     await page.getByRole('button', { name: 'Quản lý học kỳ / nhóm môn' }).click();
@@ -166,8 +167,13 @@ test('admin creates semester/classes and previews balanced reviewers', async ({ 
     await expect(page.getByLabel('Học kỳ', { exact: true }).first()).toHaveValue('2028-2029-1');
     await page.getByRole('button', { name: 'Tạo lớp nháp', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Thực tập', exact: true })).toBeVisible();
     const target = classes.find(c => c.courseCode === 'INT3132'); await page.goto(`/#/classes/${target.id}`);
-    await feature(page, 'assignments'); await page.getByRole('button', { name: 'Xem trước phân công', exact: true }).click();
-    await expect(page.getByText('Cùng bộ môn').first()).toBeVisible(); await page.getByRole('button', { name: 'Áp dụng phương án đã xem trước' }).click();
+    await feature(page, 'assignments'); const trigger=page.getByRole('button',{name:'Phân công GV nhận xét',exact:true});await expect(trigger).toBeVisible();expect(calls).toEqual([]);
+    const auth={Authorization:`Bearer ${token}`};const reviewers=async()=>{const r=await context.request.get(`http://127.0.0.1:4318/api/campaigns/${target.campaignId}/enrollments`,{headers:auth});return(await r.json()).items.flatMap(e=>e.assignments.filter(a=>a.role==='reviewer')).length;};
+    const before=await reviewers();await trigger.click();await expect(page.getByText('Cùng bộ môn').first()).toBeVisible();expect(calls).toHaveLength(1);expect(await reviewers()).toBe(before);
+    await page.screenshot({animations:'disabled',path:`${screenshots}/manual-reviewer-preview-desktop.png`,fullPage:true});
+    await page.setViewportSize({width:390,height:844});expect((await page.getByRole('dialog',{name:'Phân công GV nhận xét'}).boundingBox())!.width).toBeLessThanOrEqual(390);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({animations:'disabled',path:`${screenshots}/manual-reviewer-preview-mobile.png`,fullPage:true});await page.setViewportSize({width:1440,height:1000});
+    await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);expect(await reviewers()).toBe(before);await expect(trigger).toBeFocused();
+    await trigger.click();await expect(page.getByText('Cùng bộ môn').first()).toBeVisible();expect(calls).toHaveLength(2);await page.getByRole('button',{name:'Xác nhận phân công',exact:true}).click();
     await expect(page.getByText(/Đã phân công 6 sinh viên/)).toBeVisible();
     await mkdir(screenshots, { recursive: true }); await page.screenshot({ animations: 'disabled', path: `${screenshots}/reviewer-preview.png`, fullPage: true });
     expect(errors).toEqual([]);
