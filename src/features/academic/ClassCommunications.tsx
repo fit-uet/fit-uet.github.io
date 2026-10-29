@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { MessageCircle, Users } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Download, MessageCircle, Paperclip, Send, Users, X } from 'lucide-react';
+import { API_BASE } from '../../shared';
 import type { AcademicClassSummary, EnrollmentView, LecturerInfo } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
 import { academicApi, academicDownload } from './client';
@@ -7,38 +8,477 @@ import { academicInput } from './form';
 
 type ClassData = { class: AcademicClassSummary; enrollments: EnrollmentView[]; lecturers: LecturerInfo[] };
 export function ClassChat({ token, user, data }: { token: string; user: any; data: ClassData }) {
-  const [selected, setSelected] = useState(''); const [messages, setMessages] = useState<any[]>([]); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [draft, setDraft] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [attachmentPreviewUrls, setAttachmentPreviewUrls] = useState<Record<string, string>>({});
+  const [previewLoadingIds, setPreviewLoadingIds] = useState<Record<string, boolean>>({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
   const ownLecturer = data.lecturers.find(l => l.email.toLowerCase() === user.email.toLowerCase());
-  const threads: { id: string; label: string; lecturerId: number; classId: string; enrollmentId?: string }[] = [];
-  for (const e of data.enrollments) for (const a of e.assignments.filter(a => a.role !== 'reviewer' && (user.role === 'student' || a.lecturerId === ownLecturer?.id))) {
-    const l = data.lecturers.find(l => l.id === a.lecturerId); if (!l) continue;
-    threads.push({ id: `${e.id}:${l.id}`, label: `${e.name} ↔ ${l.name}`, lecturerId: l.id, classId: e.classId, enrollmentId: e.id });
-    if (!threads.some(t => t.id === `group:${l.id}`)) threads.push({ id: `group:${l.id}`, label: `Nhóm ${data.class.code} · ${l.name}`, lecturerId: l.id, classId: e.classId });
+  const isStudent = user.role === 'student';
+  const threads: {
+    id: string;
+    label: string;
+    title: string;
+    subtitle: string;
+    lecturerId: number;
+    classId: string;
+    enrollmentId?: string;
+    isGroup: boolean;
+  }[] = [];
+
+  for (const e of data.enrollments) {
+    for (const a of e.assignments.filter(a => a.role !== 'reviewer' && (isStudent || a.lecturerId === ownLecturer?.id))) {
+      const l = data.lecturers.find(l => l.id === a.lecturerId);
+      if (!l) continue;
+      threads.push({
+        id: `${e.id}:${l.id}`,
+        label: `${e.name} ↔ ${l.name}`,
+        title: isStudent ? l.name : e.name,
+        subtitle: isStudent
+          ? (a.role === 'primary' ? 'GVHD chính' : 'Đồng hướng dẫn')
+          : [e.studentId, e.className, data.class.code].filter(Boolean).join(' · '),
+        lecturerId: l.id,
+        classId: e.classId,
+        enrollmentId: e.id,
+        isGroup: false,
+      });
+
+      if (!threads.some(t => t.id === `group:${l.id}`)) {
+        const studentCount = data.enrollments.filter(item =>
+          item.assignments.some(assign => assign.lecturerId === l.id && assign.role !== 'reviewer')
+        ).length;
+        threads.push({
+          id: `group:${l.id}`,
+          label: `Nhóm ${data.class.code} · ${l.name}`,
+          title: isStudent ? `Nhóm của ${l.name}` : 'Nhóm sinh viên hướng dẫn',
+          subtitle: isStudent
+            ? 'Trao đổi chung với giảng viên và các sinh viên cùng GVHD'
+            : `${studentCount} sinh viên`,
+          lecturerId: l.id,
+          classId: e.classId,
+          isGroup: true,
+        });
+      }
+    }
   }
+
   const target = threads.find(t => t.id === selected) || threads[0];
+
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!target) return;
-    try { setMessages(await academicApi(token, `/api/classes/${target.classId}/chat?lecturerId=${target.lecturerId}${target.enrollmentId ? `&enrollmentId=${target.enrollmentId}` : ''}`, 'GET', undefined, signal)); setError(''); }
-    catch (error) { if (error.name !== 'AbortError') setError(error.message); }
+    try {
+      const res = await academicApi(token, `/api/classes/${target.classId}/chat?lecturerId=${target.lecturerId}${target.enrollmentId ? `&enrollmentId=${target.enrollmentId}` : ''}`, 'GET', undefined, signal);
+      setMessages(res);
+      setError('');
+    } catch (err: any) {
+      if (err.name !== 'AbortError') setError(err.message);
+    }
   }, [token, data.class.id, target?.id]);
-  useEffect(() => { const abort = new AbortController(); setMessages([]); load(abort.signal); const visible = () => { if(document.visibilityState==='visible')load(abort.signal); }; const timer = window.setInterval(visible, 30_000); document.addEventListener('visibilitychange',visible); window.addEventListener('api-force-refresh',visible); return () => { abort.abort(); window.clearInterval(timer); document.removeEventListener('visibilitychange',visible); window.removeEventListener('api-force-refresh',visible); }; }, [load]);
-  const run = async (fn: () => Promise<unknown>) => { setBusy(true); try { await fn(); await load(); } catch (error) { setError(error.message); } finally { setBusy(false); } };
+
+  useEffect(() => {
+    const abort = new AbortController();
+    setMessages([]);
+    load(abort.signal);
+    const visible = () => {
+      if (document.visibilityState === 'visible') load(abort.signal);
+    };
+    const timer = window.setInterval(visible, 30_000);
+    document.addEventListener('visibilitychange', visible);
+    window.addEventListener('api-force-refresh', visible);
+    return () => {
+      abort.abort();
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', visible);
+      window.removeEventListener('api-force-refresh', visible);
+    };
+  }, [load]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(attachmentPreviewUrls).forEach(u => URL.revokeObjectURL(u));
+    };
+  }, [attachmentPreviewUrls]);
+
+  const run = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    try {
+      await fn();
+      await load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const writable = data.class.status === 'active';
-  return <section className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden"><h3 className="font-bold text-base text-slate-800 p-5 border-b border-slate-100 flex items-center gap-2"><MessageCircle size={18} className="text-[#034ea1]" /> Trao đổi trong nhóm môn</h3>
-    {!threads.length ? <p className="p-6 text-sm text-slate-500">Chưa có nhóm hướng dẫn để trao đổi. GVNX sử dụng phần nhận xét/yêu cầu sửa trong hồ sơ.</p> : <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]"><aside aria-label="Danh sách cuộc trò chuyện" className="hidden lg:block border-r border-slate-200 bg-slate-50/50 p-3 space-y-2">{threads.map(thread => <button key={thread.id} className={`w-full text-left rounded-xl p-3 flex gap-2 text-xs transition-colors cursor-pointer ${thread.id === target?.id ? 'bg-blue-50 border border-blue-200 text-[#034ea1] font-semibold shadow-xs' : 'border border-transparent hover:bg-slate-100 text-slate-700'}`} onClick={() => setSelected(thread.id)}>{thread.id.startsWith('group:') ? <Users size={16} className="shrink-0" /> : <MessageCircle size={16} className="shrink-0" />}<span>{thread.label}</span></button>)}</aside><div className="min-w-0 p-5 space-y-4">
-      <FormField label="Cuộc trò chuyện"><select className={academicInput} value={target?.id || ''} onChange={e => setSelected(e.target.value)}>{threads.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}</select></FormField>
-      {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
-      <div className="space-y-3 max-h-96 overflow-y-auto p-4 bg-slate-50/70 border border-slate-200/80 rounded-2xl">{messages.map(m => <div key={m.id} className={`p-3.5 rounded-2xl text-sm transition-all ${Number(m.sender_id) === Number(user.id) ? 'bg-blue-50/90 border border-blue-100 ml-6 shadow-xs' : 'bg-white mr-6 border border-slate-200/80 shadow-xs'}`}>
-        <strong className="text-xs font-semibold text-slate-900">{m.sender_name}</strong><p className="whitespace-pre-wrap break-words mt-1 text-slate-800">{m.retracted_at ? 'Tin nhắn đã được thu hồi.' : m.body}</p>
-        {m.attachment_name && <button className="block text-[#034ea1] hover:underline break-all my-2 font-medium cursor-pointer" disabled={busy} onClick={() => run(() => academicDownload(token, `/api/classes/${m.class_id || target.classId}/chat/${m.id}/attachment`, m.attachment_name))}>{m.attachment_name} ({Math.ceil(m.attachment_size / 1024)} KB)</button>}
-        <div className="flex flex-wrap justify-between items-center gap-2 mt-2 pt-1.5 border-t border-slate-100/60"><time className="text-[11px] text-slate-400">{new Date(m.created_at).toLocaleString('vi-VN')}</time>{writable && Number(m.sender_id) === Number(user.id) && !m.retracted_at && <button className="text-xs text-rose-600 hover:text-rose-700 font-medium cursor-pointer" disabled={busy} onClick={() => run(() => academicApi(token, `/api/classes/${m.class_id || target.classId}/chat/${m.id}`, 'DELETE'))}>Thu hồi</button>}</div>
-      </div>)}{!messages.length && <p className="text-slate-500 text-sm text-center py-6">Chưa có tin nhắn.</p>}</div>
-      <form className="space-y-3 bg-white p-4 border border-slate-200 rounded-2xl shadow-xs" onSubmit={event => { event.preventDefault(); const form = event.currentTarget; const f = new FormData(form); f.set('lecturerId', String(target.lecturerId)); if (target.enrollmentId) f.set('enrollmentId', target.enrollmentId); run(async () => { await academicApi(token, `/api/classes/${target.classId}/chat`, 'POST', f); form.reset(); }); }}>
-        <FormField label="Tin nhắn"><textarea name="body" className={academicInput} placeholder="Tin nhắn cho nhóm / giảng viên" maxLength={10000} disabled={!writable} /></FormField>
-        <FormField label="Đính kèm (tối đa 10 MB)"><input className="text-sm max-w-full" type="file" name="file" disabled={!writable} /></FormField><Button type="submit" disabled={busy || !writable}>Gửi</Button>
-      </form>{data.class.legacy && <p className="text-xs text-slate-500">Hội thoại Thực tập cũ được đọc từ nguồn gốc trong cùng nhóm học kỳ.</p>}
-    </div></div>}
-  </section>;
+
+  const formatChatBytes = (bytes: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const isImageAttachment = (m: any) => {
+    const name = String(m.attachment_name || '').toLowerCase();
+    return /\.(jpe?g|png|gif|webp|svg)$/i.test(name);
+  };
+
+  const canPreviewAttachment = (m: any) => {
+    const name = String(m.attachment_name || '').toLowerCase();
+    return isImageAttachment(m) || name.endsWith('.pdf');
+  };
+
+  const toggleAttachmentPreview = async (m: any) => {
+    if (attachmentPreviewUrls[m.id]) {
+      URL.revokeObjectURL(attachmentPreviewUrls[m.id]);
+      setAttachmentPreviewUrls(prev => {
+        const next = { ...prev };
+        delete next[m.id];
+        return next;
+      });
+      return;
+    }
+    setPreviewLoadingIds(prev => ({ ...prev, [m.id]: true }));
+    try {
+      const res = await fetch(`${API_BASE}/api/classes/${m.class_id || target.classId}/chat/${m.id}/attachment`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Không tải được bản xem trước.');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setAttachmentPreviewUrls(prev => ({ ...prev, [m.id]: url }));
+    } catch (err: any) {
+      alert(err?.message || 'Không tải được bản xem trước.');
+    } finally {
+      setPreviewLoadingIds(prev => ({ ...prev, [m.id]: false }));
+    }
+  };
+
+  const downloadAttachment = (m: any) => {
+    academicDownload(
+      token,
+      `/api/classes/${m.class_id || target.classId}/chat/${m.id}/attachment`,
+      m.attachment_name || 'attachment'
+    );
+  };
+
+  const retractMessage = async (m: any) => {
+    if (!confirm('Thu hồi tin nhắn này? Tin nhắn và file đính kèm (nếu có) sẽ bị xóa khỏi hệ thống.')) return;
+    run(async () => {
+      await academicApi(token, `/api/classes/${m.class_id || target.classId}/chat/${m.id}`, 'DELETE');
+      if (attachmentPreviewUrls[m.id]) {
+        URL.revokeObjectURL(attachmentPreviewUrls[m.id]);
+        setAttachmentPreviewUrls(prev => {
+          const next = { ...prev };
+          delete next[m.id];
+          return next;
+        });
+      }
+    });
+  };
+
+  const sendMessage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!target || busy || sending) return;
+    const bodyText = draft.trim();
+    if (!bodyText && !selectedFile) return;
+    if (selectedFile && selectedFile.size > 10 * 1024 * 1024) {
+      alert('File vượt quá 10 MB. Vui lòng nén hoặc chọn file nhỏ hơn.');
+      return;
+    }
+    setSending(true);
+    try {
+      const f = new FormData();
+      if (bodyText) f.set('body', bodyText);
+      if (selectedFile) f.set('file', selectedFile);
+      f.set('lecturerId', String(target.lecturerId));
+      if (target.enrollmentId) f.set('enrollmentId', target.enrollmentId);
+
+      await academicApi(token, `/api/classes/${target.classId}/chat`, 'POST', f);
+      setDraft('');
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      await load();
+    } catch (err: any) {
+      alert(err?.message || 'Gửi tin nhắn thất bại.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {error && (
+        <div role="alert" className="rounded-xl border border-red-200/80 bg-[#fee2e2] p-4 text-xs font-medium text-[#d70015]">
+          {error}
+        </div>
+      )}
+
+      {!threads.length ? (
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-8 text-center text-slate-500 text-sm">
+          Chưa có nhóm hướng dẫn để trao đổi. GVNX sử dụng phần nhận xét/yêu cầu sửa trong hồ sơ.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4 min-h-[620px]">
+          {/* Left Thread List */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col">
+            <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f8fafc]">
+              <div className="font-bold text-slate-900 text-sm">Cuộc trò chuyện</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">{threads.length} hội thoại</div>
+            </div>
+            <div className="divide-y divide-slate-100 max-h-[560px] overflow-y-auto flex-1">
+              {threads.map(thread => {
+                const active = thread.id === target?.id;
+                return (
+                  <button
+                    key={thread.id}
+                    type="button"
+                    onClick={() => setSelected(thread.id)}
+                    className={`w-full text-left p-4 transition-all cursor-pointer ${
+                      active ? 'bg-[#e8f1fb] text-[#034ea1]' : 'hover:bg-[#f8fafc] text-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        active ? 'bg-[#034ea1] text-white shadow-xs' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {thread.isGroup ? <Users size={16} /> : <MessageCircle size={16} />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className={`font-semibold text-xs truncate ${active ? 'text-[#034ea1]' : 'text-slate-900'}`}>
+                          {thread.title}
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+                          {thread.subtitle || '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Chat Window */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col min-h-[620px]">
+            {target ? (
+              <>
+                <div className="px-5 py-3.5 border-b border-slate-100 bg-[#f8fafc]">
+                  <div className="font-bold text-slate-900 text-sm">{target.title}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{target.subtitle || '-'}</div>
+                </div>
+
+                {/* Mobile selector */}
+                <div className="lg:hidden p-3 border-b border-slate-100 bg-slate-50/50">
+                  <select
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white text-slate-800"
+                    value={target.id}
+                    onChange={e => setSelected(e.target.value)}
+                  >
+                    {threads.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.title} ({t.subtitle})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex-1 p-5 overflow-y-auto bg-[#f8fafc]/30 space-y-3 max-h-[460px]">
+                  {messages.length === 0 ? (
+                    <div className="text-xs text-slate-400 text-center py-12 font-medium">
+                      Chưa có tin nhắn. Bạn có thể bắt đầu trao đổi ở ô bên dưới.
+                    </div>
+                  ) : (
+                    messages.map(m => {
+                      const mine = Number(m.sender_id) === Number(user.id);
+                      return (
+                        <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[78%] rounded-2xl px-4 py-3 shadow-xs ${
+                            mine
+                              ? 'bg-[#034ea1] text-white'
+                              : 'bg-white border border-black/[0.06] text-slate-800'
+                          }`}>
+                            <div className={`text-[10px] font-semibold mb-1 ${mine ? 'text-white/80' : 'text-slate-400'}`}>
+                              {mine ? 'Bạn' : m.sender_name}
+                            </div>
+                            <div className="text-xs whitespace-pre-wrap leading-relaxed">
+                              {m.retracted_at ? 'Tin nhắn đã được thu hồi.' : m.body}
+                            </div>
+
+                            {m.attachment_name && !m.retracted_at && (
+                              <div className="mt-2.5 space-y-2">
+                                <div className={`flex max-w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold ${
+                                  mine
+                                    ? 'border-white/20 bg-white/10 text-white'
+                                    : 'border-black/[0.08] bg-[#f8fafc] text-slate-700'
+                                }`}>
+                                  <Paperclip size={14} className="shrink-0" />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate">{m.attachment_name}</span>
+                                    <span className={`block text-[10px] font-medium ${mine ? 'text-white/70' : 'text-slate-400'}`}>
+                                      {formatChatBytes(Number(m.attachment_size || 0))}
+                                    </span>
+                                  </span>
+                                  {canPreviewAttachment(m) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleAttachmentPreview(m)}
+                                      disabled={!!previewLoadingIds[m.id]}
+                                      className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold ${
+                                        mine ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-white hover:bg-slate-100 text-slate-700 border border-black/[0.08]'
+                                      } disabled:opacity-60 cursor-pointer`}
+                                    >
+                                      {previewLoadingIds[m.id] ? 'Đang tải' : attachmentPreviewUrls[m.id] ? 'Ẩn' : 'Xem'}
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => downloadAttachment(m)}
+                                    className={`shrink-0 rounded-lg p-1 transition-colors cursor-pointer ${
+                                      mine ? 'hover:bg-white/20 text-white' : 'hover:bg-slate-200 text-slate-600'
+                                    }`}
+                                    title="Tải file"
+                                  >
+                                    <Download size={14} />
+                                  </button>
+                                </div>
+                                {attachmentPreviewUrls[m.id] && (
+                                  <div className={`overflow-hidden rounded-xl border ${mine ? 'border-white/20 bg-white/10' : 'border-black/[0.08] bg-white'}`}>
+                                    {isImageAttachment(m) ? (
+                                      <img src={attachmentPreviewUrls[m.id]} alt={m.attachment_name} className="max-h-72 w-full object-contain" />
+                                    ) : (
+                                      <iframe src={attachmentPreviewUrls[m.id]} title={m.attachment_name} className="h-72 w-full bg-white" />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className={`mt-2 flex items-center gap-2 text-[10px] ${mine ? 'justify-end text-white/70' : 'text-slate-400'}`}>
+                              <span>{m.created_at ? new Date(m.created_at).toLocaleString('vi-VN') : '-'}</span>
+                              {writable && mine && !m.retracted_at && (
+                                <button
+                                  type="button"
+                                  onClick={() => retractMessage(m)}
+                                  disabled={busy}
+                                  className="rounded-md px-1.5 py-0.5 font-semibold text-white/80 hover:bg-white/20 disabled:opacity-60 cursor-pointer transition-colors"
+                                >
+                                  Thu hồi
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input form */}
+                <form onSubmit={sendMessage} className="p-4 border-t border-slate-100 bg-white">
+                  {selectedFile && (
+                    <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-[#bfe0ff]/80 bg-[#e8f1fb] px-3.5 py-2 text-xs text-[#005bb5]">
+                      <div className="min-w-0 flex items-center gap-2">
+                        <Paperclip size={14} className="shrink-0" />
+                        <span className="truncate font-semibold">{selectedFile.name}</span>
+                        <span className="shrink-0 text-[#034ea1] font-medium">{formatChatBytes(selectedFile.size)}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }}
+                        className="rounded-md p-0.5 text-blue-600 hover:bg-blue-100 hover:text-blue-800 transition-colors cursor-pointer"
+                        title="Bỏ chọn file"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <textarea
+                      value={draft}
+                      onChange={e => setDraft(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      disabled={!writable || sending}
+                      placeholder="Nhập tin nhắn..."
+                      rows={2}
+                      className="w-full resize-none border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all bg-slate-50/50 focus:bg-white disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        disabled={!writable || sending}
+                        className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            if (f.size > 10 * 1024 * 1024) {
+                              alert('File vượt quá 10 MB. Vui lòng nén hoặc chọn file nhỏ hơn.');
+                              e.target.value = '';
+                              return;
+                            }
+                            setSelectedFile(f);
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={!writable || sending}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#034ea1] p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <Paperclip size={15} />
+                        <span>Đính kèm file</span>
+                      </button>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        Tối đa 10 MB (Shift+Enter để xuống dòng)
+                      </span>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={(!draft.trim() && !selectedFile) || !writable || sending}
+                      className="bg-[#034ea1] hover:bg-[#023b7a] active:scale-[0.98] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      <span>{sending ? 'Đang gửi...' : 'Gửi'}</span>
+                      <Send size={13} />
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="p-8 text-center text-xs text-slate-400">Chọn cuộc trò chuyện để bắt đầu.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 type Question = { id: string; question: string; answer: string | null; created_at: string; answered_at: string | null; revision: number; asker_name?: string };
