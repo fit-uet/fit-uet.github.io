@@ -21,7 +21,7 @@ export function ClassChat({ token, user, data }: { token: string; user: any; dat
     try { setMessages(await academicApi(token, `/api/classes/${target.classId}/chat?lecturerId=${target.lecturerId}${target.enrollmentId ? `&enrollmentId=${target.enrollmentId}` : ''}`, 'GET', undefined, signal)); setError(''); }
     catch (error) { if (error.name !== 'AbortError') setError(error.message); }
   }, [token, data.class.id, target?.id]);
-  useEffect(() => { const abort = new AbortController(); setMessages([]); load(abort.signal); const timer = window.setInterval(() => load(abort.signal), 30_000); return () => { abort.abort(); window.clearInterval(timer); }; }, [load]);
+  useEffect(() => { const abort = new AbortController(); setMessages([]); load(abort.signal); const visible = () => { if(document.visibilityState==='visible')load(abort.signal); }; const timer = window.setInterval(visible, 30_000); document.addEventListener('visibilitychange',visible); return () => { abort.abort(); window.clearInterval(timer); document.removeEventListener('visibilitychange',visible); }; }, [load]);
   const run = async (fn: () => Promise<unknown>) => { setBusy(true); try { await fn(); await load(); } catch (error) { setError(error.message); } finally { setBusy(false); } };
   const writable = data.class.status === 'active';
   return <section className="bg-white border border-slate-200 rounded-xl overflow-hidden"><h3 className="font-semibold p-5 border-b border-slate-100">Trao đổi trong nhóm môn</h3>
@@ -45,7 +45,12 @@ type Question = { id: string; question: string; answer: string | null; created_a
 export function ClassQuestions({ token, user, c }: { token: string; user: any; c: AcademicClassSummary }) {
   const [rows, setRows] = useState<Question[]>([]); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
   const load = useCallback(async (signal?: AbortSignal) => setRows(await academicApi(token, `/api/campaigns/${c.id}/questions`, 'GET', undefined, signal)), [token, c.id]);
-  useEffect(() => { const a = new AbortController(); load(a.signal).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => a.abort(); }, [load]);
+  useEffect(() => {
+    const a = new AbortController();
+    const update = () => { if(document.visibilityState==='visible')load(a.signal).catch(e=>{if(e.name!=='AbortError')setError(e.message);}); };
+    update(); document.addEventListener('visibilitychange',update); window.addEventListener('api-data-changed',update);
+    return () => {a.abort();document.removeEventListener('visibilitychange',update);window.removeEventListener('api-data-changed',update);};
+  }, [load]);
   const run = async (fn: () => Promise<unknown>) => { setBusy(true); setError(''); try { await fn(); await load(); } catch (e) { setError(e.message); } finally { setBusy(false); } };
   return <section className="bg-white border rounded-xl p-5 space-y-4"><h3 className="font-semibold">Hỏi đáp với Khoa</h3><p className="text-sm text-slate-500">Câu hỏi được hiển thị cho cả nhóm môn sau khi Khoa trả lời. Các câu chưa trả lời chỉ hiện với người hỏi và Khoa.</p>
     {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
