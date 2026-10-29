@@ -110,3 +110,18 @@ test('transient cohort read errors cannot grant legacy access to a deleted proje
  setDb({...original,execute:async(input:any)=>{calls++;if(calls===1)throw Error('reads are blocked');return {rows:[{id:1}]} as any;}});
  try{await assert.rejects(isListedStudentCohortException('24020001@vnu.edu.vn'),/reads are blocked/);assert.equal(calls,1);}finally{setDb(original);}
 });
+
+test('project unread counts work without membership status and clear immediately after deleting that enrollment',async()=>{
+ const {unreadCounts,invalidateUnreadCountsCache}=await import('../../server/services/unread');invalidateUnreadCountsCache();
+ const a=await seed();assert.equal(a.e.status,undefined);
+ await db.executeMultiple(`CREATE TABLE system_notifications(id INTEGER PRIMARY KEY,target_role TEXT,active INTEGER,created_at TEXT);
+ CREATE TABLE system_notification_reads(system_notification_id INTEGER,user_id INTEGER,read_at TEXT);
+ CREATE TABLE chat_messages(id INTEGER PRIMARY KEY,student_user_id INTEGER,lecturer_id INTEGER,sender_user_id INTEGER,read_at TEXT);
+ CREATE TABLE chat_group_messages(id INTEGER PRIMARY KEY,lecturer_id INTEGER,sender_user_id INTEGER);
+ CREATE TABLE chat_group_message_reads(message_id INTEGER,user_id INTEGER);`);
+ await db.execute({sql:'INSERT INTO academic_messages(id,class_id,enrollment_id,lecturer_id,sender_id,body,created_at) VALUES(?,?,?,?,?,?,?)',args:['project-unread',a.c.id,a.e.id,1,alpha.id,'Tin nhắn của GVHD','now']});
+ await db.execute({sql:"INSERT INTO notifications(user_id,recipient_email,type,subject,body,status,created_at,academic_class_id,academic_campaign_id,academic_enrollment_id) VALUES(?,?,'course_announcement','Thông báo','Nội dung','website_only','now',?,?,?)",args:[a.actor.id,a.actor.email,a.c.id,a.c.campaignId,a.e.id]});
+ assert.deepEqual(await unreadCounts(a.actor),{notifications:1,chats:1});assert.deepEqual(await unreadCounts(a.actor),{notifications:1,chats:1});
+ await remove(a.c.campaignId,[a.e.id]);assert.deepEqual(await unreadCounts(a.actor),{notifications:0,chats:0});
+ invalidateUnreadCountsCache();
+});

@@ -360,11 +360,13 @@ test('legacy lecturer PDF viewer preserves its cached PDF and rechecks access be
 
 test('returning to a visible question screen revalidates its content without loading records',async({browser})=>{
   const {page,context,classes,errors}=await session(browser,'student');const p=classes.find(c=>c.courseCode==='INT3132').campaignId;const statuses:number[]=[];let records=0;
+  await page.clock.install();
   page.on('response',r=>{if(r.url().endsWith(`/campaigns/${p}/questions`))statuses.push(r.status());});page.on('request',r=>{if(r.url().includes('/enrollments'))records++;});
   try{
     await page.goto(`/#/campaigns/${p}?tab=questions`);await expect.poll(()=>statuses.length).toBe(1);expect(statuses[0]).toBe(200);
     await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));});expect(statuses).toEqual([200]);
-    await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'));});await expect.poll(()=>statuses.length).toBe(2);expect(statuses[1]).toBe(304);expect(records).toBe(0);expect(errors).toEqual([]);
+    await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'));});expect(statuses).toEqual([200]);
+    await page.clock.fastForward(31_000);await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await expect.poll(()=>statuses.length).toBe(2);expect(statuses[1]).toBe(304);expect(records).toBe(0);expect(errors).toEqual([]);
   }finally{await context.close();}
 });
 
