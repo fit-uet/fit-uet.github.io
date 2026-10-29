@@ -1,6 +1,25 @@
 import {randomUUID} from 'node:crypto';
 import type {DatabaseClient} from '../../server/types';
 import type {Snapshot} from '../../server/academic/store';
+import {compoundSelect} from '../../server/services/compoundSelect';
+export async function readRosterSnapshot(client:DatabaseClient,campaignId:string):Promise<Snapshot>{
+ // This administrative correction needs only one project campaign. In
+ // particular, never hydrate or scan the independent legacy internship tables.
+ const query=compoundSelect([
+  "SELECT 'revision' kind,CAST(revision AS TEXT) data FROM academic_meta WHERE id=1",
+  "SELECT 'campaigns',data FROM academic_campaigns WHERE id=(SELECT id FROM scope) AND course_group='project'",
+  "SELECT 'semesters',data FROM academic_semesters WHERE id=(SELECT semester_id FROM academic_campaigns WHERE id=(SELECT id FROM scope))",
+  "SELECT 'classes',data FROM academic_classes WHERE json_extract(data,'$.campaignId')=(SELECT id FROM scope)",
+  "SELECT 'enrollments',e.data FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id WHERE json_extract(c.data,'$.campaignId')=(SELECT id FROM scope)",
+  "SELECT 'lecturers',json_object('id',id,'name',name,'email',COALESCE(email,''),'work_unit',COALESCE(work_unit,'')) FROM lecturers",
+ ],'WITH scope AS (SELECT ? id)');
+ const s:Snapshot={revision:0,campaigns:[],semesters:[],classes:[],enrollments:[],quotas:[],lecturers:[]};
+ for(const row of (await client.execute({sql:query,args:[campaignId]})).rows){
+  if(row.kind==='revision')s.revision=Number(row.data);
+  else s[String(row.kind)].push(JSON.parse(String(row.data)));
+ }
+ return s;
+}
 export type RosterCorrection={campaignId:string;revision:number;sourceHash:string;keys:string[];keep:number;students:number;remove:{id:string;revision:number}[]};
 export function planRosterCorrection(s:Snapshot,campaignId:string,rows:{studentId:string;classCode:string}[],sourceHash:string):RosterCorrection{
  const campaign=s.campaigns?.find(p=>p.id===campaignId);if(campaign?.group!=='project'||campaign.status!=='active')throw Error('ACTIVE_PROJECT_REQUIRED');
