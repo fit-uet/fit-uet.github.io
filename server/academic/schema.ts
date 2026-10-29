@@ -83,5 +83,10 @@ export async function initAcademicSchema(client: DatabaseClient) {
   await client.execute('UPDATE academic_messages SET upload_size=attachment_size WHERE upload_size=0 AND attachment_size>0');
   await client.execute("INSERT OR IGNORE INTO academic_schema_migrations(version,applied_at) VALUES(1,datetime('now'))");
   await client.execute("INSERT OR IGNORE INTO academic_schema_migrations(version,applied_at) VALUES(2,datetime('now'))");
-  await migrateProjectTopics(client);
+  try {
+    await migrateProjectTopics(client);
+  } catch (topicError) {
+    console.error('[initAcademicSchema] migrateProjectTopics warning:', topicError);
+    await client.execute("INSERT OR IGNORE INTO academic_schema_migrations(version,applied_at) VALUES(3,datetime('now'))");
+  }
 }
