@@ -163,15 +163,15 @@ function App() {
       <HashRouter>
         <div className="app-shell w-full h-full flex flex-col font-sans overflow-x-hidden">
           {/* Header */}
-          <header className="app-header h-16 text-white px-6 flex items-center justify-between z-10 sticky top-0 w-full">
+          <header className="app-header h-16 text-white px-3 sm:px-6 flex items-center justify-between z-10 sticky top-0 w-full">
             <div className="app-header__inner mx-auto w-full flex items-center justify-between">
-              <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity cursor-pointer">
+              <Link to="/" className="flex min-w-0 items-center gap-3 hover:opacity-90 transition-opacity cursor-pointer">
                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center hidden sm:flex overflow-hidden border border-white/20 shadow-sm">
                   <img src={`${import.meta.env.BASE_URL}logo.png`} alt="FIT UET 30 Years" className="w-full h-full object-contain p-0.5" />
                 </div>
                 <div>
-                  <h1 className="text-sm md:text-base font-extrabold leading-tight uppercase tracking-tight">Khoa Công nghệ Thông tin</h1>
-                  <p className="text-[9px] md:text-[10px] text-blue-100 font-bold uppercase tracking-wider opacity-90">Trường Đại học Công nghệ - ĐHQGHN</p>
+                  <h1 className="text-sm md:text-base font-extrabold leading-tight uppercase tracking-tight"><span className="hidden sm:inline">Khoa Công nghệ Thông tin</span><span className="sm:hidden">FIT UET</span></h1>
+                  <p className="hidden sm:block text-[9px] md:text-[10px] text-blue-100 font-bold uppercase tracking-wider opacity-90">Trường Đại học Công nghệ - ĐHQGHN</p>
                 </div>
               </Link>
 

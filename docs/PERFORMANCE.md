@@ -39,7 +39,7 @@ Facade `PaginatedVirtualProxy` được giữ cho nơi gọi cũ nhưng không g
 | `GET /api/enrollments/:id` | Một hồ sơ và các phiên bản/đánh giá theo quyền |
 | `GET /api/me/unread-counts` | `{notifications, chats}`, không có nội dung |
 
-`server/academic/reads.ts` tách luồng đọc khỏi snapshot CAS dành cho thao tác ghi. Dự án không hydrate hồ sơ Thực tập. Danh mục, tổng quan và chi tiết một hồ sơ Dự án dùng một lệnh DB cho read model; danh sách và export dùng hai lệnh, chưa tính một truy vấn xác thực. Chat/hỏi đáp dùng roster giới hạn phạm vi, không lấy lịch sử bài nộp hoặc điểm.
+`server/academic/reads.ts` tách luồng đọc khỏi snapshot CAS dành cho thao tác ghi. Dự án không hydrate hồ sơ Thực tập. Danh mục, tổng quan và chi tiết một hồ sơ Dự án dùng một lệnh DB cho read model; danh sách dùng một lệnh, export dùng hai lệnh, chưa tính một truy vấn xác thực. Chat/hỏi đáp dùng roster giới hạn phạm vi, không lấy lịch sử bài nộp hoặc điểm.
 
 Các GET legacy đăng ký, nơi thực tập, phân công, đề xuất, báo cáo, bảng điểm và danh sách GV phụ trách hỗ trợ `pagination=1&page=1&limit=25`. Trả `{items,total,studentCount,page,limit,totalPages,summary}`; phân công có thêm danh mục GV. `limit` tối đa 100. Hỗ trợ bộ lọc học phần/lớp/GV, `q`, trạng thái và sắp xếp tương ứng màn. Không có `pagination=1` vẫn trả mảng/đối tượng cũ. Mã `INT4002` khớp tên học phần đầy đủ. API phân trang không tự phân công hoặc backfill khi đọc; các thao tác quản trị ghi giữ API riêng. GET bảng điểm không UPDATE dữ liệu; chuẩn hóa tên/điểm hiển thị tại DTO.
 

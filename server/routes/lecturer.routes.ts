@@ -174,7 +174,7 @@ lecturerRouter.get('/api/reports/final/:userId/view', requireAuth, async (req: a
   if (!report) return res.status(404).json({ error: 'Chưa có báo cáo.' });
   const etag = `"${report.id}-${report.file_size}-${new Date(report.submitted_at || report.updated_at || Date.now()).getTime()}"`;
   res.setHeader('ETag', etag);
-  res.setHeader('Cache-Control', 'private, max-age=3600, must-revalidate');
+  res.setHeader('Cache-Control', 'private, no-cache');
 
   if (req.header('if-none-match') === etag) {
     return res.status(304).end();

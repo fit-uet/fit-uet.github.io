@@ -91,6 +91,7 @@ test('legacy reports export all pages and assigned legacy students remain availa
     const wb=XLSX.read(await readFile((await download.path())!),{type:'buffer'});expect(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])).toHaveLength(records.total);
     await page.goto(origin.origin+'/__local_staging/login?email='+encodeURIComponent(process.env.ACADEMIC_ACCEPTANCE_LECTURER!));await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
     await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=students');await expect(page.locator('tbody tr').first()).toBeVisible();expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(25);
+    await page.getByLabel('Chức năng',{exact:true}).selectOption('chat');await expect(page.locator('textarea[placeholder="Nhập tin nhắn..."]')).toBeVisible();expect(page.url()).toContain('campaigns/2025-2026-summer:internship');
     expect(errors).toEqual([]);
   }finally{await context.close();}
 });

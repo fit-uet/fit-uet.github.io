@@ -1,7 +1,8 @@
+import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useNavigate } from 'react-router-dom';
+import {useCampaignNavigate as useNavigate} from '../../academic/useCampaignNavigate';
 import React, { useState, useEffect } from 'react';
 import { Upload, RefreshCw, Save, CircleHelp, ChevronLeft, Eye, Code2, RotateCcw } from 'lucide-react';
 import {
@@ -19,6 +20,7 @@ import { SegmentedControl } from '../../../shared/ui/SegmentedControl';
 
 export function FAQSettingsAdmin({ token }: { token: string }) {
   const navigate = useNavigate();
+  const editor = useCampaignEditor();
   const [faq, setFaq] = useState<any>({ faq_student_md: DEFAULT_STUDENT_FAQ, faq_lecturer_md: DEFAULT_LECTURER_FAQ });
   const [activeTab, setActiveTab] = useState<'student' | 'lecturer'>('student');
   const [loading, setLoading] = useState(true);
@@ -26,6 +28,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
   const [importingDocx, setImportingDocx] = useState(false);
 
   useEffect(() => {
+    if(editor){setFaq({faq_student_md:editor.campaign.settings.studentFaq,faq_lecturer_md:editor.campaign.settings.lecturerFaq});setLoading(false);return;}
     cachedJsonFetch<any>(`${API_BASE}/api/settings/faq`, {
       cacheKey: 'markdown:faq',
       ttlMs: CACHE_TTL.markdown,
@@ -40,11 +43,12 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
         }
       })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token,editor?.campaign.id]);
 
   const saveFaq = async () => {
     setSaving(true);
     try {
+      if(editor){await editor.save({studentFaq:faq.faq_student_md,lecturerFaq:faq.faq_lecturer_md});alert('Đã lưu nội dung nhóm môn.');return;}
       const res = await fetch(`${API_BASE}/api/settings/faq`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -62,7 +66,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
   };
 
   const activeKey = activeTab === 'student' ? 'faq_student_md' : 'faq_lecturer_md';
-  const activeDefault = activeTab === 'student' ? DEFAULT_STUDENT_FAQ : DEFAULT_LECTURER_FAQ;
+  const activeDefault = editor?.campaign.group==='project' ? '' : activeTab === 'student' ? DEFAULT_STUDENT_FAQ : DEFAULT_LECTURER_FAQ;
 
   const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,7 +131,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
         {/* Primary Save Button */}
         <button
           onClick={saveFaq}
-          disabled={saving}
+          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
         >
           {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
@@ -165,7 +169,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 className="hidden"
-                disabled={importingDocx}
+                disabled={importingDocx || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
                 onChange={handleImportDocx}
                 onClick={(e) => {
                   (e.target as HTMLInputElement).value = '';
@@ -197,7 +201,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
               </span>
             </div>
 
-            <textarea
+            <textarea disabled={editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
               value={currentContent}
               onChange={(e) => setFaq((prev: any) => ({ ...prev, [activeKey]: e.target.value }))}
               placeholder="Nhập nội dung FAQ theo định dạng Markdown..."

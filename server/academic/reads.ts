@@ -43,7 +43,9 @@ export const recordCte = `WITH actor_input AS MATERIALIZED (SELECT ? role,? emai
  )`;
 const argsFor = (actor: AuthenticatedUser, id = '', enrollmentId = '') => [actor.role, actor.email.trim().toLowerCase(), actor.role === 'lecturer' || actor.role === 'admin' || actor.is_lecturer ? 1 : 0, id, enrollmentId];
 
-export async function readContext(actor: AuthenticatedUser, id = '', section = 'full', enrollmentId = '') {
+export async function readContext(actor: AuthenticatedUser, id = '', section = 'full', enrollmentId = '', pageQuery?:Record<string,any>) {
+  const pageFilter = pageQuery ? listFilter(pageQuery) : null;
+  const page = Math.max(1,Math.floor(Number(pageQuery?.page)||1)), limit=Math.min(100,Math.max(1,Math.floor(Number(pageQuery?.limit)||25)));
   const light = section === 'base' || section === 'overview' || section === 'management';
   const result = (await db.execute({ sql: `${recordCte}
     SELECT 'campaigns' kind,${light ? withoutContent('data') : 'data'} data FROM academic_campaigns WHERE (SELECT campaignId FROM actor)='' OR id=(SELECT campaignId FROM actor)
@@ -57,13 +59,17 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
     UNION ALL SELECT 'enrolledClasses',json_object('id',class_id) FROM academic_enrollments CROSS JOIN actor WHERE lower(json_extract(data,'$.email'))=actor.email
     UNION ALL SELECT 'classCounts',json_object('classId',class_id,'n',count(*)) FROM records WHERE json_extract(j,'$.status')='active' GROUP BY class_id
     UNION ALL SELECT 'unmapped',json_object('value',CASE WHEN (SELECT role FROM actor)='student' AND NOT EXISTS(SELECT 1 FROM academic_enrollments WHERE json_extract(data,'$.legacy')=1 AND lower(json_extract(data,'$.email'))=(SELECT email FROM actor)) THEN 1 ELSE 0 END)
-    UNION ALL SELECT 'settings',json_object('key',key,'value',value) FROM settings WHERE EXISTS(SELECT 1 FROM academic_campaigns p WHERE json_extract(p.data,'$.legacy')=1 AND ((SELECT campaignId FROM actor)='' OR p.id=(SELECT campaignId FROM actor)))`, args: argsFor(actor, id, enrollmentId) })).rows;
+    UNION ALL SELECT 'settings',json_object('key',key,'value',value) FROM settings WHERE EXISTS(SELECT 1 FROM academic_campaigns p WHERE json_extract(p.data,'$.legacy')=1 AND ((SELECT campaignId FROM actor)='' OR p.id=(SELECT campaignId FROM actor)))
+    ${pageFilter?`UNION ALL SELECT 'pageCount',json_object('total',count(*),'studentCount',count(DISTINCT student_id)) FROM records WHERE ${pageFilter.sql}
+    UNION ALL SELECT 'pageItem',j FROM (SELECT * FROM records WHERE ${pageFilter.sql} ORDER BY student_id,classCode ${pageQuery.__all?'':'LIMIT ? OFFSET ?'})`:''}`, args: [...argsFor(actor, id, enrollmentId),...(pageFilter?[...pageFilter.args,...pageFilter.args,...(pageQuery.__all?[]:[limit,(page-1)*limit])]:[])] })).rows;
   const s: Snapshot = { revision: 0, campaigns: [], semesters: [], classes: [], enrollments: [], quotas: [], lecturers: [] };
-  const counts = new Map<string, any>(), classCounts = new Map<string, number>(); let unmapped = false, targetExists = false;
+  const counts = new Map<string, any>(), classCounts = new Map<string, number>(); let unmapped = false, targetExists = false; let pageCount:{total:number;studentCount:number}|undefined;
   const settings: any[] = []; const enrolledClasses = new Set<string>();
   for (const row of result) {
     const item = JSON.parse(String(row.data));
-    if (row.kind === 'counts') counts.set(item.campaignId, item);
+    if(row.kind==='pageCount')pageCount=item;
+    else if(row.kind==='pageItem')s.enrollments.push(item);
+    else if (row.kind === 'counts') counts.set(item.campaignId, item);
     else if (row.kind === 'classCounts') classCounts.set(item.classId, item.n);
     else if (row.kind === 'unmapped') unmapped = !!item.value;
     else if (row.kind === 'settings') settings.push(item);
@@ -85,7 +91,7 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
   const campaigns = s.campaigns!.filter(p => actor.role === 'admin' || !p.pendingMigration && classes.some(c => c.campaignId === p.id)).map(p => ({ ...p, semesterName: s.semesters.find(x => x.id === p.semesterId)?.name || '', name: `${GROUP_NAMES[p.group]} · ${s.semesters.find(x => x.id === p.semesterId)?.name || ''}`, classCount: classes.filter(c => c.campaignId === p.id).length, studentCount: counts.get(p.id)?.studentCount || 0, enrollmentCount: counts.get(p.id)?.enrollmentCount || 0 }));
   if (id && !s.campaigns!.some(p => p.id === id)) fail(404, 'CAMPAIGN_NOT_FOUND', 'Không tìm thấy nhóm môn.');
   if (id && !campaigns.some(p => p.id === id)) fail(403, 'CAMPAIGN_ACCESS_DENIED', 'Bạn không có quyền vào nhóm môn này.');
-  return { s, campaigns, classes, counts, targetExists, unmapped: unmapped && actor.legacy_internship_access === 1 };
+  return { s, campaigns, classes, counts, pageCount, targetExists, unmapped: unmapped && actor.legacy_internship_access === 1 };
 }
 function applyReadSettings(s: Snapshot, rows: any[]) {
   const settings = Object.fromEntries(rows.map(r => [r.key, String(r.value || '')]));
@@ -124,17 +130,20 @@ function listFilter(query: Record<string, any>) {
   return {sql:filters.join(' AND '),args};
 }
 export async function readCampaignEnrollments(actor: AuthenticatedUser,id:string,query:Record<string,any>={},all=false,context?:Awaited<ReturnType<typeof readContext>>) {
-  const ctx=context || await readContext(actor,id,'management');
+  const ctx=context || await readContext(actor,id,'management','',{...query,__all:all});
   if(query.classId&&!ctx.s.classes.some(c=>c.id===query.classId)||query.courseCode&&!ctx.s.classes.some(c=>c.courseCode===query.courseCode))fail(422,'INVALID_CAMPAIGN_FILTER','Lớp/học phần không thuộc nhóm môn.');
   if(query.topicStatus&&(!['unregistered','pending','approved'].includes(query.topicStatus)||ctx.campaigns[0]?.group!=='project'))fail(422,'INVALID_TOPIC_FILTER','Trạng thái đề tài không hợp lệ.');
   const projection=query.projection;if(projection&&!['students','assignments','reports','grades'].includes(projection))fail(422,'INVALID_PROJECTION','Loại danh sách không hợp lệ.');
   const page=Math.max(1,Math.floor(Number(query.page)||1)),limit=Math.min(100,Math.max(1,Math.floor(Number(query.limit)||25)));
   const filter=listFilter(query);
-  const rows=(await db.execute({sql:`${recordCte},filtered AS (SELECT * FROM records WHERE ${filter.sql})
+  let count=ctx.pageCount;
+  if(!count){
+    const rows=(await db.execute({sql:`${recordCte},filtered AS (SELECT * FROM records WHERE ${filter.sql})
     SELECT 'count' kind,json_object('total',count(*),'studentCount',count(DISTINCT student_id)) data FROM filtered
     UNION ALL SELECT 'item',j FROM (SELECT * FROM filtered ORDER BY student_id,classCode ${all?'':'LIMIT ? OFFSET ?'})`,args:[...argsFor(actor,id),...filter.args,...(all?[]:[limit,(page-1)*limit])]})).rows;
-  const count=JSON.parse(String(rows.find(r=>r.kind==='count')!.data));
-  ctx.s.enrollments=rows.filter(r=>r.kind==='item').map(r=>JSON.parse(String(r.data)));
+    count=JSON.parse(String(rows.find(r=>r.kind==='count')!.data));
+    ctx.s.enrollments=rows.filter(r=>r.kind==='item').map(r=>JSON.parse(String(r.data)));
+  }
   if(ctx.s.enrollments.some(e=>e.legacy))await hydrateLegacy(ctx.s);
   const items=ctx.s.enrollments.map(e=>{const c=getClass(ctx.s,e.classId);const view=enrollmentView(ctx.s,c,e,actor);if(projection){view.versions=view.versions.slice(-1);if(projection!=='grades'){delete view.evaluations;delete view.internshipGrade;delete view.finalScore;}else if(view.evaluations)view.evaluations={[view.versions[0].id]:view.evaluations[view.versions[0].id]||{}};view.preferences=[];view.finalInternship=null;view.advisorRequest=null;view.note='';}return {...view,classCode:c.code,courseCode:c.courseCode};});
   return {items,...count,page,limit,totalPages:Math.max(1,Math.ceil(count.total/limit))};

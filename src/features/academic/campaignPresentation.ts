@@ -10,6 +10,7 @@ export const recordPages = ['students', 'assignments', 'reports', 'grades', 'reg
 export function campaignModules(admin: boolean, student: boolean, internship: boolean) {
   if (student) return [
     { id: 'students', title: 'Hồ sơ và bài nộp', description: 'Thông tin học phần, đề tài và báo cáo', icon: 'student' },
+    ...(internship ? [{ id:'reports',title:'Báo cáo cuối kỳ',description:'Nộp và xem báo cáo thực tập',icon:'reports'}] : []),
     { id: 'plan', title: 'Kế hoạch và hướng dẫn', description: 'Mốc thời gian và quy định học phần', icon: 'plan' },
     { id: 'chat', title: 'Trao đổi', description: 'Trao đổi với giảng viên hướng dẫn', icon: 'chat' },
     { id: 'questions', title: 'Hỏi đáp', description: 'Câu hỏi thường gặp và hỗ trợ từ Khoa', icon: 'questions' },
@@ -26,9 +27,14 @@ export function campaignModules(admin: boolean, student: boolean, internship: bo
     { id: 'grades', title: 'Bảng điểm', description: internship ? 'Chấm điểm, tổng hợp kết quả' : 'Điểm GVHD 60% và GVNX 40%', icon: 'grades' },
     { id: 'chat', title: 'Trao đổi', description: 'Trao đổi riêng và nhóm hướng dẫn', icon: 'chat' },
     { id: 'plan', title: 'Kế hoạch và hướng dẫn', description: 'Kế hoạch triển khai và hướng dẫn giảng viên', icon: 'plan' },
+    { id: 'guide', title: 'Hướng dẫn sử dụng', description: 'Hướng dẫn giảng viên', icon: 'plan' },
     { id: 'questions', title: 'Hỏi đáp', description: 'Câu hỏi thường gặp và hỗ trợ', icon: 'questions' },
     ...(admin ? [
       { id: 'announcements', title: 'Thông báo', description: 'Thông báo theo nhóm hoặc lớp đã chọn', icon: 'announcements' },
+      { id: 'plan-editor', title: 'Cài đặt Kế hoạch', description: 'Soạn kế hoạch, import Word và xem trước', icon: 'plan' },
+      { id: 'guide-editor', title: 'Cài đặt Hướng dẫn GV', description: 'Soạn hướng dẫn giảng viên', icon: 'plan' },
+      { id: 'faq-editor', title: 'Cài đặt FAQ', description: 'FAQ riêng cho sinh viên và giảng viên', icon: 'questions' },
+      ...(internship ? [{ id: 'rules-editor', title: 'Cài đặt Quy định thực tập', description: 'Quy định đăng ký', icon: 'plan' }] : []),
       { id: 'settings', title: 'Thiết lập', description: 'Thời hạn, hướng dẫn và trạng thái nhóm môn', icon: 'settings' },
     ] : []),
   ];

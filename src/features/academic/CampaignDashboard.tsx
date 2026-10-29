@@ -1,21 +1,49 @@
-import { Link } from 'react-router-dom';
-import { Users, FileText, CheckCircle2, GraduationCap, LayoutDashboard, Building2, UserCheck, MessageCircle, CircleHelp, Mail, Settings, BookOpen, Shield, ArrowRight } from 'lucide-react';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Clock, Mail, CircleHelp, MessageCircle } from 'lucide-react';
+import { AdminDashboard } from '../admin/pages/AdminDashboard';
 import type { campaignModules, CampaignMeta } from './campaignPresentation';
+import { GROUP_NAMES } from '../../shared/academic';
 
-const icons = { overview: LayoutDashboard, student: Users, registrations: LayoutDashboard, company: Building2, assignments: UserCheck, reports: FileText, grades: CheckCircle2, chat: MessageCircle, questions: CircleHelp, announcements: Mail, settings: Settings, plan: BookOpen };
-type Modules = ReturnType<typeof campaignModules>;
-export function CampaignDashboard({ data, modules, navigate }: { data: CampaignMeta; modules: Modules; navigate: (id: string) => void }) {
-  const statistics = [
-    { key: 'studentCount', title: 'Sinh viên', caption: 'Số sinh viên duy nhất', icon: Users, color: 'text-[#034ea1] bg-blue-50' },
-    { key: 'enrollmentCount', title: 'Lần học', caption: `${data.campaign.classCount} lớp học phần`, icon: GraduationCap, color: 'text-[#034ea1] bg-blue-50' },
-    { key: 'submitted', title: 'Đã nộp báo cáo', caption: 'Theo từng hồ sơ học phần', icon: FileText, color: 'text-amber-700 bg-amber-50' },
-    { key: 'graded', title: 'Đã hoàn tất điểm', caption: 'Đủ các phần đánh giá', icon: CheckCircle2, color: 'text-emerald-700 bg-emerald-50' },
-  ];
-  return <div className="space-y-6">
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{statistics.map(item => <div key={item.key} className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs"><div className="flex justify-between items-center gap-2 mb-3"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{item.title}</span><div className={`p-2 rounded-lg ${item.color}`}><item.icon size={18} /></div></div><strong className="text-3xl font-bold text-slate-900">{data.stats[item.key] ?? 0}</strong><p className="text-[11px] text-slate-500 mt-2">{item.caption}</p></div>)}</div>
-    <section aria-label="Chức năng quản lý"><h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Chức năng quản lý</h2><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">{modules.filter(m => m.id !== 'overview').map(item => { const Icon = icons[item.icon] || FileText; return <button key={item.id} type="button" onClick={() => navigate(item.id)} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-[#034ea1] hover:shadow-sm transition-all flex items-start gap-3.5 text-left group"><span className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 text-[#034ea1] group-hover:bg-blue-50"><Icon size={20} /></span><span className="min-w-0"><span className="block font-semibold text-sm text-slate-800 group-hover:text-[#034ea1]">{item.title}</span><span className="block text-xs text-slate-500 leading-relaxed mt-1">{item.description}</span></span></button>; })}</div></section>
-    <section className="border-t border-slate-200 pt-5"><h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Danh mục và quản trị hệ thống</h2><div className="flex flex-wrap gap-x-6 gap-y-3">{[
-      ['students', 'Danh mục sinh viên', Users], ['lecturers', 'Giảng viên', GraduationCap], ['companies', 'Doanh nghiệp', Building2], ['approved-companies', 'CSDL thẩm định', Shield], ['admins', 'Quản trị viên', Shield],
-    ].map(([key, label, Icon]: any) => <Link key={key} className="text-xs font-semibold text-slate-600 hover:text-[#034ea1] inline-flex gap-2 items-center" to={`/admin/${key}`}><Icon size={15} />{label}</Link>)}<Link to="/system/notifications" className="text-xs font-semibold text-slate-600 hover:text-[#034ea1] inline-flex gap-2 items-center"><Mail size={15} />Thông báo hệ thống<ArrowRight size={12} /></Link><Link to="/system/settings" className="text-xs font-semibold text-slate-600 hover:text-[#034ea1] inline-flex gap-2 items-center"><Settings size={15} />Tích hợp hệ thống</Link></div></section>
-  </div>;
+type Props = {
+  data: CampaignMeta;
+  modules: ReturnType<typeof campaignModules>;
+  navigate: (tab: string) => void;
+  token: string;
+  reload: () => void;
+};
+const destinations: Record<string, string> = {
+  '/campaign/students': 'students', '/admin/registrations': 'registrations',
+  '/admin/final-internships': 'final-internships', '/admin/advisors': 'assignments',
+  '/admin/reports': 'reports', '/admin/grades': 'grades', '/plan': 'plan',
+  '/admin/plan': 'plan-editor', '/admin/registration-rules': 'rules-editor',
+  '/admin/lecturer-guide': 'guide-editor', '/admin/faq': 'faq-editor',
+};
+export function CampaignDashboard({ data, navigate, token, reload }: Props) {
+  const route = useNavigate();
+  const p = data.campaign;
+  const stats = useMemo(() => ({
+    registeredCount: data.stats.studentCount ?? 0,
+    confirmedCount: data.stats.enrollmentCount ?? 0,
+    reportCount: data.stats.submitted ?? 0,
+    gradedCount: data.stats.graded ?? 0,
+  }), [data.stats]);
+  const extraModules = [
+    { title: 'Thời hạn nhóm môn', Icon: Clock, path: '/campaign/settings' },
+    { title: 'Thông báo nhóm môn', Icon: Mail, path: '/campaign/announcements' },
+    { title: 'Hỏi đáp với Khoa', Icon: CircleHelp, path: '/campaign/questions' },
+    { title: 'Trao đổi', Icon: MessageCircle, path: '/campaign/chat' },
+  ].map(({Icon,...item}) => ({ ...item, icon:<Icon size={20} className="text-[#034ea1]"/>, onClick: () => navigate(item.path.split('/').at(-1)!) }));
+  return <AdminDashboard token={token} presentation={{
+    stats, subtitle: `${GROUP_NAMES[p.group]} · ${p.semesterName}`,
+    project: p.group === 'project', legacy: !!p.legacy,
+    onNavigate: path => destinations[path] ? navigate(destinations[path])
+      : route(path === '/admin/notifications' ? '/system/notifications' : path === '/admin/settings' ? '/system/settings' : path),
+    actions: <button onClick={reload} className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"><RefreshCw size={14} />Tải lại</button>,
+    context: <div className="flex flex-wrap gap-3 items-center text-xs text-slate-500">
+      <span className={`rounded-full border px-2 py-1 ${p.status==='active'?'border-emerald-200 bg-emerald-50 text-emerald-700':'border-slate-200 bg-slate-50'}`}>{p.status === 'active' ? 'Đang hoạt động' : p.status === 'archived' ? 'Lưu trữ · Chỉ xem' : 'Nháp'}</span>
+      <span>{p.classCount} lớp · {p.studentCount} sinh viên · {p.enrollmentCount} lần học</span>
+    </div>,
+    extraModules,
+  }} />;
 }

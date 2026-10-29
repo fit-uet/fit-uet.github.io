@@ -1,13 +1,22 @@
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, RefreshCw, X, Send, MessageCircle, Paperclip } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { API_BASE, PageDescriptionTooltip } from '../../../shared';
 
 export function ChatView({ token, user, onUnreadChanged }: { token: string; user: any; onUnreadChanged?: (unread: number) => void }) {
-  const navigate = useNavigate();
-  const params = useParams();
+  const routeNavigate = useNavigate(), location=useLocation(); const [query]=useSearchParams();
+  const routeParams=useParams(); const scoped=location.pathname.startsWith('/campaigns/');
+  const params=scoped?{groupLecturerId:query.get('groupLecturerId'),studentUserId:query.get('studentUserId'),lecturerId:query.get('lecturerId')}:routeParams;
+  const navigate=(path:string,options?:{replace?:boolean})=>{
+    if(!scoped)return routeNavigate(path,options);
+    const match=/^\/chat\/(?:group\/(\d+)|(\d+)\/(\d+))$/.exec(path);
+    if(!match)return routeNavigate(path,options);
+    const next=new URLSearchParams(query);for(const key of ['groupLecturerId','studentUserId','lecturerId'])next.delete(key);
+    if(match[1])next.set('groupLecturerId',match[1]);else{next.set('studentUserId',match[2]);next.set('lecturerId',match[3]);}
+    routeNavigate(`${location.pathname}?${next}`,options);
+  };
   const [threads, setThreads] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [draft, setDraft] = useState('');
@@ -31,6 +40,8 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
     : (params.studentUserId && params.lecturerId ? `${params.studentUserId}:${params.lecturerId}` : '');
   const selectedThread = threads.find((thread: any) => threadKey(thread) === selectedKey) || null;
   const selectedIsGroup = selectedKey.startsWith('group:');
+  const activeThread=useRef(selectedKey);activeThread.current=selectedKey;
+  const activeMessages=useRef<AbortController|null>(null);
 
   const fetchThreads = async () => {
     try {
@@ -45,7 +56,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
       setThreads(list);
       const total = list.reduce((sum, t) => sum + Number(t.unread_count || 0), 0);
       onUnreadChanged?.(total);
-      if (!selectedKey && list.length > 0) {
+      if (!activeThread.current && list.length > 0) {
         navigate(Number(list[0].is_group || 0) === 1 ? `/chat/group/${list[0].lecturer_id}` : `/chat/${list[0].student_user_id}/${list[0].lecturer_id}`, { replace: true });
       }
     } catch (e) {
@@ -61,15 +72,18 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
       setMessages([]);
       return;
     }
+    activeMessages.current?.abort();const controller=new AbortController();activeMessages.current=controller;const key=selectedKey;
     if (showLoading) setLoadingMessages(true);
     try {
       const endpoint = selectedIsGroup
         ? `${API_BASE}/api/chat/groups/${params.groupLecturerId}/messages`
         : `${API_BASE}/api/chat/threads/${params.studentUserId}/${params.lecturerId}/messages`;
       const res = await fetch(endpoint, {
+        signal:controller.signal,
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      if(controller.signal.aborted||activeThread.current!==key)return;
       if (!res.ok) {
         setError(data.error || 'Không tải được tin nhắn.');
         setMessages([]);
@@ -79,6 +93,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
       setError('');
       fetchThreads();
     } catch (e) {
+      if(controller.signal.aborted||activeThread.current!==key)return;
       setError('Không tải được tin nhắn.');
     } finally {
       setLoadingMessages(false);
@@ -101,7 +116,7 @@ export function ChatView({ token, user, onUnreadChanged }: { token: string; user
     const timer = window.setInterval(() => {
       if (document.visibilityState === 'visible') fetchMessages(false);
     }, 10000);
-    return () => window.clearInterval(timer);
+    return () => {window.clearInterval(timer);activeMessages.current?.abort();};
   }, [token, selectedKey]);
 
   const openThread = (thread: any) => {

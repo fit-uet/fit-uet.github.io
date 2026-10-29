@@ -104,13 +104,13 @@ export function AppRoutes({
       <Route path="/admin/approved-companies" element={adminOnly(<ApprovedCompanyRegistry token={token} />)} />
       <Route path="/admin/admins" element={adminOnly(<AdminRegistry token={token} />)} />
       <Route path="/admin/settings" element={<ContextRedirect token={token} tab="settings" internshipOnly={false} />} />
-      <Route path="/admin/faq" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
+      <Route path="/admin/faq" element={<ContextRedirect token={token} tab="faq-editor" internshipOnly={false} />} />
       <Route path="/admin/faq-questions" element={<ContextRedirect token={token} tab="questions" internshipOnly={false} />} />
-      <Route path="/admin/plan" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
-      <Route path="/admin/lecturer-guide" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
-      <Route path="/admin/registration-rules" element={<ContextRedirect token={token} tab="plan" internshipOnly={true} />} />
+      <Route path="/admin/plan" element={<ContextRedirect token={token} tab="plan-editor" internshipOnly={false} />} />
+      <Route path="/admin/lecturer-guide" element={<ContextRedirect token={token} tab="guide-editor" internshipOnly={false} />} />
+      <Route path="/admin/registration-rules" element={<ContextRedirect token={token} tab="rules-editor" internshipOnly={true} />} />
 
-      <Route path="/reports/final" element={<ContextRedirect token={token} tab="students" internshipOnly={false} />} />
+      <Route path="/reports/final" element={<ContextRedirect token={token} tab="reports" internshipOnly={false} />} />
       <Route path="/company/:id" element={<CompanyDetail user={user} token={token} />} />
       <Route path="/plan" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
       <Route path="/lecturer-guide" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />

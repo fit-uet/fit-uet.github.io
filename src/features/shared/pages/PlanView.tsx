@@ -1,6 +1,7 @@
+import {useCampaignEditor} from '../../academic/CampaignEditorContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useNavigate } from 'react-router-dom';
+import {useCampaignNavigate as useNavigate} from '../../academic/useCampaignNavigate';
 import { useState, useEffect } from 'react';
 import { Edit2, Shield } from 'lucide-react';
 import { API_BASE, CACHE_TTL, cachedJsonFetch, DEFAULT_PLAN } from '../../../shared';
@@ -9,8 +10,10 @@ export function PlanView({ user }: { user: any }) {
   const [plan, setPlan] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const editor = useCampaignEditor();
 
   useEffect(() => {
+    if(editor){setPlan(editor.campaign.settings.plan || 'Khoa chưa cập nhật nội dung.');setLoading(false);return;}
     cachedJsonFetch<any>(`${API_BASE}/api/plan`, {
       cacheKey: 'markdown:plan',
       ttlMs: CACHE_TTL.markdown,
@@ -23,7 +26,7 @@ export function PlanView({ user }: { user: any }) {
         setPlan(DEFAULT_PLAN);
         setLoading(false);
       });
-  }, []);
+  }, [editor?.campaign.id,editor?.campaign.revision]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -31,9 +34,9 @@ export function PlanView({ user }: { user: any }) {
         <button onClick={() => navigate('/')} className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer mb-2 active:scale-[0.98]">&larr; Quay lại trang chủ</button>
         {user?.role === 'admin' && (
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => navigate('/admin/registration-rules')} className="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
+            {(!editor || editor.campaign.group==='internship') && <button onClick={() => navigate('/admin/registration-rules')} className="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
               <Shield size={14} className="text-slate-500" /> Cài đặt quy định
-            </button>
+            </button>}
             <button onClick={() => navigate('/admin/plan')} className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-[0.98]">
               <Edit2 size={14} /> Cài đặt kế hoạch
             </button>

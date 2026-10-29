@@ -1,6 +1,7 @@
+import {useCampaignEditor} from '../../academic/CampaignEditorContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useNavigate } from 'react-router-dom';
+import {useCampaignNavigate as useNavigate} from '../../academic/useCampaignNavigate';
 import { useState, useEffect } from 'react';
 import { Edit2 } from 'lucide-react';
 import { API_BASE, DEFAULT_LECTURER_GUIDE, CACHE_TTL, cachedJsonFetch } from '../../../shared';
@@ -9,8 +10,10 @@ export function LecturerGuideView({ token, user }: { token: string; user: any })
   const [guide, setGuide] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const editor = useCampaignEditor();
 
   useEffect(() => {
+    if(editor){setGuide(editor.campaign.settings.lecturerGuide || 'Khoa chưa cập nhật nội dung.');setLoading(false);return;}
     cachedJsonFetch<any>(`${API_BASE}/api/lecturer-guide`, {
       cacheKey: 'markdown:lecturer-guide',
       ttlMs: CACHE_TTL.markdown,
@@ -19,7 +22,7 @@ export function LecturerGuideView({ token, user }: { token: string; user: any })
       .then(data => setGuide(data?.guide || DEFAULT_LECTURER_GUIDE))
       .catch(() => setGuide(DEFAULT_LECTURER_GUIDE))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token,editor?.campaign.id,editor?.campaign.revision]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

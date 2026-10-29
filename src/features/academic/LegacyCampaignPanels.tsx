@@ -3,6 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../shared/ui';
 import { LegacyListScope } from './LegacyListScope';
 import { useParams } from 'react-router-dom';
+const PlanView=lazy(()=>import('../shared/pages/PlanView').then(module=>({default:module.PlanView})));
+const FAQView=lazy(()=>import('../shared/pages/FAQView').then(module=>({default:module.FAQView})));
+const ChatView=lazy(()=>import('../shared/pages/ChatView').then(module=>({default:module.ChatView})));
 const StudentFinalReportView = lazy(() => import('../student/pages/StudentFinalReportView').then(module => ({ default: module.StudentFinalReportView })));
 const Dashboard = lazy(() => import('../student/pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const LecturerGradeView = lazy(() => import('../lecturer/pages/LecturerGradeView').then(module => ({ default: module.LecturerGradeView })));
@@ -33,6 +36,10 @@ export function LegacyCampaignPanels({ token, user, tab, courseCode }: { token: 
   } else if (user.role === 'lecturer' || user.is_lecturer) {
     if (['students', 'assignments', 'reports'].includes(tab)) content = <LecturerHome {...props} user={user} />;
     if (tab === 'grades') content = <LecturerGradeView {...props} user={user} />;
-  } else if (tab === 'students') content = <><Dashboard token={token} user={user} setUser={value => { localStorage.setItem('user', JSON.stringify(value)); window.location.reload(); }} onAuthExpired={() => window.dispatchEvent(new Event('auth-expired'))} /><StudentFinalReportView token={token} user={user} /></>;
+  } else if (tab === 'students') content = <Dashboard token={token} user={user} setUser={value => { localStorage.setItem('user', JSON.stringify(value)); window.location.reload(); }} onAuthExpired={() => window.dispatchEvent(new Event('auth-expired'))} />;
+  if(user.role==='student'&&tab==='reports')content=<StudentFinalReportView token={token} user={user}/>;
+  if(tab==='plan')content=<PlanView user={user}/>;
+  if(tab==='questions')content=user.role==='admin'?<FAQQuestionsAdmin token={token}/>:<FAQView token={token} user={user}/>;
+  if(tab==='chat')content=<ChatView token={token} user={user}/>;
   return content ? <Suspense fallback={<p role="status">Đang tải chức năng…</p>}><LegacyListScope token={token} campaignId={campaignId}><section key={`${tab}:${courseCode}`} className="space-y-4">{content}</section></LegacyListScope></Suspense> : null;
 }

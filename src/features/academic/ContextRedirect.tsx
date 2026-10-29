@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import { academicApi } from './client';
 export function ContextRedirect({ token, tab, internshipOnly = false, view }: { token: string; tab: string; internshipOnly?: boolean; view?: string }) {
   const [target, setTarget] = useState('');
+  const params=useParams();const threadQuery=new URLSearchParams(Object.fromEntries(['groupLecturerId','studentUserId','lecturerId'].filter(key=>params[key]).map(key=>[key,params[key]!]))).toString();
   useEffect(() => { const a = new AbortController(); academicApi(token, '/api/me/campaigns?section=base', 'GET', undefined, a.signal).then(data => {
     if (a.signal.aborted) return;
     const choices = data.campaigns.filter(p => !internshipOnly || p.group === 'internship');
@@ -10,7 +11,7 @@ export function ContextRedirect({ token, tab, internshipOnly = false, view }: { 
       setTarget(`/internship/legacy?tab=${tab}`); return;
     }
     const p = choices.find(p => p.id === sessionStorage.getItem('academic:campaign')) || choices.find(p => p.legacy) || choices.find(p => p.status === 'active') || choices[0];
-    setTarget(p ? `/campaigns/${p.id}?tab=${tab}${view ? `&view=${view}` : ''}` : '/classes');
-  }).catch(e => { if (e.name !== 'AbortError' && !a.signal.aborted) setTarget('/classes'); }); return () => a.abort(); }, [token, tab, internshipOnly, view]);
+    setTarget(p ? `/campaigns/${p.id}?tab=${tab}${view ? `&view=${view}` : ''}${tab==='chat'&&threadQuery?'&'+threadQuery:''}` : '/classes');
+  }).catch(e => { if (e.name !== 'AbortError' && !a.signal.aborted) setTarget('/classes'); }); return () => a.abort(); }, [token, tab, internshipOnly, view, threadQuery]);
   return target ? <Navigate to={target} replace /> : <p role="status">Đang mở nhóm môn…</p>;
 }

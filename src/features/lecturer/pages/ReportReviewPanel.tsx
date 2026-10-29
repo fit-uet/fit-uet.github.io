@@ -57,7 +57,7 @@ interface Props {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // In-memory module cache for report PDF blobs to prevent redundant downloads across review sessions
-const pdfBlobCache = new Map<number, { blob: Blob; url: string; filename?: string; timestamp: number }>();
+const pdfBlobCache = new Map<string, { blob: Blob; url: string; etag:string; filename?: string; timestamp: number }>();
 export function clearReportReviewCache() {
   for (const item of pdfBlobCache.values()) URL.revokeObjectURL(item.url);
   pdfBlobCache.clear();
@@ -210,31 +210,30 @@ export function ReportReviewPanel({
       return;
     }
 
-    // Check memory cache first to avoid re-fetching across review clicks
-    const cached = pdfBlobCache.get(uid);
-    if (cached && (!target.report_filename || cached.filename === target.report_filename)) {
-      setPdfUrl(cached.url);
-      setPdfLoading(false);
-      setPdfError(null);
-      return;
-    }
-
+    const cacheKey=`${token}:${uid}`;const cached=pdfBlobCache.get(cacheKey);
+    const controller=new AbortController();
     setPdfLoading(true);
     setPdfError(null);
 
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/reports/final/${uid}/view`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}`, ...(cached?.etag?{'If-None-Match':cached.etag}:{}) },
+          signal:controller.signal,cache:'no-store',
         });
+        if(res.status===304&&cached){if(!cancelled)setPdfUrl(cached.url);return;}
         if (!res.ok) {
+          if(res.status===401||res.status===403)clearReportReviewCache();
           const body = await res.json().catch(() => ({}));
           throw new Error(body?.error || `HTTP ${res.status}`);
         }
         const blob = await res.blob();
         if (cancelled) return;
+        if(cached)URL.revokeObjectURL(cached.url);
+        pdfBlobCache.delete(cacheKey);
+        if(pdfBlobCache.size>=8){const oldest=pdfBlobCache.keys().next().value!;URL.revokeObjectURL(pdfBlobCache.get(oldest)!.url);pdfBlobCache.delete(oldest);}
         const url = URL.createObjectURL(blob);
-        pdfBlobCache.set(uid, { blob, url, filename: target.report_filename, timestamp: Date.now() });
+        pdfBlobCache.set(cacheKey, { blob, url, etag:res.headers.get('ETag')||'', filename: target.report_filename, timestamp: Date.now() });
         setPdfUrl(url);
       } catch (e: any) {
         if (!cancelled) setPdfError(e.message || 'Không tải được file báo cáo.');
@@ -244,7 +243,7 @@ export function ReportReviewPanel({
     })();
 
     return () => {
-      cancelled = true;
+      cancelled = true;controller.abort();
     };
   }, [uid, target.report_filename, token]);
 

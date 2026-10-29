@@ -1,7 +1,8 @@
+import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useNavigate } from 'react-router-dom';
+import {useCampaignNavigate as useNavigate} from '../../academic/useCampaignNavigate';
 import React, { useState, useEffect } from 'react';
 import { Upload, RefreshCw, Save, FileText } from 'lucide-react';
 import { API_BASE, convertDocxFileToMarkdown, clearJsonCache, PageDescriptionTooltip, DEFAULT_PLAN } from '../../../shared';
@@ -9,22 +10,25 @@ import { AdminSettingsSubNav } from '../components/AdminSettingsSubNav';
 
 export function PlanSettingsAdmin({ token }: { token: string }) {
   const navigate = useNavigate();
+  const editor = useCampaignEditor();
   const [planContent, setPlanContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importingDocx, setImportingDocx] = useState(false);
 
   useEffect(() => {
+    if(editor){setPlanContent(editor.campaign.settings.plan);setLoading(false);return;}
     fetch(`${API_BASE}/api/settings/plan`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setPlanContent(data?.plan || DEFAULT_PLAN))
       .catch(() => setPlanContent(DEFAULT_PLAN))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token,editor?.campaign.id]);
 
   const handleSavePlan = async () => {
     setSaving(true);
     try {
+      if(editor){await editor.save({plan:planContent});alert('Đã lưu nội dung nhóm môn.');return;}
       const res = await fetch(`${API_BASE}/api/settings/plan`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -81,7 +85,7 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
         </div>
         <button
           onClick={handleSavePlan}
-          disabled={saving}
+          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
           className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
         >
           {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Lưu kế hoạch
@@ -107,13 +111,13 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 className="hidden"
-                disabled={importingDocx}
+                disabled={importingDocx || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
                 onChange={handleImportDocx}
                 onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
               />
             </label>
             <button
-              onClick={() => setPlanContent(DEFAULT_PLAN)}
+              onClick={() => setPlanContent(editor?.campaign.group==='project'?'':DEFAULT_PLAN)}
               className="text-xs font-semibold text-slate-700 bg-white border border-black/[0.08] px-3.5 py-1.5 rounded-xl hover:bg-[#f8fafc] shadow-xs active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
             >
               Khôi phục mặc định
@@ -124,7 +128,7 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           <div className="p-5 border-b lg:border-b-0 lg:border-r border-slate-100">
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nội dung Kế hoạch triển khai</label>
-            <textarea
+            <textarea disabled={editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
               className="w-full min-h-[560px] border border-slate-200 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all font-mono bg-[#f8fafc]/50 focus:bg-white shadow-inner resize-y leading-relaxed text-slate-800"
               value={planContent}
               onChange={(e) => setPlanContent(e.target.value)}

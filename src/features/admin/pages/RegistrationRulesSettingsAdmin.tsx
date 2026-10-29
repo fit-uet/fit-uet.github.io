@@ -1,5 +1,6 @@
+import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
-import { useNavigate } from 'react-router-dom';
+import {useCampaignNavigate as useNavigate} from '../../academic/useCampaignNavigate';
 import { useState, useEffect } from 'react';
 import { RefreshCw, Save, Shield, ChevronLeft, RotateCcw, Code2, Eye } from 'lucide-react';
 import { API_BASE, DEFAULT_REGISTRATION_RULES, RegistrationRulesMarkdown, PageDescriptionTooltip } from '../../../shared';
@@ -7,20 +8,23 @@ import { AdminSettingsSubNav } from '../components/AdminSettingsSubNav';
 
 export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
   const navigate = useNavigate();
+  const editor = useCampaignEditor();
   const [rules, setRules] = useState(DEFAULT_REGISTRATION_RULES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if(editor){setRules(editor.campaign.settings.registrationRules);setLoading(false);return;}
     fetch(`${API_BASE}/api/settings/registration-rules`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
       .then((data) => setRules(data?.registration_rules_md || DEFAULT_REGISTRATION_RULES))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token,editor?.campaign.id]);
 
   const saveRules = async () => {
     setSaving(true);
     try {
+      if(editor){await editor.save({registrationRules:rules});alert('Đã lưu nội dung nhóm môn.');return;}
       const res = await fetch(`${API_BASE}/api/settings/registration-rules`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -87,7 +91,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
           </button>
           <button
             onClick={saveRules}
-            disabled={saving}
+            disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
@@ -114,7 +118,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
               </span>
             </div>
 
-            <textarea
+            <textarea disabled={editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
               value={rules}
               onChange={(e) => setRules(e.target.value)}
               placeholder="Nhập nội dung quy định theo định dạng Markdown..."
