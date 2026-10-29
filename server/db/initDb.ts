@@ -196,12 +196,15 @@ export async function ensureDbIndexes(force = false) {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_student_id_unique
       ON users(student_id)
       WHERE role = 'student' AND student_id IS NOT NULL AND student_id != '';
+    CREATE INDEX IF NOT EXISTS idx_users_student_id ON users(student_id);
+    CREATE INDEX IF NOT EXISTS idx_users_email_casefold ON users(lower(email));
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_name_unique ON companies(name);
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_lecturers_email_unique
       ON lecturers(email)
       WHERE email IS NOT NULL AND email != '';
+    CREATE INDEX IF NOT EXISTS idx_lecturers_email_casefold_trim ON lecturers(lower(trim(email)));
     CREATE INDEX IF NOT EXISTS idx_lecturers_name ON lecturers(name);
 
     CREATE INDEX IF NOT EXISTS idx_registrations_user_id ON registrations(user_id);

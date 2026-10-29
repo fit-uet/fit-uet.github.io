@@ -2,7 +2,20 @@ import { db } from '../db';
 import type { AuthenticatedUser } from '../types';
 import { recordCte } from '../academic/reads';
 
+const unreadCountsCache = new Map<number, { data: { notifications: number; chats: number }; expiresAt: number }>();
+
+export function invalidateUnreadCountsCache(userId?: number) {
+  if (userId != null) unreadCountsCache.delete(userId);
+  else unreadCountsCache.clear();
+}
+
 export async function unreadCounts(user: AuthenticatedUser) {
+  const now = Date.now();
+  const cached = unreadCountsCache.get(user.id);
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
   const permission = `EXISTS(SELECT 1 FROM records e WHERE json_extract(e.j,'$.status')='active' AND (lower(json_extract(e.j,'$.email'))=actor.email OR EXISTS(SELECT 1 FROM json_each(json_extract(e.j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=e.actorLecturerId)) AND (
     n.type='course_announcement' AND n.academic_campaign_id IS NOT NULL AND e.campaignId=n.academic_campaign_id AND (COALESCE(n.academic_audience_class_ids,'[]')='[]' OR e.class_id IN (SELECT value FROM json_each(n.academic_audience_class_ids)))
     OR (n.type!='course_announcement' OR n.academic_campaign_id IS NULL) AND e.class_id=n.academic_class_id AND (n.academic_enrollment_id IS NULL OR e.id=n.academic_enrollment_id)))`;
@@ -25,5 +38,8 @@ export async function unreadCounts(user: AuthenticatedUser) {
     SELECT (SELECT count(*) FROM latest WHERE read_at IS NULL) notifications,
       (SELECT count(*) FROM legacy_private)+(SELECT count(*) FROM legacy_group)+(SELECT count(*) FROM academic_unread) chats`,
     args: [user.role,user.email.trim().toLowerCase(),user.role==='lecturer'||user.role==='admin'||user.is_lecturer?1:0,'','',user.id,user.email,user.personal_email||'',user.personal_email||'',user.id,user.id,user.id,user.id,user.id,user.id,user.id,user.id] });
-  return { notifications: Number(result.rows[0].notifications), chats: Number(result.rows[0].chats) };
+  const data = { notifications: Number(result.rows[0].notifications), chats: Number(result.rows[0].chats) };
+  if (unreadCountsCache.size > 2000) unreadCountsCache.clear();
+  unreadCountsCache.set(user.id, { data, expiresAt: now + 20_000 });
+  return data;
 }
