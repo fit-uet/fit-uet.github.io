@@ -26,6 +26,7 @@
     "academic:membership": "tsx scripts/project-membership.ts",
     "academic:reviewers-reset": "tsx scripts/reset-project-reviewers.ts",
     "academic:campaign-migrate": "tsx scripts/migrate-campaigns.ts",
+    "database:failover-d1": "tsx scripts/failover-d1.ts",
     "production:backup": "tsx scripts/backup-production.ts",
     "production:check": "tsx scripts/check-production.ts"
   },

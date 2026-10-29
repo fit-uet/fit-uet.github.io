@@ -165,3 +165,5 @@ Sao lưu database và manifest/file R2 trước tác vụ bảo trì dữ liệu
 | Email giữ queued hoặc failed | Provider, sender, quota, cấu hình IP provider và lỗi trên lịch sử thông báo |
 | Cron không chạy thành công | Secrets/Variables GitHub Actions, CRON_SECRET backend và URL API |
 | Cần sửa phân công/điểm đã khóa | Khoa xử lý qua màn quản trị và quy trình được mô tả trong đặc tả |
+
+Vận hành tạm trên D1 khi Turso hết quota: [D1_FAILOVER.md](docs/D1_FAILOVER.md). Không tự chuyển ngược provider khi Turso hoạt động lại.

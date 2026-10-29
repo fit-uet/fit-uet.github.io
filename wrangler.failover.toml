@@ -1,0 +1,7 @@
+# D1 administration only. The application remains Express on Render.
+name = "internship-d1-failover-admin"
+compatibility_date = "2026-10-29"
+[[d1_databases]]
+binding = "DB"
+database_name = "internship-turso-failover-20261029"
+database_id = "bd58a106-1b64-473a-8211-896e84f6072e"

@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { caseInsensitiveGlob } from '../academic/reads';
+import { searchMatch } from './search';
 
 // Opt-in pagination keeps existing array/object responses intact for older clients.
 export async function legacyRows(req: any, sql: string, args: any[] = [], options: { name?: string; status?: string; sort?: Record<string,string> } = {}) {
@@ -18,7 +18,7 @@ export async function legacyRows(req: any, sql: string, args: any[] = [], option
     '/api/lecturer/grades':['internship_place']
   };
   const searchColumns=['student_id',name,'email','class_name',...(sql.includes('course_code')?['course_code']:[]),...(extraSearch[req.path]||[])];
-  if(q.q){filters.push(`(${searchColumns.map(c=>`COALESCE(${c},'')`).join("||' '||")}) GLOB ?`);values.push(caseInsensitiveGlob(String(q.q).trim()));}
+  if(q.q){const search=searchMatch(`(${searchColumns.map(c=>`COALESCE(${c},'')`).join("||' '||")})`,String(q.q).trim());filters.push(search.sql);values.push(...search.args);}
   if(q.courseCode){const code=String(q.courseCode).toUpperCase().match(/INT\d{4}/)?.[0];if(!code||!['INT4002','INT4003','INT3508'].includes(code)){req.legacyFilterError=true;return [];}filters.push(`instr(upper(COALESCE(course_code,'')),?)>0`);values.push(code);}
   if(q.classId){filters.push(`EXISTS(SELECT 1 FROM academic_classes c WHERE c.id=? AND json_extract(c.data,'$.legacy')=1 AND instr(upper(COALESCE(source.course_code,'')),json_extract(c.data,'$.courseCode'))>0)`);values.push(String(q.classId));}
   if(q.lecturerId){filters.push(`EXISTS(SELECT 1 FROM advisor_assignments a WHERE a.user_id=source.user_id AND a.lecturer_id=?)`);values.push(Number(q.lecturerId));}

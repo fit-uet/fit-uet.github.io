@@ -1,3 +1,6 @@
+import {searchMatch} from '../services/search';
+export {caseInsensitiveGlob} from '../services/search';
+import {compoundSelect} from '../services/compoundSelect';
 import { db } from '../db';
 import type { AuthenticatedUser } from '../types';
 import { COURSE_CATALOG, EMPTY_CLASS_SETTINGS, GROUP_NAMES, campaignKey, type CourseEnrollment, type AcademicClass } from '../../src/shared/academic';
@@ -47,7 +50,7 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
   const pageFilter = pageQuery ? listFilter(pageQuery) : null;
   const page = Math.max(1,Math.floor(Number(pageQuery?.page)||1)), limit=Math.min(100,Math.max(1,Math.floor(Number(pageQuery?.limit)||25)));
   const light = section === 'base' || section === 'overview' || section === 'management';
-  const result = (await db.execute({ sql: `${recordCte}
+  const result = (await db.execute({ sql: compoundSelect(`
     SELECT 'campaigns' kind,${light ? withoutContent('data') : 'data'} data FROM academic_campaigns WHERE (SELECT campaignId FROM actor)='' OR id=(SELECT campaignId FROM actor)
     UNION ALL SELECT 'classes',${light ? withoutContent('c.data') : 'c.data'} FROM academic_classes c WHERE (SELECT campaignId FROM actor)='' OR ${campaignIdSql}=(SELECT campaignId FROM actor)
     UNION ALL SELECT 'enrollments',j FROM records WHERE (SELECT enrollmentId FROM actor)!=''
@@ -61,7 +64,7 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
     UNION ALL SELECT 'unmapped',json_object('value',CASE WHEN (SELECT role FROM actor)='student' AND NOT EXISTS(SELECT 1 FROM academic_enrollments WHERE json_extract(data,'$.legacy')=1 AND lower(json_extract(data,'$.email'))=(SELECT email FROM actor)) THEN 1 ELSE 0 END)
     UNION ALL SELECT 'settings',json_object('key',key,'value',value) FROM settings WHERE EXISTS(SELECT 1 FROM academic_campaigns p WHERE json_extract(p.data,'$.legacy')=1 AND ((SELECT campaignId FROM actor)='' OR p.id=(SELECT campaignId FROM actor)))
     ${pageFilter?`UNION ALL SELECT 'pageCount',json_object('total',count(*),'studentCount',count(DISTINCT student_id)) FROM records WHERE ${pageFilter.sql}
-    UNION ALL SELECT 'pageItem',j FROM (SELECT * FROM records WHERE ${pageFilter.sql} ORDER BY student_id,classCode ${pageQuery.__all?'':'LIMIT ? OFFSET ?'})`:''}`, args: [...argsFor(actor, id, enrollmentId),...(pageFilter?[...pageFilter.args,...pageFilter.args,...(pageQuery.__all?[]:[limit,(page-1)*limit])]:[])] })).rows;
+    UNION ALL SELECT 'pageItem',j FROM (SELECT * FROM records WHERE ${pageFilter.sql} ORDER BY student_id,classCode ${pageQuery.__all?'':'LIMIT ? OFFSET ?'})`:''}`.split(/\n\s*UNION ALL /),recordCte), args: [...argsFor(actor, id, enrollmentId),...(pageFilter?[...pageFilter.args,...pageFilter.args,...(pageQuery.__all?[]:[limit,(page-1)*limit])]:[])] })).rows;
   const s: Snapshot = { revision: 0, campaigns: [], semesters: [], classes: [], enrollments: [], quotas: [], lecturers: [] };
   const counts = new Map<string, any>(), classCounts = new Map<string, number>(); let unmapped = false, targetExists = false; let pageCount:{total:number;studentCount:number}|undefined;
   const settings: any[] = []; const enrolledClasses = new Set<string>();
@@ -138,14 +141,11 @@ export async function readCampaignCatalog(actor: AuthenticatedUser, section = 'f
   readCache.set(cacheKey, { data: structuredClone(result), expiresAt: now + 30_000 });
   return result;
 }
-export function caseInsensitiveGlob(value: string) {
-  return '*' + Array.from(value.normalize('NFC')).map(c => c === '*' ? '[*]' : c === '?' ? '[?]' : c === '[' ? '[[]' : c.toLowerCase() !== c.toUpperCase() ? `[${c.toLowerCase()}${c.toUpperCase()}]` : c).join('') + '*';
-}
 function listFilter(query: Record<string, any>) {
   const filters=['1=1'];const args:any[]=[];
   for(const [name,sql] of [['classId','class_id'],['courseCode','courseCode']] as const) if(query[name]){filters.push(`${sql}=?`);args.push(String(query[name]));}
   if(query.lecturerId){filters.push(`EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=?)`);args.push(Number(query.lecturerId));}
-  if(query.q){filters.push(`(student_id||' '||json_extract(j,'$.name')||' '||json_extract(j,'$.topic')) GLOB ?`);args.push(caseInsensitiveGlob(String(query.q)));}
+  if(query.q){const search=searchMatch("(student_id||' '||json_extract(j,'$.name')||' '||json_extract(j,'$.topic'))",String(query.q));filters.push(search.sql);args.push(...search.args);}
   if(query.assignmentStatus){
     const has=(role:string)=>`EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.role')='${role}')`;
     const cases:Record<string,string>={missingPrimary:`NOT ${has('primary')}`,missingReviewer:`NOT ${has('reviewer')}`,complete:`${has('primary')} AND ${has('reviewer')}`};

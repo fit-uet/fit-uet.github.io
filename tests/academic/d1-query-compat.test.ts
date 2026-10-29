@@ -1,0 +1,7 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {createClient} from '@libsql/client';import {compoundSelect} from '../../server/services/compoundSelect';import {searchMatch} from '../../server/services/search';
+test('bounded compound reads preserve one result snapshot, ordering and parameters across many groups',async()=>{
+ const db=createClient({url:'file::memory:'});try{const sql=compoundSelect(Array.from({length:25},(_,i)=>`SELECT ${i} n,? value`));const result=await db.execute({sql,args:Array.from({length:25},(_,i)=>String(i))});assert.deepEqual(result.rows.map(r=>Number(r.n)),Array.from({length:25},(_,i)=>i));assert.equal(result.rows[24].value,'24');}finally{db.close();}
+});
+test('long Unicode search is case-insensitive and contiguous, treating wildcard characters literally',async()=>{
+ const db=createClient({url:'file::memory:'});try{await db.execute('CREATE TABLE people(name TEXT)');for(const name of ['Nguyễn Đức Hoàng Long','Nguyễn Đức khác Hoàng Long','Đề tài nghiên cứu [a]?_*'])await db.execute({sql:'INSERT INTO people VALUES(?)',args:[name]});for(const [q,expected] of [['NGUYỄN ĐỨC HOÀNG LONG','Nguyễn Đức Hoàng Long'],['ĐỀ TÀI NGHIÊN CỨU [A]?_*','Đề tài nghiên cứu [a]?_*']]){const search=searchMatch('name',q);const rows=(await db.execute({sql:'SELECT name FROM people WHERE '+search.sql,args:search.args})).rows;assert.deepEqual(rows.map(r=>r.name),[expected]);const chunks=JSON.parse(String(search.args[2]));assert.ok(chunks.every(c=>Buffer.byteLength(c.pattern)<=42));}}finally{db.close();}
+});
