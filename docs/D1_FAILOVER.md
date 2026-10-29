@@ -34,10 +34,12 @@ Không chỉ đổi `DB_PROVIDER` về Turso sau khi tài khoản được mở 
 1. Tạm dừng ghi, sao lưu D1 và lấy snapshot mới của Turso; giữ cả bản mốc 17:32 và manifest R2.
 2. Đối soát theo ID/khóa nghiệp vụ, phân biệt dữ liệu có trước và thay đổi sau mốc; giải quyết xung đột trên cả hai nguồn, giữ các thay đổi phát sinh ở D1. Không phục hồi đè một bản cũ hoặc tự khôi phục lần học đã xóa.
 3. Diễn tập dữ liệu đã hợp nhất trên bản sao, đối chiếu tài khoản/lần học/phân công/điểm/bài/tin nhắn/thông báo và sequence.
-4. Cập nhật Render về Turso đã đối soát, deploy, kiểm tra readiness/ba vai trò/PDF; chỉ mở ghi ở một nguồn. Giữ D1 và các backup để đối soát, không tự xóa sau cutover.
+4. Cập nhật cả `render.yaml` và Environment Render về Turso đã đối soát, deploy, kiểm tra readiness/ba vai trò/PDF; chỉ mở ghi ở một nguồn. Giữ D1 và các backup để đối soát, không tự xóa sau cutover.
 
 Sao lưu D1 dùng cấu hình quản trị riêng, không deploy Worker:
 
 ```sh
 npx wrangler d1 export internship-turso-failover-20261029 --remote --config wrangler.failover.toml --output=/private/d1-before-return.sql
 ```
+
+Đã phát hành Render/Pages ở commit `d049e9e`, readiness trả `databaseProvider=d1`. Báo cáo chi tiết nằm trong thư mục vận hành riêng, không chứa trong repo công khai. Bổ sung chỉ mục không unique theo `lower(users.email)` và `lower(trim(lecturers.email))` bằng `scripts/maintenance/d1-failover-indexes.sql` để các API xác thực dùng đúng index thay vì quét danh mục người dùng.

@@ -1,6 +1,6 @@
 # Triển khai bản quản lý học kỳ và nhóm môn
 
-Nguồn vận hành hiện tại: React trên GitHub Pages, Express trên Render, **Turso** cho database, Cloudflare R2 cho báo cáo và tệp trao đổi. D1 trong `wrangler.toml` là một nguồn khác; không dùng bản sao D1 để khôi phục Turso. Worker không chứa API học vụ mới và vẫn để tắt quy trình deploy.
+Nguồn vận hành hiện tại: React trên GitHub Pages, Express trên Render, **D1 tạm thời** cho database, Cloudflare R2 cho báo cáo và tệp trao đổi. Dùng đích tạm trong `wrangler.failover.toml` theo [D1_FAILOVER.md](D1_FAILOVER.md); D1 cũ trong `wrangler.toml` là nguồn khác, không được ghi đè. Turso được giữ để đối soát trước khi chuyển lại. Worker không chứa API học vụ mới và vẫn để tắt quy trình deploy.
 
 ## Sao lưu và diễn tập
 
