@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, MessageCircle, Paperclip, Send, Users, X } from 'lucide-react';
+import { Bell, CheckCircle2, CircleHelp, Download, Eye, MessageCircle, Paperclip, RefreshCw, Save, Search, Send, Users, X } from 'lucide-react';
 import { API_BASE } from '../../shared';
 import type { AcademicClassSummary, EnrollmentView, LecturerInfo } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
@@ -483,58 +483,511 @@ export function ClassChat({ token, user, data }: { token: string; user: any; dat
 
 type Question = { id: string; question: string; answer: string | null; created_at: string; answered_at: string | null; revision: number; asker_name?: string };
 export function ClassQuestions({ token, user, c }: { token: string; user: any; c: AcademicClassSummary }) {
-  const [rows, setRows] = useState<Question[]>([]); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
-  const load = useCallback(async (signal?: AbortSignal) => setRows(await academicApi(token, `/api/campaigns/${c.id}/questions`, 'GET', undefined, signal)), [token, c.id]);
+  const [rows, setRows] = useState<Question[]>([]);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'answered'>('all');
+  const [search, setSearch] = useState('');
+  const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async (signal?: AbortSignal) => {
+    const list = await academicApi(token, `/api/campaigns/${c.id}/questions`, 'GET', undefined, signal);
+    setRows(list);
+    setAnswerDrafts(prev => {
+      const next = { ...prev };
+      list.forEach((q: Question) => {
+        if (next[q.id] === undefined) next[q.id] = q.answer || '';
+      });
+      return next;
+    });
+  }, [token, c.id]);
+
   useEffect(() => {
     const a = new AbortController();
-    const update = () => { if(document.visibilityState==='visible')load(a.signal).catch(e=>{if(e.name!=='AbortError')setError(e.message);}); };
-    update(); document.addEventListener('visibilitychange',update); window.addEventListener('api-data-changed',update); window.addEventListener('api-force-refresh',update);
-    return () => {a.abort();document.removeEventListener('visibilitychange',update);window.removeEventListener('api-data-changed',update); window.removeEventListener('api-force-refresh',update);};
+    const update = () => {
+      if (document.visibilityState === 'visible') load(a.signal).catch(e => { if (e.name !== 'AbortError') setError(e.message); });
+    };
+    update();
+    document.addEventListener('visibilitychange', update);
+    window.addEventListener('api-data-changed', update);
+    window.addEventListener('api-force-refresh', update);
+    return () => {
+      a.abort();
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('api-data-changed', update);
+      window.removeEventListener('api-force-refresh', update);
+    };
   }, [load]);
-  const run = async (fn: () => Promise<unknown>) => { setBusy(true); setError(''); try { await fn(); await load(); } catch (e) { setError(e.message); } finally { setBusy(false); } };
-  return <section className="bg-white border border-slate-200 rounded-2xl shadow-xs p-5 space-y-4">
-    <div className="border-b border-slate-100 pb-3 flex items-center justify-between gap-2">
-      <div>
-        <h3 className="font-bold text-base text-slate-900">Hỏi đáp với Khoa</h3>
-        <p className="text-xs text-slate-500 mt-0.5">Câu hỏi được hiển thị cho cả nhóm môn sau khi Khoa trả lời. Các câu chưa trả lời chỉ hiện với người hỏi và Khoa.</p>
-      </div>
-    </div>
-    {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
-    <div className="space-y-3">
-      {rows.map(q => <article key={q.id} className="border border-slate-200 rounded-2xl p-4.5 space-y-3 bg-white shadow-xs">
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-sm text-slate-900 whitespace-pre-wrap break-words">{q.question}</p>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${q.answer ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
-            {q.answer ? 'Đã trả lời' : 'Chờ phản hồi'}
-          </span>
+
+  const run = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setError('');
+    try {
+      await fn();
+      await load();
+    } catch (e: any) {
+      setError(e.message || 'Thao tác thất bại.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleAnswer = async (q: Question) => {
+    const answer = String(answerDrafts[q.id] || '').trim();
+    if (!answer) return alert('Vui lòng nhập câu trả lời.');
+    setAnsweringId(q.id);
+    try {
+      await academicApi(token, `/api/admin/campaigns/${c.id}/questions/${q.id}`, 'PUT', { answer, expectedRevision: q.revision });
+      await load();
+    } catch (e: any) {
+      alert(e.message || 'Lưu câu trả lời thất bại.');
+    } finally {
+      setAnsweringId(null);
+    }
+  };
+
+  const handleAsk = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const qText = newQuestion.trim();
+    if (!qText || submitting) return;
+    setSubmitting(true);
+    try {
+      await academicApi(token, `/api/campaigns/${c.id}/questions`, 'POST', { question: qText });
+      setNewQuestion('');
+      await load();
+    } catch (err: any) {
+      alert(err.message || 'Gửi câu hỏi thất bại.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const pendingCount = rows.filter(q => !q.answer).length;
+  const answeredCount = rows.filter(q => !!q.answer).length;
+
+  const filtered = rows.filter(q => {
+    if (filter === 'pending' && q.answer) return false;
+    if (filter === 'answered' && !q.answer) return false;
+    if (search.trim()) {
+      const s = search.toLowerCase();
+      const matchQ = q.question.toLowerCase().includes(s);
+      const matchA = (q.answer || '').toLowerCase().includes(s);
+      const matchAsker = (q.asker_name || '').toLowerCase().includes(s);
+      return matchQ || matchA || matchAsker;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {error && (
+        <div role="alert" className="rounded-xl border border-red-200/80 bg-[#fee2e2] p-4 text-xs font-medium text-[#d70015]">
+          {error}
         </div>
-        {q.asker_name && <p className="text-xs text-slate-500">Người hỏi: {q.asker_name}</p>}
-        {q.answer ? (
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm text-slate-800">
-            <span className="font-semibold text-xs text-[#034ea1] block mb-1">Khoa CNTT trả lời:</span>
-            <p className="text-sm whitespace-pre-wrap break-words text-slate-800">{q.answer}</p>
+      )}
+
+      {/* Main card */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="font-bold text-slate-900 flex items-center gap-2 text-base">
+              <CircleHelp size={18} className="text-[#034ea1]" /> Hỏi đáp với Khoa CNTT
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              {user.role === 'admin'
+                ? `Còn ${pendingCount} câu hỏi đang chờ phản hồi. Câu trả lời sẽ hiển thị cho toàn bộ sinh viên/giảng viên trong nhóm môn.`
+                : 'Đặt câu hỏi và nhận giải đáp từ Khoa CNTT. Câu hỏi đã trả lời sẽ được chia sẻ cho cả nhóm môn.'}
+            </p>
           </div>
-        ) : (
-          <p className="text-xs text-slate-500 italic">Đang chờ Khoa trả lời.</p>
-        )}
-        {user.role === 'admin' && <form className="space-y-2 pt-2 border-t border-slate-100" onSubmit={e => { e.preventDefault(); const answer = new FormData(e.currentTarget).get('answer'); run(() => academicApi(token, `/api/admin/campaigns/${c.id}/questions/${q.id}`, 'PUT', { answer, expectedRevision: q.revision })); }}><FormField label="Câu trả lời"><textarea key={q.revision} className={academicInput} name="answer" defaultValue={q.answer || ''} required maxLength={10000} disabled={c.status !== 'active'} /></FormField><Button type="submit" size="sm" disabled={busy || c.status !== 'active'}>Lưu câu trả lời</Button></form>}
-      </article>)}
+          <button
+            onClick={() => load()}
+            disabled={busy}
+            className="bg-white text-slate-700 border border-black/[0.08] px-3.5 py-1.5 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={`text-slate-500 ${busy ? 'animate-spin' : ''}`} /> Tải lại
+          </button>
+        </div>
+
+        {/* Filter bar */}
+        <div className="px-5 py-3 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl text-xs font-semibold">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                filter === 'all' ? 'bg-white text-[#034ea1] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Tất cả ({rows.length})
+            </button>
+            <button
+              onClick={() => setFilter('pending')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                filter === 'pending' ? 'bg-white text-[#034ea1] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Chờ trả lời ({pendingCount})
+            </button>
+            <button
+              onClick={() => setFilter('answered')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                filter === 'answered' ? 'bg-white text-[#034ea1] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Đã trả lời ({answeredCount})
+            </button>
+          </div>
+
+          <div className="relative min-w-[220px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Tìm câu hỏi, người hỏi..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] transition-all text-slate-800 placeholder-slate-400"
+            />
+          </div>
+        </div>
+
+        {/* Question List */}
+        <div className="divide-y divide-slate-100">
+          {!filtered.length ? (
+            <div className="p-12 text-center text-xs text-slate-400 font-medium">
+              {rows.length === 0
+                ? 'Chưa có câu hỏi nào trong nhóm môn.'
+                : 'Không tìm thấy câu hỏi phù hợp với bộ lọc.'}
+            </div>
+          ) : (
+            filtered.map(q => {
+              const isAnswered = !!q.answer;
+              return (
+                <article key={q.id} className="p-5 transition-colors hover:bg-slate-50/50">
+                  {user.role === 'admin' ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.3fr] gap-5">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isAnswered
+                              ? 'bg-[#dcfce7] text-[#1d833f] border border-emerald-200/60'
+                              : 'bg-[#ffedd5] text-[#b25e00] border border-amber-200/60'
+                          }`}>
+                            {isAnswered ? 'Đã trả lời' : 'Chờ phản hồi'}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {q.created_at ? new Date(q.created_at).toLocaleString('vi-VN') : ''}
+                          </span>
+                        </div>
+                        {q.asker_name && (
+                          <div className="text-xs font-semibold text-slate-800 mb-2">
+                            Người hỏi: <span className="text-[#034ea1]">{q.asker_name}</span>
+                          </div>
+                        )}
+                        <div className="text-xs font-medium text-slate-800 whitespace-pre-wrap bg-[#f8fafc] border border-slate-200/80 rounded-xl p-3.5 leading-relaxed">
+                          {q.question}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <textarea
+                          value={answerDrafts[q.id] ?? (q.answer || '')}
+                          onChange={e => setAnswerDrafts(prev => ({ ...prev, [q.id]: e.target.value }))}
+                          rows={4}
+                          disabled={c.status !== 'active'}
+                          placeholder="Nhập câu trả lời của Khoa..."
+                          className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-[#f8fafc]/50 focus:bg-white resize-y font-medium text-slate-700 leading-relaxed disabled:opacity-50"
+                        />
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-[11px] text-slate-400">
+                            {q.answered_at ? `Đã trả lời lúc ${new Date(q.answered_at).toLocaleString('vi-VN')}` : 'Chưa có câu trả lời'}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleAnswer(q)}
+                            disabled={answeringId === q.id || c.status !== 'active'}
+                            className="bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            {answeringId === q.id ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
+                            <span>{isAnswered ? 'Cập nhật trả lời' : 'Lưu câu trả lời'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isAnswered
+                                ? 'bg-[#dcfce7] text-[#1d833f] border border-emerald-200/60'
+                                : 'bg-[#ffedd5] text-[#b25e00] border border-amber-200/60'
+                            }`}>
+                              {isAnswered ? 'Đã trả lời' : 'Chờ phản hồi'}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {q.created_at ? new Date(q.created_at).toLocaleString('vi-VN') : ''}
+                            </span>
+                          </div>
+                          <p className="font-semibold text-sm text-slate-900 whitespace-pre-wrap leading-relaxed pt-1">
+                            {q.question}
+                          </p>
+                          {q.asker_name && (
+                            <p className="text-[11px] text-slate-400">Người hỏi: {q.asker_name}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {q.answer ? (
+                        <div className="bg-[#e8f1fb]/50 border border-blue-100 rounded-xl p-4 text-xs text-slate-800 space-y-1 mt-2">
+                          <div className="font-bold text-[#034ea1] text-xs flex items-center gap-1.5">
+                            <CheckCircle2 size={14} className="text-blue-600" /> Khoa Công nghệ Thông tin trả lời:
+                          </div>
+                          <p className="text-xs whitespace-pre-wrap leading-relaxed text-slate-800 pt-1">
+                            {q.answer}
+                          </p>
+                          {q.answered_at && (
+                            <div className="text-[10px] text-slate-400 pt-1">
+                              Trả lời lúc {new Date(q.answered_at).toLocaleString('vi-VN')}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-amber-700/80 italic bg-amber-50/60 border border-amber-100 rounded-xl p-3">
+                          Câu hỏi đã được gửi đến Khoa và đang chờ phản hồi.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </article>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Student/Lecturer asking form */}
+      {user.role !== 'admin' && c.status === 'active' && (
+        <form onSubmit={handleAsk} className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#034ea1] flex items-center justify-center">
+              <Send size={15} />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-slate-900">Đặt câu hỏi mới cho Khoa</h4>
+              <p className="text-[11px] text-slate-400">Câu hỏi sẽ được chuyển đến ban điều phối học phần của Khoa.</p>
+            </div>
+          </div>
+
+          <textarea
+            value={newQuestion}
+            onChange={e => setNewQuestion(e.target.value)}
+            required
+            maxLength={2000}
+            rows={3}
+            placeholder="Nhập nội dung thắc mắc hoặc câu hỏi cần giải đáp..."
+            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all bg-slate-50/50 focus:bg-white resize-y font-medium text-slate-700 leading-relaxed"
+          />
+
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] text-slate-400">
+              {newQuestion.length}/2000 ký tự
+            </span>
+            <button
+              type="submit"
+              disabled={!newQuestion.trim() || submitting}
+              className="bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+            >
+              <span>{submitting ? 'Đang gửi...' : 'Gửi câu hỏi'}</span>
+              <Send size={13} />
+            </button>
+          </div>
+        </form>
+      )}
     </div>
-    {user.role !== 'admin' && c.status === 'active' && <form className="space-y-3 bg-slate-50/80 p-4 border border-slate-200 rounded-2xl" onSubmit={e => { e.preventDefault(); const form = e.currentTarget; const question = new FormData(form).get('question'); run(async () => { await academicApi(token, `/api/campaigns/${c.id}/questions`, 'POST', { question }); form.reset(); }); }}><FormField label="Câu hỏi mới"><textarea className={academicInput} name="question" required maxLength={2000} placeholder="Nhập nội dung câu hỏi gửi Khoa..." /></FormField><Button type="submit" disabled={busy}>Gửi câu hỏi</Button></form>}
-    {!rows.length && <p className="text-sm text-slate-500 text-center py-6">Chưa có câu hỏi.</p>}
-  </section>;
+  );
 }
 
 export function ClassAnnouncement({ token, c, filters = {}, scopeLabel }: { token: string; c: AcademicClassSummary; filters?: Record<string, string>; scopeLabel?: string }) {
-  const [busy, setBusy] = useState(false); const [notice, setNotice] = useState(''); const [preview, setPreview] = useState<any>(null);
-  useEffect(() => { setPreview(null); setNotice(''); }, [c.id, JSON.stringify(filters)]);
-  return <section className="bg-white border rounded-xl p-5 space-y-4"><h3 className="font-semibold">Thông báo nhóm môn</h3><p className="text-sm text-slate-500">Phạm vi gửi: {scopeLabel || 'Toàn nhóm môn trong học kỳ'}. Chỉ sinh viên đang tham gia và giảng viên được phân công được nhận.</p>
-    {notice && <p role="status" className="text-sm">{notice}</p>}
-    <form className="space-y-3" onChange={() => setPreview(null)} onSubmit={async e => { e.preventDefault(); const f = new FormData(e.currentTarget); setBusy(true); setNotice(''); setPreview(null); try { setPreview(await academicApi(token, `/api/admin/campaigns/${c.id}/announcements/preview`, 'POST', { subject: f.get('subject'), body: f.get('body'), deliveryMode: f.get('deliveryMode'), includeLecturers: f.has('includeLecturers'), ...filters })); } catch (e) { setNotice(e.message); } finally { setBusy(false); } }}>
-      <FormField label="Tiêu đề"><input name="subject" className={academicInput} required maxLength={300} /></FormField><FormField label="Nội dung"><textarea name="body" className={academicInput} required rows={5} maxLength={10000} /></FormField>
-      <FormField label="Phương thức gửi"><select name="deliveryMode" className={academicInput}><option value="website_only">Chỉ thông báo trong hệ thống</option><option value="website_and_email">Thông báo và gửi email</option></select></FormField>
-      <label className="text-sm flex gap-2"><input type="checkbox" name="includeLecturers" />Gửi cả giảng viên trong phạm vi</label><Button type="submit" variant="primary" disabled={busy || c.status !== 'active'}>Xem trước người nhận</Button>
-    </form>
-    {preview && <div className="border rounded-xl p-4 space-y-3 bg-slate-50"><h4 className="font-semibold">Kiểm tra trước khi gửi · {preview.recipients.length} người nhận</h4><p className="text-sm font-medium">{preview.subject}</p><p className="text-sm whitespace-pre-wrap break-words">{preview.body}</p><p className="text-xs text-slate-500">{preview.deliveryMode === 'website_and_email' ? 'Thông báo trong hệ thống và email' : 'Chỉ thông báo trong hệ thống'}</p><div className="max-h-60 overflow-y-auto text-sm">{preview.recipients.map(r => <p key={r.email}>{r.name} · {r.email} · {r.role === 'lecturer' ? 'Giảng viên' : 'Sinh viên'}</p>)}</div><Button variant="primary" disabled={busy || c.status !== 'active' || !preview.recipients.length} onClick={async () => { setBusy(true); setNotice(''); try { const r = await academicApi(token, `/api/admin/announcement-previews/${preview.id}/apply`, 'POST'); setNotice(`Đã tạo thông báo cho ${r.created} người nhận.`); setPreview(null); } catch (e) { setNotice(e.message); setPreview(null); } finally { setBusy(false); } }}>Gửi thông báo</Button></div>}
-  </section>;
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [preview, setPreview] = useState<any>(null);
+
+  useEffect(() => {
+    setPreview(null);
+    setNotice('');
+  }, [c.id, JSON.stringify(filters)]);
+
+  return (
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {notice && (
+        <div role="status" className="rounded-xl border border-blue-200/80 bg-[#e8f1fb] p-4 text-xs font-semibold text-[#034ea1]">
+          {notice}
+        </div>
+      )}
+
+      {/* Main card */}
+      <section className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6 space-y-5">
+        <div className="flex items-start justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <Bell size={18} className="text-[#034ea1]" /> Soạn thông báo nhóm môn
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Phạm vi gửi: <strong className="text-slate-800">{scopeLabel || 'Toàn nhóm môn trong học kỳ'}</strong>. Chỉ sinh viên đang tham gia và giảng viên được phân công trong phạm vi sẽ nhận được thông báo.
+            </p>
+          </div>
+        </div>
+
+        <form
+          className="space-y-4"
+          onChange={() => setPreview(null)}
+          onSubmit={async e => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            setBusy(true);
+            setNotice('');
+            setPreview(null);
+            try {
+              const res = await academicApi(token, `/api/admin/campaigns/${c.id}/announcements/preview`, 'POST', {
+                subject: f.get('subject'),
+                body: f.get('body'),
+                deliveryMode: f.get('deliveryMode'),
+                includeLecturers: f.has('includeLecturers'),
+                ...filters,
+              });
+              setPreview(res);
+            } catch (err: any) {
+              setNotice(err.message || 'Lỗi kiểm tra người nhận.');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <FormField label="Tiêu đề thông báo">
+            <input
+              name="subject"
+              className={academicInput}
+              required
+              maxLength={300}
+              placeholder="Nhập tiêu đề thông báo ngắn gọn, rõ ràng..."
+            />
+          </FormField>
+
+          <FormField label="Nội dung thông báo">
+            <textarea
+              name="body"
+              className={academicInput}
+              required
+              rows={5}
+              maxLength={10000}
+              placeholder="Nhập chi tiết nội dung thông báo gửi đến sinh viên / giảng viên..."
+            />
+          </FormField>
+
+          <div className="grid sm:grid-cols-2 gap-4 items-center">
+            <FormField label="Phương thức gửi">
+              <select name="deliveryMode" className={academicInput}>
+                <option value="website_only">Chỉ thông báo trong hệ thống website</option>
+                <option value="website_and_email">Thông báo trong website và gửi email</option>
+              </select>
+            </FormField>
+
+            <div className="sm:pt-5">
+              <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                <input
+                  type="checkbox"
+                  name="includeLecturers"
+                  className="rounded border-slate-300 text-[#034ea1] focus:ring-[#034ea1]"
+                />
+                <Users size={15} className="text-slate-500" />
+                <span>Gửi kèm cả giảng viên trong phạm vi</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <Button type="submit" variant="primary" disabled={busy || c.status !== 'active'}>
+              Xem trước người nhận
+            </Button>
+          </div>
+        </form>
+
+        {/* Preview card */}
+        {preview && (
+          <div className="border border-blue-200 bg-[#f0f7ff]/70 rounded-2xl p-5 space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-blue-100">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={18} className="text-[#034ea1]" />
+                <h4 className="font-bold text-sm text-slate-900">
+                  Kiểm tra trước khi gửi · <span className="text-[#034ea1]">{preview.recipients.length} người nhận</span>
+                </h4>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#034ea1] border border-blue-200">
+                {preview.deliveryMode === 'website_and_email' ? 'Website + Email' : 'Chỉ Website'}
+              </span>
+            </div>
+
+            <div className="space-y-2 bg-white border border-blue-100/80 rounded-xl p-4">
+              <div className="font-semibold text-xs text-slate-900">{preview.subject}</div>
+              <div className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{preview.body}</div>
+            </div>
+
+            <div>
+              <div className="text-xs font-bold text-slate-700 mb-2">
+                Danh sách người nhận ({preview.recipients.length}):
+              </div>
+              <div className="max-h-56 overflow-y-auto bg-white border border-blue-100/80 rounded-xl divide-y divide-slate-100">
+                {preview.recipients.map((r: any) => (
+                  <div key={r.email} className="px-3.5 py-2 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-semibold text-slate-800">{r.name}</span>
+                      <span className="text-slate-400 ml-2 font-mono text-[11px]">{r.email}</span>
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      r.role === 'lecturer' ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {r.role === 'lecturer' ? 'Giảng viên' : 'Sinh viên'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="secondary"
+                disabled={busy}
+                onClick={() => setPreview(null)}
+              >
+                Hủy xem trước
+              </Button>
+              <Button
+                variant="primary"
+                disabled={busy || c.status !== 'active' || !preview.recipients.length}
+                onClick={async () => {
+                  setBusy(true);
+                  setNotice('');
+                  try {
+                    const r = await academicApi(token, `/api/admin/announcement-previews/${preview.id}/apply`, 'POST');
+                    setNotice(`Đã tạo thông báo thành công cho ${r.created} người nhận.`);
+                    setPreview(null);
+                  } catch (e: any) {
+                    setNotice(e.message || 'Lỗi gửi thông báo.');
+                    setPreview(null);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Xác nhận gửi thông báo
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { UserCheck } from 'lucide-react';
 import { CampaignToolbarActions } from './CampaignLayoutContext';
 import { EnrollmentDialog } from './EnrollmentDialog';
 import type { AcademicClassSummary, LecturerInfo } from '../../shared/academic';
@@ -26,7 +27,7 @@ export function ReviewerPanel({ token, c, lecturers, quotas, refresh }: { token:
   const close = () => { if (request.current) { request.current.abort(); request.current = null; epoch.current++; setBusy(false); } setVisible(false); };
   const start = () => { setPreview(null); setOverrides({}); setScope('semester'); setDirty(false); setVisible(true); void inspect('semester', {}); };
   return <>
-    <CampaignToolbarActions><Button id={triggerId} aria-label="Phân công GV nhận xét" variant="primary" disabled={busy || c.status !== 'active'} onClick={start}>Phân công</Button></CampaignToolbarActions>
+    <CampaignToolbarActions><Button id={triggerId} aria-label="Phân công GV nhận xét" variant="primary" leadingIcon={<UserCheck size={14} />} disabled={busy || c.status !== 'active'} onClick={start}>Phân công GVNX</Button></CampaignToolbarActions>
     {visible && <EnrollmentDialog title="Phân công GV nhận xét" close={close} returnFocus={()=>document.getElementById(triggerId)}><section className="space-y-4">
     <p className="text-sm text-slate-500">Ưu tiên cùng bộ môn GVHD, cân bằng số bài trong học kỳ. Kiểm tra phương án rồi bấm <strong>Xác nhận phân công</strong> để lưu. Phân công đã có được giữ nguyên; hệ thống không tự phân công khi mở trang.</p>
     {message && <p role="status" className="text-sm bg-blue-50 text-blue-900 p-3 rounded-lg">{message}</p>}
