@@ -19,6 +19,14 @@ services:
         sync: false
       - key: VITE_GOOGLE_API_KEY
         sync: false
+      - key: DB_PROVIDER
+        value: d1
+      - key: CLOUDFLARE_ACCOUNT_ID
+        value: 7f6e0debd543c1ec1871f4f6d2c03dd5
+      - key: CLOUDFLARE_DATABASE_ID
+        value: bd58a106-1b64-473a-8211-896e84f6072e
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
       - key: TURSO_DATABASE_URL
         sync: false
       - key: TURSO_AUTH_TOKEN

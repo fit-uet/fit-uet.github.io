@@ -1,3 +1,4 @@
+import {compoundSelect} from '../services/compoundSelect';
 import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { COURSE_CATALOG, EMPTY_CLASS_SETTINGS, campaignKey, type AcademicClass, type AcademicSemester, type CourseEnrollment, type LecturerInfo, type CourseCampaign } from '../../src/shared/academic';
@@ -18,13 +19,13 @@ export interface Snapshot {
 export async function snapshot(): Promise<Snapshot> {
   // One SELECT observes a consistent snapshot. Keep individual records in separate
   // rows instead of aggregating years of submissions into one oversized D1 cell.
-  const rows = (await db.execute(`SELECT 'revision' kind,CAST(revision AS TEXT) data FROM academic_meta WHERE id=1
+  const rows = (await db.execute(compoundSelect(`SELECT 'revision' kind,CAST(revision AS TEXT) data FROM academic_meta WHERE id=1
     UNION ALL SELECT 'semesters',data FROM academic_semesters
     UNION ALL SELECT 'campaigns',data FROM academic_campaigns
     UNION ALL SELECT 'classes',data FROM academic_classes
     UNION ALL SELECT 'enrollments',data FROM academic_enrollments
     UNION ALL SELECT 'quotas',data FROM academic_quotas
-    UNION ALL SELECT 'lecturers',json_object('id',id,'name',name,'email',COALESCE(email,''),'work_unit',COALESCE(work_unit,'')) FROM lecturers`)).rows;
+    UNION ALL SELECT 'lecturers',json_object('id',id,'name',name,'email',COALESCE(email,''),'work_unit',COALESCE(work_unit,'')) FROM lecturers`.split(/\n\s*UNION ALL /)))).rows;
   const result: Snapshot = { revision: 0, campaigns: [], semesters: [], classes: [], enrollments: [], quotas: [], lecturers: [] };
   for (const row of rows) {
     if (row.kind === 'revision') result.revision = Number(row.data);

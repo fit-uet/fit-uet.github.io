@@ -12,7 +12,7 @@ healthRouter.get('/api/ready', async (_req, res) => {
       console.warn('[ready] Version 3 not found in academic_schema_migrations');
       throw new Error('Schema not ready');
     }
-    res.json({ status: 'ready', ...metadata(), database: 'ok', academicSchema: 3 });
+    res.json({ status: 'ready', ...metadata(), database: 'ok', databaseProvider: (process.env.DB_PROVIDER || (process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_D1_API_TOKEN ? 'd1' : 'turso')).toLowerCase(), academicSchema: 3 });
   } catch (err: any) {
     const errMsg = String(err?.message || err);
     console.error('[ready error]:', errMsg);
