@@ -10,8 +10,8 @@ const campaignIdSql = `COALESCE(json_extract(c.data,'$.campaignId'),c.semester_i
 const withoutContent = (data: string) => `json_remove(${data},'$.settings.plan','$.settings.lecturerGuide','$.settings.studentFaq','$.settings.lecturerFaq','$.settings.registrationRules')`;
 // Read models use one consistent SQL snapshot, filter before transferring rows,
 // and join live legacy assignments rather than treating the academic copy as truth.
-export const recordCte = `WITH actor_input AS (SELECT ? role,? email,? lecturer,? campaignId,? enrollmentId), actor AS (SELECT role,email,lecturer,CASE WHEN enrollmentId!='' THEN (SELECT ${campaignIdSql} FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id WHERE e.id=actor_input.enrollmentId) ELSE campaignId END campaignId,enrollmentId FROM actor_input),
- raw AS (
+export const recordCte = `WITH actor_input AS MATERIALIZED (SELECT ? role,? email,? lecturer,? campaignId,? enrollmentId), actor AS MATERIALIZED (SELECT role,email,lecturer,CASE WHEN enrollmentId!='' THEN (SELECT ${campaignIdSql} FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id WHERE e.id=actor_input.enrollmentId) ELSE campaignId END campaignId,enrollmentId FROM actor_input),
+ raw AS MATERIALIZED (
  SELECT e.id,e.class_id,e.student_id,c.code classCode,json_extract(c.data,'$.courseCode') courseCode,${campaignIdSql} campaignId,
  COALESCE(json_extract(p.data,'$.status'),'draft') campaignStatus,
  CASE WHEN json_extract(e.data,'$.legacy')=1 THEN
@@ -26,19 +26,19 @@ export const recordCte = `WITH actor_input AS (SELECT ? role,? email,? lecturer,
  LEFT JOIN users u ON json_extract(e.data,'$.legacy')=1 AND u.student_id=e.student_id
  LEFT JOIN final_reports fr ON fr.user_id=u.id LEFT JOIN grades g ON g.user_id=u.id CROSS JOIN actor
  WHERE (actor.campaignId='' OR ${campaignIdSql}=actor.campaignId) AND (actor.enrollmentId='' OR e.id=actor.enrollmentId)
- ), pairs AS (
+ ), pairs AS MATERIALIZED (
  SELECT *,json_extract(j,'$.versions[#-1]') v,
  json_extract(j,'$.evaluations."'||json_extract(j,'$.versions[#-1].id')||'".advisor') advisor,
  json_extract(j,'$.evaluations."'||json_extract(j,'$.versions[#-1].id')||'".reviewer') reviewer,
  (SELECT id FROM lecturers,actor WHERE actor.lecturer=1 AND lower(trim(lecturers.email))=actor.email LIMIT 1) actorLecturerId
  FROM raw
- ), visible AS (
+ ), visible AS MATERIALIZED (
  SELECT *, CASE WHEN actor.role='admin' OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=actorLecturerId AND json_extract(a.value,'$.role') IN ('primary','reviewer')) THEN 1 ELSE 0 END canSeeGrades,
  CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.evaluations."'||json_extract(v,'$.id')||'"')) WHERE value IS NOT NULL) THEN 1 ELSE 0 END hasGrade,
  CASE WHEN courseCode IN ('INT3131','INT3132') THEN CASE WHEN advisor IS NOT NULL AND reviewer IS NOT NULL AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(advisor,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(advisor,'$.lecturerId') AND json_extract(a.value,'$.role')='primary') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(reviewer,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(reviewer,'$.lecturerId') AND json_extract(a.value,'$.role')='reviewer') THEN 1 ELSE 0 END ELSE CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL THEN 1 ELSE 0 END END complete,
  CASE WHEN courseCode IN ('INT3131','INT3132') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.versions')) WHERE json_extract(value,'$.state')='submitted') AND json_extract(v,'$.topicVersion') IS NOT json_extract(j,'$.topicReview.version') THEN 1 ELSE 0 END requiresResubmission
  FROM pairs CROSS JOIN actor WHERE actor.role='admin' OR campaignStatus!='draft' AND json_extract(j,'$.status')='active' AND (actor.role='student' AND lower(json_extract(j,'$.email'))=actor.email OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=actorLecturerId))
- ), records AS (
+ ), records AS MATERIALIZED (
  SELECT *,CASE WHEN json_extract(j,'$.lockedAt') IS NOT NULL THEN 'locked' WHEN complete=1 THEN 'complete' WHEN hasGrade=1 THEN 'partial' ELSE 'missing' END gradeStatus FROM visible
  )`;
 const argsFor = (actor: AuthenticatedUser, id = '', enrollmentId = '') => [actor.role, actor.email.trim().toLowerCase(), actor.role === 'lecturer' || actor.role === 'admin' || actor.is_lecturer ? 1 : 0, id, enrollmentId];
