@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { campaignKey, type AcademicClass, type CourseEnrollment } from '../../src/shared/academic';
 import { currentVersion, hasGrade, isBachelor, newClass, newEnrollment, normalized, now, text } from './domain';
 import { fail, type ChangeSet, type Snapshot } from './store';
+import { changeTopic } from './topics';
 
 export interface ImportResolution {
   studentId?: string; name?: string; dob?: string; className?: string; classCode?: string;
@@ -16,7 +17,7 @@ export interface ImportRow {
   excluded: boolean; useFile: boolean; issues: string[];
 }
 export interface ImportPlan { rows: ImportRow[]; changes: ChangeSet; summary: { rows: number; students: number; classes: number; created: number; updated: number; unchanged: number; excluded: number; errors: number } }
-const header = (v: unknown) => normalized(v).normalize('NFD').replace(/\p{M}/gu, '');
+const header = (v: unknown) => normalized(v).normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
 const lecturerName = (v: unknown) => normalized(v).replace(/^(?:(?:pgs|gs|ts|ths|cn)\.?\s*)+/iu, '').replace(/\s+/g, ' ').trim();
 
 function studentId(v: unknown) {
@@ -132,7 +133,7 @@ export function planImport(s: Snapshot, semesterId: string, bytes: Buffer, resol
     if (row.topic && row.topic !== e.topic) {
       if (hasGrade(e)) row.issues.push('Đã có điểm; đổi đề tài cần mở lại bài riêng.');
       else if (e.topic && !row.useFile) row.issues.push('Đề tài khác hiện có; cần xác nhận dùng file.');
-      else { e.topic = row.topic; if (currentVersion(e).state === 'empty') currentVersion(e).title = row.topic; }
+      else { changeTopic(e, row.topic); if (currentVersion(e).state === 'empty') currentVersion(e).title = row.topic; }
     }
     if (row.issues.length) continue;
     if (old && JSON.stringify(old) === JSON.stringify(e)) unchanged++;

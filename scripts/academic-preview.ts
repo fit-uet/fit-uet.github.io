@@ -18,6 +18,7 @@ const { default: tailwindcss } = await import('@tailwindcss/vite');
 const { createAcademicFixture } = await import('../tests/academic/fixture');
 const database = await import('../server/db');
 const { snapshot, commit } = await import('../server/academic/store');
+const { changeTopic, approveTopic } = await import('../server/academic/topics');
 const { newEnrollment } = await import('../server/academic/domain');
 const { createSemester, createClass, updateClass } = await import('../server/academic/service');
 const { updateCampaign } = await import('../server/academic/campaigns');
@@ -37,8 +38,8 @@ for (const code of ['INT3132', 'INT3131']) {
   const s = await snapshot();
   const enrollments = ['24020001', '24020002', '24020003'].map((id, i) => {
     const e = newEnrollment(active, { studentId: id, name: ['Sinh viên An', 'Sinh viên Bình', 'Sinh viên Chi'][i], className: 'QH-2024-I/CQ-I-CS1' });
-    e.topic = ['Ứng dụng quản lý học vụ', 'Hệ thống tìm kiếm tài liệu', 'Phân tích dữ liệu học tập'][i];
-    e.assignments = [{ id: randomUUID(), lecturerId: i + 1, role: 'primary', assignedAt: new Date().toISOString() }, ...(i === 1 ? [{ id: randomUUID(), lecturerId: 99, role: 'co' as const, assignedAt: new Date().toISOString() }] : [])]; return e;
+    changeTopic(e, ['Ứng dụng quản lý học vụ', 'Hệ thống tìm kiếm tài liệu', 'Phân tích dữ liệu học tập'][i]);
+    e.assignments = [{ id: randomUUID(), lecturerId: i + 1, role: 'primary', assignedAt: new Date().toISOString() }, ...(i === 1 ? [{ id: randomUUID(), lecturerId: 99, role: 'co' as const, assignedAt: new Date().toISOString() }] : [])]; approveTopic(s, active, e, { id: i + 2, role: 'lecturer', email: s.lecturers.find(l => l.id === i + 1)!.email, name: 'Fixture GVHD' }); return e;
   });
   await commit(s, admin.id, 'admin.fixture.seed', { enrollments, users: enrollments.map(e => ({ studentId: e.studentId, email: e.email, name: e.name, dob: '', className: e.className })) });
 }

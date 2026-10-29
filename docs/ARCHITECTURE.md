@@ -76,7 +76,7 @@ erDiagram
 | `enrollments` | id, class_id, user_id, status = `active/withdrawn`, registration_note, snapshot tên/ngày sinh/lớp khóa học, source, revision; unique(class_id, user_id) |
 | `campaign_settings` | Cấu hình chung theo campaign_id; lớp kế thừa hạn/nội dung/trạng thái, không có ghi đè riêng |
 | `advisor_assignments` | id, enrollment_id, lecturer_id, role = `primary/co/reviewer`, trạng thái hiện hành, người/thời điểm gán, ghi chú/liên hệ; lịch sử riêng |
-| `project_topics` | enrollment_id PK, title, người/thời điểm sửa, revision; chỉ dùng cho project |
+| `project_topics` | enrollment_id PK, title, trạng thái/phiên bản đề tài, nguồn công nhận, người/thời điểm duyệt, revision; chỉ dùng cho project |
 | `final_reports` | id, enrollment_id unique, current_version_id, report_status, submission_locked_at, submission_reopen_until, revision; con trỏ bộ bài hiện hành |
 | `submission_versions` | id, enrollment_id, version_no, state = `empty/editing/submitted`, snapshot đề tài, PDF metadata, slides_url, demo_url, người/thời điểm tạo, nguồn mở lại; unique(enrollment, version_no) |
 | `project_evaluations` | id, submission_version_id, assignment_id, lecturer_id, role = `advisor/reviewer`, score, comment, submitted/updated_at; unique(version, role) |
@@ -248,7 +248,7 @@ Mỗi enrollment có final_reports và version đầu `empty`, hỗ trợ chưa 
 - Upload object trước, kiểm lại quyền/hạn/khóa/revision và commit DB sau. Lỗi DB dọn object mới, không xóa file cũ. DB và R2 không có chung transaction.
 - Giữ lịch sử/file qua các kỳ, không tự xóa khi mở kỳ mới hoặc mặc định dung lượng nhiều kỳ nằm trong mức miễn phí cố định.
 
-Tên đề tài chấm/xuất là snapshot lúc nộp. Sau điểm đầu tiên, khóa cả snapshot và bộ bài; sửa tên làm đổi snapshot cần Khoa mở lại. Trước chấm, sửa đề tài/nộp phải đúng các hạn tương ứng.
+Tên đề tài chấm/xuất là snapshot lúc nộp. Sau điểm đầu tiên, khóa cả snapshot và bộ bài; sửa tên làm đổi snapshot cần Khoa mở lại. Trước chấm, SV sửa tên chuyển Pending; chỉ GVHD chính được duyệt/sửa rồi duyệt. Đổi tên sau nộp bắt buộc nộp lại theo topicVersion; duyệt muộn mở quyền nộp riêng đến hết hạn chấm. Xem [Duyệt đề tài](TOPIC_APPROVAL.md) cho quyền, thời gian và chuyển đổi metadata.
 
 ### 6.2. Trạng thái và mở lại
 
@@ -307,7 +307,7 @@ Mutation nhận expectedRevision; preview có idempotency riêng. Tách DTO SV v
 | Phân công | `GET /api/enrollments/:enrollmentId/assignments`; `PUT /api/admin/enrollments/:enrollmentId/assignments` | Xem theo lần học; Admin ghi tập phân công và revision |
 | Trần NX | `GET/PUT /api/admin/semesters/:semesterId/reviewer-quotas` | Admin; lecturerId, maxReviews null hoặc số nguyên ≥0 |
 | Tự phân công | `POST /api/admin/semesters/:semesterId/reviewers/preview`; `POST /api/admin/reviewer-previews/:previewId/apply` | Admin; classIds trong kỳ, chỉnh phương án qua preview mới |
-| Đề tài | `GET/PUT /api/enrollments/:enrollmentId/topic` | SV sở hữu trong hạn; Admin điều chỉnh có reason |
+| Đề tài | `GET/PUT /api/enrollments/:enrollmentId/topic`, `POST .../topic/approve` | SV gửi Pending; GVHD chính duyệt/sửa tự duyệt; Admin khác cần reason và không tự duyệt |
 | Bộ bài | `GET/POST /api/enrollments/:enrollmentId/submission` | SV sở hữu; multipart PDF hoặc version PDF đã sở hữu, slide/demo, revision; complete khi đủ |
 | File | `GET /api/enrollments/:enrollmentId/submissions/:versionId/view`; route tương ứng `/download` | Kiểm quyền cả enrollment/version trước bytes/304 |
 | Yêu cầu sửa | `PUT /api/enrollments/:enrollmentId/submission/review` | GVHD/GVNX/Admin; needs_revision hoặc hủy, lý do riêng gửi SV |
@@ -539,3 +539,7 @@ Phạm vi kiểm thử, dữ liệu mẫu, trình tự nhập tám lớp và cá
 `server/staging/rehearsal.ts` mở nguồn SQLite chỉ đọc, dùng backup API lấy snapshot nhất quán cả WAL, chạy khởi tạo schema/ánh xạ trên bản sao và kiểm tra checksum từng hàng theo cột nguồn. Khác biệt điểm/hồ sơ làm đối soát thất bại. Tool chỉ preview workbook, chưa tiếp nhận SV. `scripts/serve-academic-staging.ts` chỉ mở bản sao đã đối soát trên loopback; có đăng nhập thử riêng, kho file riêng, tắt email/cron và không dùng entry point production.
 
 Router health cung cấp `/api/health` và `/api/ready`. Cấu hình `APP_ENV=staging` cho môi trường HTTPS buộc `NODE_ENV=production`, resource ID tường minh và secret riêng trước init DB; hộp thư thử bắt buộc nếu bật provider, bỏ toàn bộ CC. CORS staging không tự thêm origin production. Đây là bước chuẩn bị, chưa phải bằng chứng các tích hợp cloud đã đạt nghiệm thu. Xem [LOCAL_STAGING.md](LOCAL_STAGING.md).
+
+### Metadata duyệt đề tài (schema v3)
+
+Cài đặt thực tế vẫn dùng JSON enrollment: `topicReview`, `topicSubmissionUntil` và `SubmissionVersion.topicVersion`; không tách bảng mới. Khởi tạo chuyển metadata hồ sơ cũ có audit trước khi readiness schema 3; kế hoạch/đối soát và hợp đồng API tại [TOPIC_APPROVAL.md](TOPIC_APPROVAL.md).

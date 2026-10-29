@@ -17,6 +17,7 @@
     "test:academic": "tsx --test tests/academic/*.test.ts",
     "test:academic:ui": "playwright test -c playwright.academic.config.ts",
     "test:academic:d1": "tsx scripts/check-academic-d1.ts",
+    "academic:topics-preview": "tsx scripts/preview-project-topics.ts",
     "academic:preview": "tsx scripts/academic-preview.ts",
     "academic:migrate": "tsx scripts/migrate-academic.ts",
     "academic:stage": "tsx scripts/prepare-academic-staging.ts",

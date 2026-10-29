@@ -18,7 +18,7 @@ export async function verifyRelease(input: { base: string; release: string; fetc
       const body = await response.json();
       const ok = expectedStatus === 401
         ? !!body.error && !body.data && !body.enrollments
-        : body.environment === 'production' && body.release === input.release && (path === '/api/ready' ? body.status === 'ready' && body.database === 'ok' && body.academicSchema === 2 : body.status === 'up');
+        : body.environment === 'production' && body.release === input.release && (path === '/api/ready' ? body.status === 'ready' && body.database === 'ok' && body.academicSchema === 3 : body.status === 'up');
       checks.push({ name: path, ok, detail: ok ? 'Đạt.' : 'Chưa có đúng phiên bản production/schema hoặc API chưa bảo vệ quyền.' });
     } catch { checks.push({ name: path, ok: false, detail: 'Không nhận được JSON hợp lệ qua HTTPS.' }); }
   }

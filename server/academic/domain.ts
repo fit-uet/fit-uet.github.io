@@ -6,6 +6,7 @@ import {
 } from '../../src/shared/academic';
 import { fail, type Snapshot } from './store';
 import type { AuthenticatedUser } from '../types';
+import { emptyTopicReview } from './topicMigration';
 
 export const now = () => new Date().toISOString();
 export const text = (value: unknown) => String(value ?? '').normalize('NFC').trim();
@@ -46,8 +47,13 @@ export function requireRevision(actual: number, expected: unknown) {
 export function inWindow(open: string, close: string, at = Date.now()) {
   return (!open || at >= Date.parse(open)) && (!close || at <= Date.parse(close));
 }
+export function hasTopicSubmissionExtension(c: AcademicClass, e?: CourseEnrollment) {
+  const until = Date.parse(e?.topicSubmissionUntil || ''), gradingClose = Date.parse(c.settings.gradingCloseAt);
+  return Number.isFinite(until) && Number.isFinite(gradingClose) && Date.now() <= Math.min(until, gradingClose);
+}
 export function requireWindow(c: AcademicClass, kind: 'topic' | 'submission' | 'grading' | 'registration' | 'confirmation' | 'advisorRequest', e?: CourseEnrollment) {
   if ((kind === 'submission' || kind === 'topic') && e?.reopenUntil && Date.now() <= Date.parse(e.reopenUntil)) return;
+  if (kind === 'submission' && hasTopicSubmissionExtension(c, e)) return;
   const cfg = c.settings;
   if (!inWindow(cfg[`${kind}OpenAt`], cfg[`${kind}CloseAt`])) fail(403, 'OUTSIDE_WINDOW', 'Thao tác nằm ngoài thời gian Khoa cho phép.');
 }
@@ -88,6 +94,7 @@ export function newEnrollment(c: AcademicClass, data: { studentId: string; name:
     id: randomUUID(), classId: c.id, studentId: data.studentId, email: `${data.studentId}@vnu.edu.vn`,
     name: text(data.name), dob: data.dob || '', className: data.className || '', note: data.note || '',
     status: 'active', legacy: false, topic: '', assignments: [], versions: [emptyVersion()], evaluations: {},
+    ...(course(c).group === 'project' ? { topicReview: emptyTopicReview(), topicSubmissionUntil: null } : {}),
     internshipGrade: null, lockedAt: null, submissionLockedAt: null, reopenUntil: null,
     reviewComment: '', needsRevision: false, preferences: [], finalInternship: null, advisorRequest: null, revision: 0,
   };

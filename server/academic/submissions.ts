@@ -14,6 +14,7 @@ export async function submitBundle(actor: AuthenticatedUser, enrollmentId: strin
   const project = course(c).group === 'project';
   if (e.lockedAt || project && (e.submissionLockedAt || hasGrade(e))) fail(409, 'SUBMISSION_LOCKED', 'Bài đã bắt đầu chấm hoặc điểm đã khóa; cần Khoa mở lại.');
   if (project && !e.topic.trim()) fail(422, 'TOPIC_REQUIRED', 'Cần khai tên đề tài trước khi nộp.');
+  if (project && e.topicReview?.status !== 'approved') fail(409, 'TOPIC_PENDING', 'Cần GVHD chính duyệt đề tài trước khi nộp bài.');
   const slidesUrl = project ? driveUrl(input.slidesUrl) : '';
   const demoUrl = project ? driveUrl(input.demoUrl) : '';
   let reference: SubmissionVersion | undefined;
@@ -25,6 +26,7 @@ export async function submitBundle(actor: AuthenticatedUser, enrollmentId: strin
     id: randomUUID(), number: currentVersion(e).number + 1, title: e.topic,
     objectKey: reference?.objectKey || null, filename: reference?.filename || null,
     size: reference?.size || 0, slidesUrl, demoUrl, state: 'submitted', createdAt: now(), submittedAt: now(),
+    ...(project ? { topicVersion: e.topicReview!.version } : {}),
   };
   let uploadedKey: string | null = null;
   try {

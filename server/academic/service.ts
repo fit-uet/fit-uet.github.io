@@ -11,6 +11,7 @@ import {
 } from './domain';
 import { commit, fail, readPreview, savePreview, snapshot, type AcademicEvent, type Snapshot } from './store';
 import { newCampaign } from './campaigns';
+import { editTopic, topicPermissions, topicSubmissionCurrent } from './topics';
 
 export function canJoin(c: AcademicClass, actor: AuthenticatedUser) {
   const year = Number(actor.email.match(/^(\d{2})\d{6}@vnu\.edu\.vn$/)?.[1]);
@@ -35,7 +36,7 @@ export function enrollmentView(s: Snapshot, c: AcademicClass, e: CourseEnrollmen
   const finalScore = totalScore(c, e);
   const gradeStatus = e.lockedAt ? 'locked' : finalScore != null ? 'complete' : hasGrade(e) ? 'partial' : 'missing';
   if (!canSeeGrades) { delete copy.evaluations; delete copy.internshipGrade; }
-  return { ...copy, myAssignment, canSeeGrades, ...(canSeeGrades ? { finalScore } : {}), gradeStatus };
+  return { ...copy, myAssignment, canSeeGrades, ...(canSeeGrades ? { finalScore } : {}), gradeStatus, topicPermissions: topicPermissions(s, c, e, actor) };
 }
 export async function classDetail(classId: string, actor: AuthenticatedUser) {
   const s = await snapshot(); const c = getClass(s, classId);
@@ -76,7 +77,7 @@ export async function joinInternship(actor: AuthenticatedUser, classId: string) 
   const e = newEnrollment(c, { studentId: actor.email.split('@')[0], name: actor.name, dob: actor.dob, className: actor.class_name });
   await commit(s, actor.id, 'student.internship.join', { enrollments: [e] }); return enrollmentView(s, c, e, actor);
 }
-export async function enrollmentAction(actor: AuthenticatedUser, enrollmentId: string, input: any, action: 'status' | 'topic' | 'assignments' | 'review' | 'reopen' | 'gradeLock') {
+export async function enrollmentAction(actor: AuthenticatedUser, enrollmentId: string, input: any, action: 'status' | 'topic' | 'topicApprove' | 'assignments' | 'review' | 'reopen' | 'gradeLock') {
   const s = await snapshot(); const e = getEnrollment(s, enrollmentId); const c = getClass(s, e.classId);
   requireRead(s, c, actor, e); requireRevision(e.revision, input.expectedRevision);
   if (c.legacy) fail(409, 'LEGACY_CONTEXT', 'Dùng màn Thực tập hiện có để xử lý đợt cũ.');
@@ -87,16 +88,7 @@ export async function enrollmentAction(actor: AuthenticatedUser, enrollmentId: s
     e.status = input.status;
   } else {
     if (e.status !== 'active') fail(403, 'ENROLLMENT_WITHDRAWN', 'Sinh viên đã rút khỏi lớp.');
-    if (action === 'topic') {
-      if (course(c).group !== 'project') fail(422, 'WRONG_COURSE', 'Đề tài thuộc học phần Dự án.');
-      if (actor.role !== 'admin' && (actor.role !== 'student' || actor.email !== e.email)) fail(403, 'OWNER_ONLY', 'Chỉ sinh viên sở hữu được khai đề tài.');
-      requireWindow(c, 'topic', e);
-      if (hasGrade(e) || e.lockedAt) fail(409, 'SUBMISSION_LOCKED', 'Đã bắt đầu chấm; cần Khoa mở lại bài.');
-      const title = text(input.title);
-      if (!title || title.length > 1500) fail(422, 'INVALID_TOPIC', 'Tên đề tài cần từ 1 đến 1.500 ký tự.');
-      e.topic = title;
-      if (actor.role === 'admin' && !text(input.reason)) fail(422, 'REASON_REQUIRED', 'Khoa cần ghi lý do chỉnh đề tài.');
-    }
+    if (action === 'topic' || action === 'topicApprove') editTopic(s, c, e, actor, input, action === 'topicApprove');
     if (action === 'assignments') {
       requireAdmin(actor);
       const assignments = validateAssignments(s, c, e, input.assignments);
@@ -150,6 +142,8 @@ export async function grade(actor: AuthenticatedUser, enrollmentId: string, role
     const value = score(input.score); const comment = text(input.comment);
     if ((!value || v.state !== 'submitted') && !comment) fail(422, 'COMMENT_REQUIRED', 'Cần ghi lý do cho điểm 0 hoặc chưa có bài nộp.');
     if (v.state !== 'submitted' && value !== 0) fail(422, 'SUBMISSION_REQUIRED', 'Chưa có bộ bài đầy đủ; chỉ chấp nhận 0 điểm kèm lý do.');
+    if (value !== 0 && (!topicSubmissionCurrent(e) || v.state !== 'submitted')) fail(422, 'TOPIC_SUBMISSION_REQUIRED', 'Cần đề tài đã duyệt và bộ bài nộp theo đúng phiên bản đề tài; chỉ chấp nhận 0 điểm kèm lý do khi chưa đủ.');
+    if ((!topicSubmissionCurrent(e) || v.state !== 'submitted') && !comment) fail(422, 'COMMENT_REQUIRED', 'Cần ghi lý do điểm 0 khi chưa có bài hợp lệ theo đề tài đã duyệt.');
     const pair = e.evaluations[v.id] ||= {};
     pair[role] = { score: value, comment, lecturerId: l.id, assignmentId: assignment.id, submittedAt: pair[role]?.submittedAt || now(), updatedAt: now() };
     e.submissionLockedAt ||= now();

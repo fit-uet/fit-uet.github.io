@@ -81,7 +81,7 @@ Tất cả quyền đều yêu cầu đăng nhập và đúng phạm vi dữ li�
 | Thao tác | SV sở hữu lần học | GVHD chính | Đồng hướng dẫn | GVNX | Khoa/Admin |
 | --- | --- | --- | --- | --- | --- |
 | Xem thông tin, đề tài, bài nộp | Có | Được phân công | Được phân công | Được phân công | Có |
-| Sửa tên đề tài, nộp/thay bộ bài | Trong hạn, chưa khóa | Không | Không | Không | Mở lại/điều chỉnh có lý do |
+| Sửa tên đề tài, nộp/thay bộ bài | Trong hạn, chưa khóa; Dự án chỉ nộp sau duyệt | Dự án: sửa và tự duyệt đề tài | Không | Không | Mở lại/điều chỉnh có lý do; không tự duyệt nếu không là GVHD chính |
 | Đổi GVHD/GVNX, tiếp nhận/rút SV | Không | Không | Không | Không | Có |
 | Xem điểm hai vai trò/tổng kết | Không | Có | Không | Có | Có |
 | Nhập/sửa điểm GVHD | Không | Có | Không | Không | Không nhập thay; quản lý khóa/mở |
@@ -138,8 +138,8 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 | REQ-IMP-02 / MR | Khoa xem trước danh sách | Gộp MSSV/lớp, bổ sung ô trống, hiển thị nguồn sheet/hàng; khác giá trị cùng trường phải đối soát; chuẩn hóa MSSV, Unicode, ngày Excel và ngày dạng chuỗi | TC-14: báo dòng MSSV 134; dòng trùng không tăng số lần học; ngày đúng lịch và không lệch ngày |
 | REQ-IMP-03 / MR | File có tên/email GVHD | Đối chiếu danh mục chung bằng email và tên đã chuẩn hóa; thiếu/không khớp/chứa nhiều GV phải được ánh xạ rõ chính/đồng HD; không tự tạo GV bằng suy đoán | TC-15: email cá nhân, tên gần giống, CN làm chính hoặc thiếu email được báo để Khoa giải quyết |
 | REQ-IMP-04 / MR | Khoa xác nhận preview hợp lệ | Xem trước → xử lý/loại lỗi → xác nhận; nhập lại không nhân bản; không xóa người vắng file; không ghi đè điểm/bài nộp; thay đổi GVHD/đề tài đã có phải được xác nhận | TC-16: gửi lại commit trả kết quả cũ; thay đổi dữ liệu kể từ preview yêu cầu xem lại |
-| REQ-PRJ-01 / MR | SV thuộc DS, chưa có GVHD | Cho vào lớp, xem hướng dẫn và khai đề tài/nộp theo hạn; Khoa quản lý GVHD chính/đồng HD qua import hoặc thủ công | TC-17: thiếu GVHD không ngăn đăng nhập; chưa đủ điều kiện thì GVNX chờ phân công |
-| REQ-PRJ-02 / MR | SV trong hạn khai đề tài | SV khai/sửa tên đề tài, không duyệt riêng; lưu lịch sử, tên đề tài bắt buộc khi hoàn tất bài; Khoa có thể điều chỉnh có lý do | TC-18: đề tài theo lần học; snapshot được chấm không đổi sau khi bắt đầu chấm |
+| REQ-PRJ-01 / MR | SV thuộc DS, chưa có GVHD | Cho vào lớp, xem hướng dẫn và khai đề tài; chỉ nộp sau khi có GVHD duyệt; Khoa quản lý GVHD chính/đồng HD qua import hoặc thủ công | TC-17: thiếu GVHD không ngăn đăng nhập; chưa đủ điều kiện thì GVNX chờ phân công |
+| REQ-PRJ-02 / MR | SV trong hạn khai đề tài | SV gửi/sửa tên chuyển Pending; chỉ GVHD chính duyệt hoặc sửa rồi tự duyệt; cùng tên giữ duyệt, đổi tên cần duyệt lại; Khoa điều chỉnh có lý do. Chi tiết [Duyệt đề tài](TOPIC_APPROVAL.md) | TC-18: trạng thái/phân quyền/hạn theo lần học; Pending không nộp; đổi tên sau nộp cần bộ bài mới; khóa sau chấm |
 | REQ-PRJ-03 / MR | Khoa phân công giảng viên | Tối đa một GVHD chính và một GVNX/lần học, có đồng HD; CN chỉ đồng HD; GVNX không trùng bất kỳ người hướng dẫn nào | TC-19: cùng kiểm tra cho import, gán tay và tự phân công |
 
 ### 3.4. Tự phân công GVNX
@@ -155,7 +155,7 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 
 | Mã / trạng thái | Tác nhân và điều kiện | Yêu cầu | Nghiệm thu |
 | --- | --- | --- | --- |
-| REQ-SUB-01 / MR | SV hoàn tất nộp trong hạn | Bắt buộc tên đề tài, 1 PDF ≤10 MB, 1 link Drive slide và 1 link Drive video demo; mỗi SV nộp riêng kể cả làm chung | TC-24: thiếu một thành phần chưa hoàn tất; chặn PDF sai loại/quá dung lượng ở UI/API |
+| REQ-SUB-01 / MR | SV hoàn tất nộp trong hạn | Bắt buộc tên đề tài đã được GVHD chính duyệt, 1 PDF ≤10 MB, 1 link Drive slide và 1 link Drive video demo; mỗi SV nộp riêng kể cả làm chung | TC-24: thiếu một thành phần chưa hoàn tất; chặn PDF sai loại/quá dung lượng ở UI/API |
 | REQ-SUB-02 / MR | SV/GV xem bài | Lưu PDF trong R2, lưu metadata/link; hướng dẫn cấp quyền xem Drive; GV được phân công xem PDF inline/tải file | TC-25: kiểm tra truy cập theo lớp, lần học và phiên bản; link hợp lệ không đồng nghĩa đã kiểm chứng quyền Drive |
 | REQ-SUB-03 / MR | Chưa có điểm, còn hạn | Cho thay bộ bài, giữ phiên bản và lịch sử; GVHD/GVNX có thể yêu cầu sửa, không tự gia hạn hoặc mở khóa bài đã chấm | TC-26: không đè PDF đã lưu; cache lấy đúng phiên bản; quá hạn cần Khoa mở lại |
 | REQ-SUB-04 / MR | Có điểm đầu tiên hoặc Khoa mở lại | Khóa bộ bài/snapshot đề tài; chỉ Khoa mở lại có lý do và hạn sửa; tạo phiên bản mới, cả hai phần điểm phải nộp lại; giữ phiên bản/điểm cũ | TC-27: không ghép điểm ở hai phiên bản; khóa điểm phải được mở trước khi mở lại bài |
@@ -214,8 +214,8 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 | TC-14 | Số khoa học/chuỗi MSSV, dòng 134, Unicode, dòng trùng, ngày Excel và dd/mm/yyyy | MSSV hợp lệ giữ đủ 8 số; lỗi rõ sheet/hàng; gộp đúng; ngày sinh không đổi lịch |
 | TC-15 | Email/tên GV khác nhau, email cá nhân, nhiều tên một ô, thiếu bộ môn | Không tự gán theo tên gần đúng; Khoa thấy và xác nhận ánh xạ/khắc phục |
 | TC-16 | Xem trước, loại lỗi, commit hai lần; nhập lại; thay dữ liệu giữa preview/commit | Idempotent; không mất người vắng file; không đè bài/điểm; stale preview phải xem lại |
-| TC-17 | SV nhập DS nhưng thiếu GVHD, khai đề tài/nộp trong hạn, chạy phân công NX | SV vào lớp được; NX chờ với lý do missing_primary |
-| TC-18 | SV sửa đề tài đúng/sai lớp, trước/sau hạn và sau điểm đầu tiên | Chỉ đúng lần học/hạn; snapshot chấm đã khóa không thay đổi |
+| TC-17 | SV nhập DS nhưng thiếu GVHD, khai đề tài chờ duyệt, chạy phân công NX | SV vào lớp/khai đề tài được, chưa nộp khi chưa duyệt; NX chờ với lý do missing_primary |
+| TC-18 | SV gửi/sửa; GVHD/đồng HD/GVNX duyệt; duyệt muộn, đổi sau nộp/chấm | Chỉ GVHD chính duyệt; Pending chặn nộp; duyệt muộn mở nộp riêng đến hạn chấm, không mở sửa tên; đổi sau nộp cần nộp lại; sau chấm cần Khoa mở lại |
 | TC-19 | Gán tay/import GVNX trùng primary/co hoặc CN; gán hai primary/reviewer | Tất cả đường ghi cùng chặn vi phạm |
 | TC-20 | Pool có GV chỉ dạy TT, GV kỳ cũ, CN, GV đồng HD Dự án đủ điều kiện | Chỉ người đang HD Dự án kỳ đó và đủ điều kiện được xét |
 | TC-21 | Có cùng bộ môn, hết người cùng bộ môn, thiếu bộ môn; nhiều bài cùng pool | Ưu tiên đúng bộ môn; fallback được đánh dấu; tải tính cả hai học phần trong kỳ |

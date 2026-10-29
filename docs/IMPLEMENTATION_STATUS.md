@@ -19,7 +19,7 @@ npm run academic:preview
 
 Mở [bản thử vai trò Khoa](http://127.0.0.1:4318/__academic_preview/login?role=admin). Đổi `role` thành `student`, `lecturer`, `reviewer` để xem các vai trò còn lại; nên dùng cửa sổ riêng cho từng vai trò. Bản thử dùng dữ liệu hư cấu trong database RAM, file tạm, email tắt và chỉ nghe trên loopback. Nó không dùng Google OAuth thật hoặc database ứng dụng, không lưu lại dữ liệu sau khi dừng. GVNX chỉ có phân công sau khi Khoa xem trước và áp dụng phân công trong bản thử.
 
-Luồng kiểm tra: Khoa chọn học kỳ/nhóm, lọc lớp khi cần → phân công GVNX → SV khai đề tài/nộp PDF và hai link → GVHD/GVNX nhập điểm riêng → Khoa xuất, khóa/mở lại. Điểm mẫu 8.0 và 8.5 cho tổng 8.2; SV chỉ thấy tiến độ và phản hồi dành cho mình.
+Luồng kiểm tra: Khoa chọn học kỳ/nhóm, lọc lớp khi cần → phân công GVNX → SV gửi đề tài → GVHD chính duyệt → SV nộp PDF và hai link → GVHD/GVNX nhập điểm riêng → Khoa xuất, khóa/mở lại. Điểm mẫu 8.0 và 8.5 cho tổng 8.2; SV chỉ thấy tiến độ và phản hồi dành cho mình.
 
 Để chạy ứng dụng thật ở local/staging, làm theo [README](../README.md#chạy-local), dùng **bản sao database** và `EMAIL_PROVIDER=none` khi thử. Trang chọn nhóm là `/#/classes`; trang quản lý là `/#/campaigns/:campaignId`, gồm cả Thực tập đợt cũ. Server khởi tạo schema bổ sung sau `initDb`, không tự ánh xạ hoặc import workbook.
 
@@ -57,8 +57,8 @@ Mã không thay/xóa bảng nghiệp vụ hoặc file TT cũ. Các màn TT cũ l
 | Lệnh | Phạm vi |
 | --- | --- |
 | `npm run lint` | TypeScript frontend, Express, Worker và scripts |
-| `npm run test:academic` | 48 kiểm thử schema/campaign, học lại/nhiều lớp, import, quyền, GVNX, điểm/phiên bản, chat, FAQ, thông báo, HTTP PDF/XLSX và CLI backup |
-| `npm run test:academic:ui` | 13 luồng Chromium và một luồng nghiệm thu tùy chọn trên bản sao production: quản trị lớp/GVNX, SV nộp/hai GV chấm/ẩn điểm, khóa/mở lại, mobile, chat xuyên lớp/đính kèm, hai hồ sơ, export, xem trước thông báo, cache khi đổi nhóm và kiểm tra kết nối email |
+| `npm run test:academic` | 63 kiểm thử schema/campaign, học lại/nhiều lớp, import, quyền, GVNX, điểm/phiên bản, chat, FAQ, thông báo, HTTP PDF/XLSX và CLI backup |
+| `npm run test:academic:ui` | 14 luồng Chromium và hai luồng nghiệm thu tùy chọn trên bản sao production: quản trị lớp/GVNX, SV nộp/hai GV chấm/ẩn điểm, khóa/mở lại, mobile, chat xuyên lớp/đính kèm, hai hồ sơ, export, xem trước thông báo, cache khi đổi nhóm và kiểm tra kết nối email |
 | `npm run test:academic:d1` | Schema/command trigger trên D1 cục bộ của Wrangler: tiếp nhận, chặn revision cũ và rollback toàn bộ khi lỗi ràng buộc muộn |
 | `npm run build` | Bundle frontend và server |
 | `npm run test:staging` | 16 kiểm thử sao lưu/đối soát/WAL, readiness, cấu hình, cron, hộp thư staging, backup Turso, chờ đúng phiên bản phát hành và chẩn đoán email không gửi thư |
@@ -87,3 +87,7 @@ Kiểm thử trên D1 local không thay cho nghiệm thu D1 REST remote. Đã ki
 Đã thêm lockfile, khai báo Google Auth/React types và cập nhật SheetJS lên bản 0.20.3 từ [nguồn phân phối chính thức](https://docs.sheetjs.com/docs/getting-started/installation/nodejs/). Các bản sửa dependency tương thích đã được áp dụng; audit còn các cảnh báo mức moderate trong cây phụ thuộc, cần xử lý riêng khi nâng các tích hợp liên quan. Không dùng `npm audit fix --force` để nâng major hàng loạt trong lần này.
 
 Đã diễn tập trên backup Turso thật và đối soát bảo toàn đủ 20 bảng nguồn trước/sau chuyển đổi. Sau phát hành, tiếp tục xử lý 208 hồ sơ TT thiếu học phần và 127 hồ sơ Dự án thiếu GVHD; nghiệm thu đăng nhập Google và các thao tác có quyền trên HTTPS theo [quy trình phát hành](PRODUCTION_RELEASE.md).
+
+## Duyệt đề tài Dự án
+
+Đã bổ sung Pending/duyệt theo lần học, quyền GVHD chính sửa và duyệt, hạn nộp riêng khi duyệt muộn và kiểm tra phiên bản đề tài khi chấm. Schema v3 công nhận tên có sẵn trước nâng cấp; không gán giả GV duyệt. Quy tắc, API và lệnh preview: [TOPIC_APPROVAL.md](TOPIC_APPROVAL.md).

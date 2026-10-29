@@ -30,6 +30,8 @@ test('health checks distinguish liveness from DB readiness and never expose DB e
   process.env.APP_ENV = 'local-staging';
   await serve(async base => {
     assert.equal((await originalFetch(`${base}/api/health`)).status, 200); assert.equal((await originalFetch(`${base}/api/ready`)).status, 200);
+    await db.execute('DELETE FROM academic_schema_migrations WHERE version=3');
+    assert.equal((await originalFetch(`${base}/api/ready`)).status, 503);
     setDb({ execute: async () => { throw new Error('private-database-credential'); }, executeMultiple: async () => {}, batch: async () => [] });
     const result = await originalFetch(`${base}/api/ready`); assert.equal(result.status, 503); assert.ok(!(await result.text()).includes('private-database-credential'));
     assert.equal((await originalFetch(`${base}/api/health`)).status, 200);

@@ -117,9 +117,10 @@ academicRoute('get', '/api/enrollments/:enrollmentId', async req => {
   const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); const c = getClass(s, e.classId); requireRead(s, c, req.user, e); return service.enrollmentView(s, c, e, req.user);
 });
 academicRoute('get', '/api/enrollments/:enrollmentId/topic', async req => {
-  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); requireRead(s, getClass(s, e.classId), req.user, e); return { title: e.topic, revision: e.revision };
+  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); const c = getClass(s, e.classId); requireRead(s, c, req.user, e); const view = service.enrollmentView(s, c, e, req.user); return { title: e.topic, revision: e.revision, topicReview: e.topicReview, topicSubmissionUntil: e.topicSubmissionUntil, topicPermissions: view.topicPermissions };
 });
 academicRoute('put', '/api/enrollments/:enrollmentId/topic', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'topic'));
+academicRoute('post', '/api/enrollments/:enrollmentId/topic/approve', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'topicApprove'));
 academicRoute('get', '/api/enrollments/:enrollmentId/assignments', async req => {
   const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); requireRead(s, getClass(s, e.classId), req.user, e); return { assignments: e.assignments, revision: e.revision };
 });

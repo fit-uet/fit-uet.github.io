@@ -16,6 +16,7 @@ import { initAcademicSchema } from '../../server/academic/schema';
 import { AcademicError, commit, snapshot, readPreview } from '../../server/academic/store';
 import { allocateReviewers, currentVersion, getClass, getEnrollment, newEnrollment, totalScore, validateAssignments, weightedScore } from '../../server/academic/domain';
 import { createSemester, createClass, updateClass, classDetail, enrollmentAction, grade, reviewerPreview, applyReviewers, updateQuotas } from '../../server/academic/service';
+import { changeTopic, approveTopic } from '../../server/academic/topics';
 import { updateCampaign } from '../../server/academic/campaigns';
 import { dateOfBirth, planImport } from '../../server/academic/imports';
 import { submitBundle } from '../../server/academic/submissions';
@@ -57,8 +58,8 @@ async function activeClass(code = 'INT3132', section = '1', year = 2026) {
 }
 async function admit(c: AcademicClass, id = '24020001', primary = 1, co: number[] = []) {
   const s = await snapshot(); const e = newEnrollment(c, { studentId: id, name: `SV ${id}`, className: 'CS1' });
-  e.topic = 'Đề tài kiểm thử';
   e.assignments = [{ id: `primary-${e.id}`, lecturerId: primary, role: 'primary', assignedAt: new Date().toISOString() }, ...co.map(l => ({ id: `co-${e.id}-${l}`, lecturerId: l, role: 'co' as const, assignedAt: new Date().toISOString() }))];
+  if (c.courseCode.startsWith('INT313')) { changeTopic(e, 'Đề tài kiểm thử'); approveTopic(s, c, e, { ...alpha, email: s.lecturers.find(l => l.id === primary)!.email }); }
   await commit(s, admin.id, 'admin.test.admit', { enrollments: [e], users: [{ studentId: id, email: e.email, name: e.name, dob: '', className: e.className }] });
   studentIds.set(id, Number((await db.execute({ sql: 'SELECT id FROM users WHERE email=?', args: [e.email] })).rows[0].id)); return e;
 }

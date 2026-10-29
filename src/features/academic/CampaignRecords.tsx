@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { FileText, Download, Search, Eye, UserCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../shared/ui';
 import type { LecturerInfo } from '../../shared/academic';
+import { TOPIC_STATUS_NAMES } from '../../shared/academic';
 import { gradeNames, lecturerNames, type CampaignRecord, type CampaignRecordPage, type EnrollmentPanelMode } from './campaignPresentation';
 
 export function RecordBadge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'success' | 'warning' | 'danger' }) {
@@ -11,7 +12,7 @@ export function RecordBadge({ children, tone = 'neutral' }: { children: ReactNod
 export function CampaignRecords({ page, tab, project, lecturer, lecturers, query, editQuery, open, exportFile, busy }: { page: CampaignRecordPage | null; tab: string; project: boolean; lecturer: boolean; lecturers: LecturerInfo[]; query: URLSearchParams; editQuery: (patch: Record<string, string>) => void; open: (record: CampaignRecord, mode?: EnrollmentPanelMode) => void; exportFile: () => void; busy: boolean }) {
   const studentCell = (e: CampaignRecord) => <div><button className="font-semibold text-[#034ea1] hover:underline text-left" onClick={() => open(e, 'profile')}>{e.name}</button><p className="text-xs text-slate-500 mt-1">{e.studentId} · {e.className || 'Chưa có lớp khóa học'}</p></div>;
   const subjectCell = (e: CampaignRecord) => <div><strong className="font-medium text-slate-700">{e.courseCode}</strong><p className="text-xs text-slate-500 mt-1">{e.classCode}</p></div>;
-  const reportCell = (e: CampaignRecord) => <div className="space-y-1"><RecordBadge tone={e.needsRevision ? 'warning' : e.versions.at(-1)?.state === 'submitted' ? 'success' : 'danger'}>{e.needsRevision ? 'Cần nộp lại' : e.versions.at(-1)?.state === 'submitted' ? 'Đã nộp' : 'Chưa nộp đủ'}</RecordBadge><p className="text-xs text-slate-500">{e.versions.at(-1)?.filename || 'Chưa có PDF'}</p></div>;
+  const reportCell = (e: CampaignRecord) => <div className="space-y-1"><RecordBadge tone={e.needsRevision || e.topicPermissions?.requiresResubmission ? 'warning' : e.versions.at(-1)?.state === 'submitted' ? 'success' : 'danger'}>{e.topicPermissions?.requiresResubmission ? 'Cần nộp lại theo đề tài' : e.needsRevision ? 'Cần nộp lại' : e.versions.at(-1)?.state === 'submitted' ? 'Đã nộp' : 'Chưa nộp đủ'}</RecordBadge><p className="text-xs text-slate-500">{e.versions.at(-1)?.filename || 'Chưa có PDF'}</p></div>;
   const columns: { title: string; render: (e: CampaignRecord) => ReactNode }[] = [{ title: 'Sinh viên', render: studentCell }, { title: 'Học phần / lớp', render: subjectCell }];
   if (tab === 'assignments') {
     columns.push({ title: 'GVHD chính', render: e => lecturerNames(e, lecturers, 'primary') }, { title: 'Đồng hướng dẫn', render: e => lecturerNames(e, lecturers, 'co') });
@@ -34,6 +35,7 @@ export function CampaignRecords({ page, tab, project, lecturer, lecturers, query
   } else {
     columns.push({ title: 'Liên hệ', render: e => <a className="text-xs text-slate-600 hover:underline" href={`mailto:${e.email}`}>{e.email}</a> }, { title: 'Đề tài', render: e => <p className="max-w-sm">{e.topic || 'Chưa khai đề tài'}</p> }, { title: 'Tư cách', render: e => <RecordBadge tone={e.status === 'active' ? 'success' : 'neutral'}>{e.status === 'active' ? 'Đang học' : 'Đã rút'}</RecordBadge> });
   }
+  if (project) columns.push({ title: 'Duyệt đề tài', render: e => <div className="space-y-1"><RecordBadge tone={e.topicReview?.status === 'approved' ? 'success' : 'warning'}>{TOPIC_STATUS_NAMES[e.topicReview?.status || 'unregistered']}</RecordBadge>{e.topicReview?.source === 'legacy' && <p className="text-[11px] text-slate-500">Công nhận dữ liệu cũ</p>}</div> });
   const action = tab === 'assignments' ? { mode: 'assignments', label: 'Điều chỉnh phân công', icon: UserCheck } : tab === 'grades' ? { mode: 'grades', label: 'Xem và chấm điểm', icon: CheckCircle2 } : tab === 'reports' || lecturer ? { mode: 'reports', label: 'Xem báo cáo', icon: Eye } : { mode: 'profile', label: 'Mở hồ sơ', icon: FileText };
   return <section className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden" aria-label="Danh sách hồ sơ">
     <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100"><div className="relative w-full sm:max-w-sm"><Search size={15} className="absolute left-3 top-2.5 text-slate-400" /><input aria-label="Tìm sinh viên" className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs bg-slate-50 focus:bg-white" placeholder="Tìm MSSV, họ tên, đề tài…" value={query.get('q') || ''} onChange={event => editQuery({ q: event.target.value, enrollmentId: '', panel: '' })} /></div><Button size="sm" leadingIcon={<Download size={14} />} disabled={busy} onClick={exportFile}>Xuất XLSX theo bộ lọc</Button></div>

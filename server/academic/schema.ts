@@ -1,4 +1,5 @@
 import type { DatabaseClient } from '../types';
+import { migrateProjectTopics } from './topicMigration';
 
 // Existing internship tables remain the sole source for legacy enrollments.
 // New class data is additive. Each command is one SQLite statement: triggers,
@@ -82,4 +83,5 @@ export async function initAcademicSchema(client: DatabaseClient) {
   await client.execute('UPDATE academic_messages SET upload_size=attachment_size WHERE upload_size=0 AND attachment_size>0');
   await client.execute("INSERT OR IGNORE INTO academic_schema_migrations(version,applied_at) VALUES(1,datetime('now'))");
   await client.execute("INSERT OR IGNORE INTO academic_schema_migrations(version,applied_at) VALUES(2,datetime('now'))");
+  await migrateProjectTopics(client);
 }

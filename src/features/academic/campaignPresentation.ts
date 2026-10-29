@@ -39,7 +39,7 @@ export function campaignQuery(current: URLSearchParams, patch: Record<string, st
   if ('tab' in patch && patch.tab !== current.get('tab')) {
     for (const key of ['status', 'page', 'enrollmentId', 'panel']) next.delete(key);
     if (current.get('view') !== 'lecturer') next.delete('view');
-  } else if (['courseCode', 'classId', 'lecturerId', 'status', 'q'].some(key => key in patch)) next.delete('page');
+  } else if (['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'q'].some(key => key in patch)) next.delete('page');
   for (const [key, value] of Object.entries(patch)) value ? next.set(key, value) : next.delete(key);
   return next;
 }

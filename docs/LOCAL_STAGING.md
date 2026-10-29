@@ -105,3 +105,7 @@ Khi chuyển sang staging HTTPS, dùng database/bucket/Google OAuth riêng và `
 Chưa tạo tài nguyên cloud hoặc deploy trong bước chuẩn bị local này. Dừng server bằng Ctrl+C; giữ thư mục staging để xem lại. Không phục hồi `before.db` đè lên database đang có ghi mới nếu chưa đối soát thay đổi phát sinh.
 
 Sau bước local, Khoa đã chọn triển khai trên production hiện có. Đã sao lưu Turso/R2 và diễn tập với dữ liệu thật; xem [PRODUCTION_RELEASE.md](PRODUCTION_RELEASE.md). Kết quả local trong tài liệu này giữ phạm vi của riêng bản sao.
+
+## Duyệt đề tài Dự án
+
+Bản sao chuẩn bị mới chạy cả chuyển đổi metadata schema v3. Dùng `academic:topics-preview` trên file nguồn trước khi tạo bản sao để đối chiếu số đề tài được công nhận. Nghiệm thu SV gửi Pending, GVHD chính duyệt/sửa và nộp lại theo đề tài mới trên bản sao, không dùng tài khoản thử trên production. Quy tắc và API tại [TOPIC_APPROVAL.md](TOPIC_APPROVAL.md).

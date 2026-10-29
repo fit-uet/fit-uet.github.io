@@ -39,13 +39,13 @@ const sha = 'a'.repeat(40);
 function fixture(overrides: Record<string, unknown> = {}) {
   return (async (url: string | URL | Request) => {
     const path = new URL(String(url)).pathname;
-    const payload = path === '/api/me/campaigns' ? { error: 'Unauthorized' } : { status: path === '/api/ready' ? 'ready' : 'up', environment: 'production', release: sha, database: 'ok', academicSchema: 2, ...overrides };
+    const payload = path === '/api/me/campaigns' ? { error: 'Unauthorized' } : { status: path === '/api/ready' ? 'ready' : 'up', environment: 'production', release: sha, database: 'ok', academicSchema: 3, ...overrides };
     return Response.json(payload, { status: path === '/api/me/campaigns' ? 401 : 200 });
   }) as typeof fetch;
 }
 test('release checks require the deployed SHA, production schema and protected API; HTML fallbacks never pass', async () => {
   assert.equal((await verifyRelease({ base: 'https://api.example.org', release: sha, fetcher: fixture() })).ok, true);
-  for (const overrides of [{ release: 'b'.repeat(40) }, { environment: 'local-staging' }, { academicSchema: 1 }, { database: 'failed' }]) {
+  for (const overrides of [{ release: 'b'.repeat(40) }, { environment: 'local-staging' }, { academicSchema: 1 }, { academicSchema: 2 }, { database: 'failed' }]) {
     assert.equal((await verifyRelease({ base: 'https://api.example.org', release: sha, fetcher: fixture(overrides) })).ok, false);
   }
   const html = (async () => new Response('<html>Old app</html>', { headers: { 'Content-Type': 'text/html' } })) as typeof fetch;

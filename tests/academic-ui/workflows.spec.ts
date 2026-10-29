@@ -283,3 +283,51 @@ test('switching campaigns revokes PDF cache and checks permission again on retur
     expect(await viewer.getAttribute('src')).not.toBe(oldUrl); expect(requests).toEqual([200, 200]); expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
+
+test('project topic becomes pending, adviser approves or edits, and changed submitted work requires resubmission on desktop/mobile', async ({ browser }) => {
+  const sv = await session(browser, 'student'); const gv = await session(browser, 'lecturer');
+  const c = sv.classes.find(c => c.courseCode === 'INT3131');
+  try {
+    await sv.page.goto(`/#/classes/${c.id}`);
+    await sv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true }).fill('Đề tài chờ duyệt từ sinh viên');
+    await sv.page.getByRole('button', { name: 'Gửi GVHD duyệt', exact: true }).click();
+    await expect(sv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Pending');
+    await expect(sv.page.locator('input[name=pdf]')).toBeDisabled();
+    await sv.page.screenshot({ animations: 'disabled', path: `${screenshots}/topic-student-pending-desktop.png`, fullPage: true });
+    await gv.page.goto(`/#/classes/${c.id}`);
+    await gv.page.getByLabel('Trạng thái đề tài', { exact: true }).selectOption('pending');
+    await gv.page.getByRole('button', { name: 'Sinh viên An', exact: true }).click();
+    await gv.page.getByRole('button', { name: 'Duyệt đề tài', exact: true }).click();
+    await expect(gv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Đã duyệt');
+    await gv.page.getByRole('button', { name: 'Sửa và duyệt', exact: true }).click();
+    await gv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true }).fill('Đề tài đã được GVHD điều chỉnh');
+    await gv.page.getByRole('button', { name: 'Lưu và duyệt', exact: true }).click();
+    await expect(gv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Đã duyệt');
+    await gv.page.setViewportSize({ width: 390, height: 844 });
+    await gv.page.screenshot({ animations: 'disabled', path: `${screenshots}/topic-adviser-approved-mobile.png`, fullPage: true });
+    expect(await gv.page.getByRole('dialog').evaluate(el => el.getBoundingClientRect().width <= window.innerWidth)).toBe(true);
+    await sv.page.reload(); await expect(sv.page.locator('input[name=pdf]')).toBeEnabled();
+    await expect(sv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true })).toHaveValue('Đề tài đã được GVHD điều chỉnh');
+    await sv.page.locator('input[name=pdf]').setInputFiles({ name: 'topic-approved.pdf', mimeType: 'application/pdf', buffer: pdf() });
+    await sv.page.getByRole('textbox', { name: 'Link Google Drive slide', exact: true }).fill('https://docs.google.com/presentation/d/topic-slide/edit');
+    await sv.page.getByRole('textbox', { name: 'Link Google Drive video demo', exact: true }).fill('https://drive.google.com/file/d/topic-demo/view');
+    await sv.page.getByRole('button', { name: 'Xác nhận nộp bài', exact: true }).click();
+    await expect(sv.page.getByText('Đã nộp bộ bài', { exact: true })).toBeVisible();
+    await sv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true }).fill('Đề tài đổi sau nộp');
+    await sv.page.getByRole('button', { name: 'Gửi GVHD duyệt', exact: true }).click();
+    await expect(sv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Cần nộp lại theo đề tài mới');
+    await expect(sv.page.locator('input[name=pdf]')).toBeDisabled();
+    await gv.page.getByRole('button', { name: 'Đóng hồ sơ', exact: true }).click();
+    await gv.page.getByRole('button', { name: 'Tải lại', exact: true }).click();
+    await gv.page.getByRole('button', { name: 'Sinh viên An', exact: true }).click();
+    await gv.page.getByRole('button', { name: 'Duyệt đề tài', exact: true }).click();
+    await sv.page.reload();
+    await expect(sv.page.locator('input[name=pdf]')).toBeEnabled();
+    await sv.page.getByRole('button', { name: 'Xác nhận nộp bài', exact: true }).click();
+    await expect(sv.page.getByRole('region', { name: 'Đề tài Dự án' })).not.toContainText('Cần nộp lại');
+    await sv.page.setViewportSize({ width: 390, height: 844 });
+    await sv.page.screenshot({ animations: 'disabled', path: `${screenshots}/topic-student-resubmitted-mobile.png`, fullPage: true });
+    expect(await sv.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(sv.errors).toEqual([]); expect(gv.errors).toEqual([]);
+  } finally { await sv.context.close(); await gv.context.close(); }
+});

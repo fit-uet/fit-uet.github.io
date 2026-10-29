@@ -45,10 +45,23 @@ export interface AcademicClass {
   status: ClassStatus; legacy: boolean; settings: ClassSettings; revision: number;
 }
 export interface CourseAssignment { id: string; lecturerId: number; role: AssignmentRole; assignedAt: string }
+export type TopicStatus = 'unregistered' | 'pending' | 'approved';
+export const TOPIC_STATUS_NAMES: Record<TopicStatus, string> = { unregistered: 'Chưa đăng ký', pending: 'Pending · Chờ GVHD duyệt', approved: 'Đã duyệt' };
+export interface TopicReview {
+  status: TopicStatus; version: number; updatedAt: string;
+  source: 'legacy' | 'advisor' | null;
+  approvedById: number | null; approvedByLecturerId: number | null;
+  approvedByName: string | null; approvedAssignmentId: string | null; approvedAt: string | null;
+}
+export interface TopicPermissions {
+  canEdit: boolean; canApprove: boolean; canSubmit: boolean;
+  submissionBlockReason: string; requiresResubmission: boolean; canGradeSubmitted: boolean;
+}
 export interface SubmissionVersion {
   id: string; number: number; title: string; objectKey: string | null;
   filename: string | null; size: number; slidesUrl: string; demoUrl: string;
   state: 'empty' | 'editing' | 'submitted'; createdAt: string; submittedAt: string | null;
+  topicVersion?: number;
 }
 export interface CourseEvaluation {
   score: number; comment: string; lecturerId: number; assignmentId: string;
@@ -66,6 +79,7 @@ export interface CourseEnrollment {
   id: string; classId: string; studentId: string; email: string; name: string;
   dob: string; className: string; note: string; status: 'active' | 'withdrawn'; legacy: boolean;
   topic: string; assignments: CourseAssignment[]; versions: SubmissionVersion[];
+  topicReview?: TopicReview; topicSubmissionUntil?: string | null;
   evaluations: Record<string, Partial<Record<'advisor' | 'reviewer', CourseEvaluation>>>;
   internshipGrade: InternshipGrade | null;
   lockedAt: string | null; submissionLockedAt: string | null; reopenUntil: string | null;
@@ -84,4 +98,5 @@ export interface EnrollmentView extends Omit<CourseEnrollment, 'evaluations' | '
   evaluations?: CourseEnrollment['evaluations']; internshipGrade?: InternshipGrade | null;
   finalScore?: number | null; canSeeGrades: boolean;
   myAssignment: AssignmentRole[]; gradeStatus: string;
+  topicPermissions?: TopicPermissions;
 }

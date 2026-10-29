@@ -37,3 +37,40 @@ test('restored role screens on a prepared local copy of production data', async 
     } finally { await context.close(); }
   }
 });
+
+test('project topic approval works on a prepared private copy without changing the original source', async ({ browser }) => {
+  const base = process.env.ACADEMIC_ACCEPTANCE_BASE;
+  test.skip(!base, 'Requires an explicitly prepared local copy.');
+  const origin = new URL(base!); expect(origin.protocol).toBe('http:'); expect(['127.0.0.1','localhost']).toContain(origin.hostname);
+  const email = process.env.ACADEMIC_ACCEPTANCE_STUDENT!; expect(email).toBeTruthy();
+  const contexts = [];
+  const login = async (email?: string) => {
+    const context = await browser.newContext({ viewport: {width:1440,height:1000} }); contexts.push(context);
+    await context.route('**/*', route => new URL(route.request().url()).origin === origin.origin || /^(blob|data):/.test(route.request().url()) ? route.continue() : route.abort());
+    const page = await context.newPage(); await page.goto(`${origin.origin}/__local_staging/login${email ? '?email='+encodeURIComponent(email):''}`);
+    await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    const token = await page.evaluate(() => localStorage.getItem('token'));
+    return {context,page,headers:{Authorization:`Bearer ${token}`}};
+  };
+  try {
+    const sv=await login(email); const admin=await login(); const campaign='2026-2027-1:project';
+    const list=await (await sv.context.request.get(`${origin.origin}/api/campaigns/${campaign}/enrollments`,{headers:sv.headers})).json();
+    const e=list.items.find(e=>e.courseCode==='INT3131'); expect(e).toBeTruthy();
+    const meta=await (await admin.context.request.get(`${origin.origin}/api/campaigns/${campaign}`,{headers:admin.headers})).json();
+    const primary=meta.lecturers.find(l=>l.id===e.assignments.find(a=>a.role==='primary').lecturerId); expect(primary).toBeTruthy();
+    const gv=await login(primary.email);
+    const path=`/#/campaigns/${campaign}?tab=students&enrollmentId=${e.id}`;
+    await sv.page.goto(origin.origin+path);
+    await sv.page.getByRole('textbox',{name:'Tên đề tài Dự án',exact:true}).fill(`Đề tài nghiệm thu riêng trên bản sao local ${Date.now()}`);
+    await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();
+    await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Pending');
+    await gv.page.goto(origin.origin+path);
+    await gv.page.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();
+    await expect(gv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Đã duyệt');
+    await sv.page.reload(); await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Đã duyệt');
+    const after=await (await sv.context.request.get(`${origin.origin}/api/campaigns/${campaign}/enrollments`,{headers:sv.headers})).json();
+    expect(after.items.find(x=>x.courseCode==='INT3132').topic).toBe(list.items.find(x=>x.courseCode==='INT3132').topic);
+    expect(after.items.find(x=>x.id===e.id)).not.toHaveProperty('evaluations');
+    await sv.page.screenshot({animations:'disabled',path:'scratch/academic-ui-results/private-local-copy/topic-approved.png',fullPage:true});
+  } finally { for (const context of contexts) await context.close(); }
+});
