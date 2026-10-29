@@ -36,26 +36,31 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
       .finally(() => setLoadingStats(false));
   }, [token, presentation?.stats, presentation?.legacy]);
 
+  const isProject = !!presentation?.project;
   const navModules = [
-    { title: presentation?.project ? 'Sinh viên Dự án' : 'Quản lý Đăng ký', path: presentation?.project ? '/campaign/students' : '/admin/registrations', icon: <LayoutDashboard size={20} className="text-[#034ea1]" /> },
+    { title: isProject ? 'Sinh viên & Đề tài Dự án' : 'Quản lý Đăng ký', path: isProject ? '/campaign/students' : '/admin/registrations', icon: <LayoutDashboard size={20} className="text-[#034ea1]" /> },
     { title: 'Quản lý Sinh viên', path: '/admin/students', icon: <Users size={20} className="text-[#034ea1]" /> },
     { title: 'Quản lý Giảng viên', path: '/admin/lecturers', icon: <GraduationCap size={20} className="text-[#034ea1]" /> },
-    { title: 'Quản lý Doanh nghiệp', path: '/admin/companies', icon: <Building2 size={20} className="text-[#034ea1]" /> },
-    { title: presentation?.project ? 'Phân công GVHD / GVNX' : 'Phân công GVHD', path: '/admin/advisors', icon: <UserCheck size={20} className="text-[#034ea1]" /> },
-    { title: presentation?.project ? 'Báo cáo Dự án' : 'Báo cáo thực tập', path: '/admin/reports', icon: <FileText size={20} className="text-[#034ea1]" /> },
-    { title: presentation?.project ? 'Bảng điểm Dự án' : 'Bảng điểm thực tập', path: '/admin/grades', icon: <CheckCircle2 size={20} className="text-[#1b7f37]" /> },
-    { title: 'CSDL Thẩm định', path: '/admin/approved-companies', icon: <Shield size={20} className="text-[#034ea1]" /> },
+    ...(!isProject ? [{ title: 'Quản lý Doanh nghiệp', path: '/admin/companies', icon: <Building2 size={20} className="text-[#034ea1]" /> }] : []),
+    { title: isProject ? 'Phân công GVHD / GVNX' : 'Phân công GVHD', path: '/admin/advisors', icon: <UserCheck size={20} className="text-[#034ea1]" /> },
+    { title: isProject ? 'Báo cáo Dự án' : 'Báo cáo thực tập', path: '/admin/reports', icon: <FileText size={20} className="text-[#034ea1]" /> },
+    { title: isProject ? 'Bảng điểm Dự án' : 'Bảng điểm thực tập', path: '/admin/grades', icon: <CheckCircle2 size={20} className="text-[#1b7f37]" /> },
+    ...(!isProject ? [{ title: 'CSDL Thẩm định', path: '/admin/approved-companies', icon: <Shield size={20} className="text-[#034ea1]" /> }] : []),
     { title: 'Thông báo & Email', path: '/admin/notifications', icon: <Mail size={20} className="text-[#b25e00]" /> },
     { title: 'Cài đặt hệ thống', path: '/admin/settings', icon: <Settings size={20} className="text-slate-600" /> },
     { title: 'Kế hoạch triển khai', path: '/admin/plan', icon: <FileText size={20} className="text-blue-600" /> },
-    { title: 'Quy định thực tập', path: '/admin/registration-rules', icon: <Shield size={20} className="text-indigo-600" /> },
+    ...(!isProject ? [{ title: 'Quy định thực tập', path: '/admin/registration-rules', icon: <Shield size={20} className="text-indigo-600" /> }] : []),
     { title: 'Hướng dẫn GV', path: '/admin/lecturer-guide', icon: <BookOpen size={20} className="text-teal-600" /> },
     { title: 'Cài đặt FAQ', path: '/admin/faq', icon: <CircleHelp size={20} className="text-amber-600" /> },
     { title: 'Quản trị viên', path: '/admin/admins', icon: <Shield size={20} className="text-slate-600" /> },
-  ].filter(item=>!presentation?.project || item.path!=='/admin/registration-rules');
-  if(presentation)navModules.splice(5,0,{title:presentation.project?'Hồ sơ học phần':'Nơi thực tập chính thức',path:presentation.project?'/campaign/students':'/admin/final-internships',icon:<Building2 size={20} className="text-[#034ea1]" />});
+  ];
+  if (presentation && !presentation.project) {
+    navModules.splice(5, 0, { title: 'Nơi thực tập chính thức', path: '/admin/final-internships', icon: <Building2 size={20} className="text-[#034ea1]" /> });
+  }
 
-  for(const item of presentation?.extraModules||[])navModules.push({...item,icon:item.icon || <Mail size={20} className="text-[#034ea1]" />});
+  for (const item of presentation?.extraModules || []) {
+    navModules.push({ ...item, icon: item.icon || <Mail size={20} className="text-[#034ea1]" /> });
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

@@ -411,9 +411,13 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
             <SegmentedControl
               value={view}
               onChange={(val) => {
-                if (val === 'assignments') navigate('/admin/advisors');
-                else if (val === 'requests') navigate('/admin/advisors/requests');
-                else if (val === 'quotas') navigate('/admin/advisors/quotas');
+                if (campaignLayout) {
+                  campaignLayout.editQuery({ view: val === 'assignments' ? '' : val });
+                } else {
+                  if (val === 'assignments') navigate('/admin/advisors');
+                  else if (val === 'requests') navigate('/admin/advisors/requests');
+                  else if (val === 'quotas') navigate('/admin/advisors/quotas');
+                }
               }}
               items={[
                 { value: 'assignments', label: 'Danh sách phân công', badge: rows.length || undefined },
