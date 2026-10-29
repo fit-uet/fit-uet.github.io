@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      frontend_only:
+        description: 'Publish static URL/assets using the existing compatible backend'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -43,6 +49,7 @@ jobs:
         run: cp dist/index.html dist/404.html
 
       - name: Wait for the matching Render backend before publishing the frontend
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.frontend_only }}
         run: npm run production:check -- --attempts=60 --interval-ms=10000
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || vars.VITE_API_BASE_URL }}
