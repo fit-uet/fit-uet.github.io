@@ -5,7 +5,7 @@ import { CampaignEditorContext } from './CampaignEditorContext';
 import { refreshRequestCache } from '../../shared/utils/requestCache';
 import { academicInput } from './form';
 import { hasLegacyPanel } from './legacyPresentation';
-import { Upload } from 'lucide-react';
+import { Lock, Upload } from 'lucide-react';
 import { CampaignDashboard } from './CampaignDashboard';
 import { CampaignRecords } from './CampaignRecords';
 import { EnrollmentDialog } from './EnrollmentDialog';
@@ -111,7 +111,7 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
       {tab === 'overview' && admin && <CampaignDashboard data={data} modules={modules} navigate={go} token={token} reload={() => runOnly(async()=>{refreshRequestCache();await refresh();})} />}
       {showImport && tab === 'students' && admin && project && <ImportPanel token={token} semesterId={p.semesterId} onImported={refresh} />}
       {legacyPanel ? (!currentMeta ? <p role="status">Đang tải chức năng…</p> : <LegacyCampaignPanels key={`${tab}:${chosenClass?.courseCode || query.get('courseCode') || ''}`} token={token} user={actor} tab={tab} courseCode={chosenClass?.courseCode || query.get('courseCode') || ''} />) : <>
-        {recordPages.includes(tab) && !student && <CampaignRecords page={rows} tab={tab} project={project} lecturer={!admin} lecturers={data.lecturers} query={query} editQuery={editQuery} open={open} exportFile={exportFile} busy={busy} extraActions={admin && project && tab==='students' && p.status!=='archived' ? <Button size="sm" variant="primary" leadingIcon={<Upload size={14}/>} onClick={()=>setShowImport(value=>!value)}>{showImport?'Đóng import':'Import danh sách'}</Button> : null}/>}
+        {recordPages.includes(tab) && !student && <CampaignRecords token={token} page={rows} tab={tab} project={project} lecturer={!admin} lecturers={data.lecturers} query={query} editQuery={editQuery} open={open} exportFile={exportFile} busy={busy} extraActions={admin && project && tab==='students' && p.status!=='archived' ? <Button size="sm" variant="primary" leadingIcon={<Upload size={14}/>} onClick={()=>setShowImport(value=>!value)}>{showImport?'Đóng import':'Import danh sách'}</Button> : null}/>}
         {student && tab === 'students' && <section className="space-y-5">{rows && rows.items.length > 1 && <div className="bg-white border border-slate-200 rounded-xl p-5"><h2 className="font-semibold text-sm mb-3">Hồ sơ học phần của tôi</h2><div className="grid sm:grid-cols-2 gap-3">{rows.items.map(e => <button key={e.id} onClick={() => editQuery({ enrollmentId: e.id, panel: '' })} aria-pressed={selectedId === e.id} className={`text-left p-4 border rounded-xl transition-colors ${selectedId === e.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'}`}><span className="block font-semibold text-sm text-[#034ea1]">{e.courseCode} · {e.classCode}</span><span className="block text-xs text-slate-600 mt-2">{e.topic || 'Chưa khai đề tài'}</span><span className="block text-[11px] text-slate-500 mt-2">{e.topicPermissions?.requiresResubmission ? 'Cần nộp lại theo đề tài' : e.versions.at(-1)?.state === 'submitted' ? 'Đã nộp bộ bài' : 'Chưa hoàn tất bài nộp'}</span></button>)}</div></div>}{selected && selectedClass ? <EnrollmentPanel key={selected.id} token={token} user={actor} courseClass={selectedClass} enrollment={selected} lecturers={data.lecturers} refresh={refresh} /> : <div className="p-8 bg-white rounded-xl border border-slate-200 text-sm text-center text-slate-500">{!rows ? 'Đang tải hồ sơ…' : rows.items.length ? 'Chọn hồ sơ học phần để xem thông tin và nộp bài.' : 'Bạn chưa có hồ sơ học phần trong nhóm này.'}</div>}</section>}
       </>}
       {!student && selectedId && recordPages.includes(tab) && !legacyPanel && (() => {
@@ -128,15 +128,30 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
         return <EnrollmentDialog title={panel === 'assignments' ? 'Phân công giảng viên' : panel === 'reports' || panel === 'grades' ? 'Báo cáo và đánh giá' : 'Hồ sơ sinh viên'} close={() => editQuery({ enrollmentId: '', panel: '' })} actions={navActions}>{selected && selectedClass ? <EnrollmentPanel key={`${selected.id}:${panel}`} mode={panel} token={token} user={actor} courseClass={selectedClass} enrollment={selected} lecturers={data.lecturers} refresh={refresh} /> : <p className="p-10 text-center text-sm text-slate-500">{error || 'Đang tải hồ sơ…'}</p>}</EnrollmentDialog>;
       })()}
       {admin && !legacyPanel && p.status === 'active' && tab === 'grades' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="text-sm font-bold text-slate-800">Quản lý Khóa / Mở khóa điểm</h3>
-            <span className="text-xs text-slate-500">Áp dụng theo bộ lọc hiện tại</span>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#034ea1] flex items-center justify-center shrink-0">
+                <Lock size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Quản lý Khóa / Mở khóa bảng điểm</h3>
+                <p className="text-xs text-slate-500">Khóa điểm để chốt kết quả đợt chấm hoặc mở khóa cho phép giảng viên cập nhật lại.</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 self-start sm:self-auto">
+              Áp dụng theo bộ lọc hiện tại
+            </span>
           </div>
-          <form className="flex flex-wrap items-center gap-3" onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); run(async () => { const r = await academicApi(token, `/api/admin/campaigns/${id}/grade-locks`, 'PUT', { locked: f.get('action') === 'lock', reason: f.get('reason'), filters }); setNotice(`Đã cập nhật ${r.changed} hồ sơ; bỏ qua ${r.skipped.length} hồ sơ chưa đủ điểm.`); }); }}>
-            <select className={`${academicInput} max-w-xs`} name="action"><option value="lock">Khóa đủ điểm theo bộ lọc</option><option value="unlock">Mở khóa theo bộ lọc</option></select>
-            <input className={`${academicInput} max-w-sm`} name="reason" placeholder="Lý do" required />
-            <Button type="submit" disabled={busy}>Áp dụng</Button>
+          <form className="flex flex-wrap items-center gap-3 pt-1" onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); run(async () => { const r = await academicApi(token, `/api/admin/campaigns/${id}/grade-locks`, 'PUT', { locked: f.get('action') === 'lock', reason: f.get('reason'), filters }); setNotice(`Đã cập nhật ${r.changed} hồ sơ; bỏ qua ${r.skipped.length} hồ sơ chưa đủ điểm.`); }); }}>
+            <select className={`${academicInput} max-w-xs`} name="action">
+              <option value="lock">Khóa hồ sơ đủ điểm theo bộ lọc</option>
+              <option value="unlock">Mở khóa theo bộ lọc</option>
+            </select>
+            <input className={`${academicInput} flex-1 min-w-[200px] max-w-md`} name="reason" placeholder="Nhập lý do khóa / mở khóa (bắt buộc)..." required />
+            <Button type="submit" variant="primary" disabled={busy}>
+              Áp dụng
+            </Button>
           </form>
         </div>
       )}
