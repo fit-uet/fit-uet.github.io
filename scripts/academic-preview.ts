@@ -86,7 +86,7 @@ app.get('/api/me/unread-counts', (_req,res) => res.json({notifications:0,chats:0
 app.use(academicRouter);
 const server = createHttpServer(app);
 process.chdir(storageRoot);
-const vite = await createServer({ configFile: false, envDir: false, root: projectRoot, cacheDir: join(storageRoot, '.vite'), plugins: [react(), tailwindcss()], server: { middlewareMode: true, hmr: { server } }, appType: 'spa', define: { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify('') } });
+const vite = await createServer({ configFile: false, envDir: false, root: projectRoot, cacheDir: join(storageRoot, '.vite'), plugins: [react(), tailwindcss()], server: { middlewareMode: true, hmr: { server }, watch: { ignored: ['**/scratch/**', '**/private/**'] } }, appType: 'spa', define: { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify('') } });
 app.use(vite.middlewares);
 const port = Number(process.env.ACADEMIC_PREVIEW_PORT || 4318);
 server.listen(port, '127.0.0.1', () => console.log(`Academic isolated preview: http://127.0.0.1:${port}`));

@@ -34,7 +34,7 @@ async function session(browser: Browser, role: 'admin' | 'student' | 'lecturer' 
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } });
   await context.route('**/*', route => { const url = new URL(route.request().url()); return ['127.0.0.1', 'localhost'].includes(url.hostname) || url.protocol === 'blob:' || url.protocol === 'data:' ? route.continue() : route.abort(); });
   const response = await context.request.get(`${previewOrigin}/__academic_preview/session?role=${role}`); const data = await response.json();
-  await context.addInitScript(data => { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); }, data);
+  await context.addInitScript(data => { if(location.protocol!=='http:'&&location.protocol!=='https:')return; localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); }, data);
   const page = await context.newPage(); const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   const classes = (await (await context.request.get(`${previewOrigin}/api/me/classes`, { headers: { Authorization: `Bearer ${data.token}` } })).json()).classes;
   return { context, page, token: data.token, classes, errors };
@@ -455,5 +455,15 @@ test('Khoa previews and deletes exactly one project enrollment while its sibling
   await dialog.getByRole('button',{name:'Hủy',exact:true}).click();expect((await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json()).total).toBe(before.total);
   await page.getByRole('button',{name:'Xóa khỏi danh sách (1)',exact:true}).click();await dialog.getByRole('textbox',{name:'Lý do xóa',exact:true}).fill('Xóa đúng học phần cần bỏ');await dialog.getByRole('button',{name:'Xác nhận xóa vĩnh viễn',exact:true}).click();await expect(page.getByText('Đã xóa hoàn tất dữ liệu và tệp của lần học.',{exact:true})).toBeVisible();
   const after=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json();expect(after.total).toBe(before.total-1);expect(after.items.some(e=>e.id===target.id)).toBe(false);expect(after.items.find(e=>e.id===sibling.id)).toEqual(sibling);expect(errors).toEqual([]);
+ }finally{await context.close();}
+});
+
+test('project drafts block browser back and can save before changing the applied filter',async({browser})=>{
+ const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
+ try{
+  await page.goto('/#/classes');await page.getByRole('link',{name:'Mở quản lý Dự án',exact:true}).click();await feature(page,'students');await applyFilters(page,{'Lớp học phần':c.id});
+  const row=page.getByRole('row').filter({hasText:'24020002'});await expect(row).toHaveCount(1);await row.getByRole('button',{name:'Sửa đề tài',exact:true}).click();await row.getByRole('textbox',{name:'Đề tài 24020002',exact:true}).fill('Đề tài lưu khi chuyển bộ lọc');await row.getByRole('textbox',{name:'Lý do đề tài 24020002',exact:true}).fill('Đối soát Khoa');
+  await page.goBack();const guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu'});await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Ở lại',exact:true}).click();await expect(page).toHaveURL(/tab=students/);await expect(row.getByRole('textbox',{name:'Đề tài 24020002',exact:true})).toHaveValue('Đề tài lưu khi chuyển bộ lọc');
+  await page.getByRole('button',{name:/^Bộ lọc/}).click();const filters=page.getByRole('dialog',{name:'Bộ lọc danh sách',exact:true});await filters.getByLabel('Trạng thái đề tài',{exact:true}).selectOption('pending');await filters.getByRole('button',{name:'Áp dụng',exact:true}).click();await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Lưu và tiếp tục',exact:true}).click();await expect(page).toHaveURL(/topicStatus=pending/);await expect(page.getByRole('button',{name:'Lưu thay đổi (0)',exact:true})).toBeVisible();await expect(page.getByText('Đề tài lưu khi chuyển bộ lọc',{exact:true})).toBeVisible();expect(errors).toEqual([]);
  }finally{await context.close();}
 });

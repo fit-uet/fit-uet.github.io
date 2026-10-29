@@ -73,7 +73,7 @@ erDiagram
 | `courses` | id, code unique, name, group = `internship/project`; seed INT4002, INT3508, INT4003, INT3132, INT3131 |
 | `course_campaigns` | id, semester_id, group, status = `draft/active/archived`, settings, revision; unique(semester_id,group) |
 | `course_classes` | id, campaign_id, course_id, section, code, revision; unique(campaign,course,section); trạng thái/cấu hình kế thừa campaign |
-| `enrollments` | id, class_id, user_id, status = `active/withdrawn`, registration_note, snapshot tên/ngày sinh/lớp khóa học, source, revision; unique(class_id, user_id) |
+| `enrollments` | id, class_id, user_id, status = `active/withdrawn` chỉ cho TT; Dự án không lưu status, registration_note, snapshot tên/ngày sinh/lớp khóa học, source, revision; unique(class_id, user_id) |
 | `campaign_settings` | Cấu hình chung theo campaign_id; lớp kế thừa hạn/nội dung/trạng thái, không có ghi đè riêng |
 | `advisor_assignments` | id, enrollment_id, lecturer_id, role = `primary/co/reviewer`, trạng thái hiện hành, người/thời điểm gán, ghi chú/liên hệ; lịch sử riêng |
 | `project_topics` | enrollment_id PK, title, trạng thái/phiên bản đề tài, nguồn công nhận, người/thời điểm duyệt, revision; chỉ dùng cho project |
@@ -95,9 +95,9 @@ Ràng buộc bắt buộc:
 
 1. Partial unique cho tối đa một primary và một reviewer hiện hành/enrollment; unique(enrollment, lecturer, role) với phân công hiện hành. Reviewer không trùng primary/co; CN không primary/reviewer. Kiểm tra trong cùng transaction với ghi dữ liệu.
 2. Con trỏ version và đánh giá phải có FK/kiểm tra bảo đảm version thuộc đúng enrollment; assignment đánh giá cùng enrollment/GV/vai trò. Giữ assignment đã thay làm lịch sử, không cascade xóa đánh giá.
-3. Enrollment withdrawn thu hồi quyền SV và quyền ghi của GV đối với lần học đó; giữ dữ liệu cho Khoa. Tái tiếp nhận cùng lớp khôi phục enrollment, không nhân bản hoặc tự mở khóa bài.
+3. Chỉ TT có Enrollment withdrawn, thu hồi quyền SV và quyền ghi của GV đối với lần học đó; giữ dữ liệu cho Khoa. Tái tiếp nhận cùng lớp khôi phục enrollment, không nhân bản hoặc tự mở khóa bài.
 4. Không dùng users.course_code để suy ra quyền; không ánh xạ giảng viên chưa xác định bằng tên và `LIMIT 1`.
-5. Danh mục/lớp đã có dữ liệu dùng lưu trữ/rút, không cascade mất điểm/file/audit. Chỉ xóa vật lý thực thể nháp không có phụ thuộc.
+5. Danh mục/lớp đã có dữ liệu dùng lưu trữ; TT giữ quy trình rút. Dự án cho phép Khoa xóa hẳn lần học qua preview/xác nhận, giao dịch xóa dữ liệu và hàng đợi R2; xem PROJECT_STUDENT_LIST.md.
 6. Điểm hữu hạn 0–10, trọng số theo course.group; API TT không ghi đánh giá Dự án và ngược lại.
 
 ### 2.3. Cấu hình chung theo nhóm môn/học kỳ
@@ -135,7 +135,7 @@ flowchart TD
     J --> K[Moi API kiem tra lai pham vi va phan cong]
 ```
 
-Giữ `POST /api/auth/google` và token tài khoản; không đưa classId cố định vào JWT làm nguồn cấp quyền. Email Google xác định MSSV, bảo toàn hồ sơ import. Tư cách Dự án là enrollment active trong class active/archived; archived cho xem lịch sử, draft chưa cấp quyền SV. Người chỉ hợp lệ TT chưa tự có quyền Dự án.
+Giữ `POST /api/auth/google` và token tài khoản; không đưa classId cố định vào JWT làm nguồn cấp quyền. Email Google xác định MSSV, bảo toàn hồ sơ import. Quyền Dự án dựa vào sự tồn tại enrollment trong class active/archived; archived cho xem lịch sử, draft chưa cấp quyền SV. Người chỉ hợp lệ TT chưa tự có quyền Dự án.
 
 Tiếp nhận TT mới: backend kiểm tra khóa/ngoại lệ của lớp, mã học phần/hồ sơ và hạn đăng ký, rồi tạo enrollment khi SV tham gia lớp TT đó. Không dùng đường này cho Dự án. Tài khoản tồn tại trong users chỉ giữ ý nghĩa ngoại lệ TT hiện có, không cấp tư cách Dự án.
 
@@ -211,7 +211,7 @@ sequenceDiagram
 
 Preview theo Admin, mặc định hết hạn sau 30 phút, không ghi user/lớp/enrollment/phân công thật. Server áp sửa/loại dòng vào dữ liệu gốc rồi tạo preview cuối. Commit chỉ nhận preview cuối, kiểm digest/revision nguồn/lớp/danh mục; lỗi hoặc stale trả 409/422, không công bố một phần lớp.
 
-PreviewId đã commit trả kết quả cũ. Nhập lại file tạo preview mới nhưng unique danh tính/enrollment/assignment ngăn nhân bản. Không xóa SV vắng file, không tự khôi phục withdrawn, không ghi điểm/file hoặc đổi đề tài/người chấm khi đã có điểm. Trường hợp đó dùng mở lại riêng. SV chưa có GVHD vẫn được nhận.
+PreviewId đã commit trả kết quả cũ. Nhập lại file tạo preview mới nhưng unique danh tính/enrollment/assignment ngăn nhân bản. Không xóa SV vắng file, không tự tiếp nhận lại SV TT đã rút, không ghi điểm/file hoặc đổi đề tài/người chấm khi đã có điểm. Trường hợp đó dùng mở lại riêng. SV chưa có GVHD vẫn được nhận.
 
 ## 5. Tự phân công GVNX
 
@@ -302,7 +302,7 @@ Mutation nhận expectedRevision; preview có idempotency riêng. Tách DTO SV v
 | Tiếp nhận TT | `POST /api/classes/:classId/enrollments/join` | SV đủ điều kiện TT; không nhận project class |
 | Học vụ | `GET/POST /api/admin/academic-years`; `GET/POST /api/admin/semesters`; `GET/POST /api/admin/classes`; `PATCH /api/admin/classes/:classId` | Admin tạo kỳ/lớp; PATCH lớp trả CAMPAIGN_CONTEXT_REQUIRED; trạng thái chung qua PATCH campaign |
 | Cấu hình | `GET /api/campaigns/:campaignId`; `PUT /api/admin/campaigns/:campaignId/settings` | Nội dung/hạn chung; Admin sửa theo nhóm/kỳ, API sửa lớp cũ trả CAMPAIGN_CONTEXT_REQUIRED |
-| DS nhóm | `GET /api/campaigns/:campaignId/enrollments`; `PATCH /api/admin/enrollments/:enrollmentId` | SV chỉ bản thân, GV phần được phân công; Admin quản lý tiếp nhận/rút/điều chỉnh |
+| DS nhóm | `GET /api/campaigns/:campaignId/enrollments`; `PATCH /api/admin/enrollments/:enrollmentId` | SV chỉ bản thân, GV phần được phân công; Admin quản lý import/xóa lần học Dự án, tiếp nhận/rút TT và điều chỉnh |
 | Import | `POST /api/admin/semesters/:semesterId/enrollments/import/preview`; `POST /api/admin/enrollment-imports/:previewId/commit` | Admin; multipart workbook/resolutions/excludedRows; commit preview cuối |
 | Phân công | `GET /api/enrollments/:enrollmentId/assignments`; `PUT /api/admin/enrollments/:enrollmentId/assignments` | Xem theo lần học; Admin ghi tập phân công và revision |
 | Trần NX | `GET/PUT /api/admin/semesters/:semesterId/reviewer-quotas` | Admin; lecturerId, maxReviews null hoặc số nguyên ≥0 |
@@ -547,3 +547,7 @@ Router health cung cấp `/api/health` và `/api/ready`. Cấu hình `APP_ENV=st
 ### Metadata duyệt đề tài (schema v3)
 
 Cài đặt thực tế vẫn dùng JSON enrollment: `topicReview`, `topicSubmissionUntil` và `SubmissionVersion.topicVersion`; không tách bảng mới. Khởi tạo chuyển metadata hồ sơ cũ có audit trước khi readiness schema 3; kế hoạch/đối soát và hợp đồng API tại [TOPIC_APPROVAL.md](TOPIC_APPROVAL.md).
+
+### Danh sách Dự án và xóa lần học (schema v4)
+
+[PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) mô tả projection `student-list`, bulk PATCH có kiểm quota/trạng thái cuối, xóa hai bước, hàng đợi R2 và audit tối thiểu. JSON Dự án không còn `status`; TT giữ trường cũ. Khởi động dừng khi phát hiện Dự án withdrawn, migration dùng snapshot revision nhất quán và guard trong trigger. Readiness yêu cầu schema 4; cache metadata kiểm revision để quyền bị thu hồi ngay sau xóa. Không có chuyển đổi file hay điểm.

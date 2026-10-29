@@ -18,6 +18,7 @@ export default defineConfig(({mode}) => {
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
+      watch: { ignored: ['**/scratch/**', '**/private/**'] },
     },
     build: {
       chunkSizeWarningLimit: 800,

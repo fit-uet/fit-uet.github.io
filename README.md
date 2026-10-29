@@ -13,6 +13,7 @@
 | [Bản cài đặt và chạy thử](docs/IMPLEMENTATION_STATUS.md) | Phạm vi mã thực tế, bản thử độc lập, import tám lớp, chuyển dữ liệu cũ và kết quả kiểm thử |
 | [Quản lý theo nhóm môn](docs/GROUP_MANAGEMENT.md) | Cách vận hành theo nhóm/kỳ, API, migration cấu hình và giao diện chung Thực tập cũ |
 | [Staging cục bộ](docs/LOCAL_STAGING.md) | Database bản sao có lưu dữ liệu, đối soát, giao diện localhost và các bước nghiệm thu |
+| [Danh sách sinh viên Dự án](docs/PROJECT_STUDENT_LIST.md) | Bảng tổng hợp, lưu nhiều dòng, xóa lần học và chuyển metadata schema 4 |
 | [Phát hành production](docs/PRODUCTION_RELEASE.md) | Sao lưu Turso/R2, diễn tập, chờ backend đúng phiên bản trước phát hành Pages và khôi phục |
 | [Thiết kế giao diện](docs/UI_DESIGN_SYSTEM.md) | UI primitives, tokens và quy chuẩn trình bày |
 | [Hiệu năng và cache](docs/PERFORMANCE.md) | Tải theo chức năng, cache RAM/ETag, API đọc và cách nghiệm thu |

@@ -113,3 +113,9 @@ Bản sao chuẩn bị mới chạy cả chuyển đổi metadata schema v3. Dù
 ## Nghiệm thu tải dữ liệu và cache
 
 Áp dụng [PERFORMANCE.md](PERFORMANCE.md) trên bản sao có 535 hồ sơ Dự án và nguồn Thực tập cũ. Kiểm tra Network: Tổng quan/Kế hoạch/Thiết lập không gọi danh sách hoặc PDF; danh sách chỉ lấy 25 dòng; quay lại nhận 304; F5 và Tải lại nhận JSON mới. Export phải đủ các trang và đúng bộ lọc. Mở hai tab cùng tài khoản để kiểm tra lưu ở tab này cập nhật màn đang mở ở tab kia; đổi vai trò/nhóm hoặc bị thu hồi quyền không nhận dữ liệu cũ. Không gửi email thật trong nghiệm thu local.
+
+## Nghiệm thu Danh sách sinh viên Dự án
+
+Trước chuẩn bị staging mới, chạy `npm run academic:membership -- --database=file:/absolute/path/copy.db` để đối soát status. Nếu có withdrawn, dừng và xuất danh sách để Khoa quyết định; không tự tiếp nhận lại. `--apply` sao lưu rồi chuyển metadata trên bản sao; nguồn production và R2 không được dùng cho thao tác thử. Readiness hiện yêu cầu schema 4.
+
+Kiểm thử lưu nhiều dòng có lỗi/revision xung đột và phân công cuối/quota; chuyển nhóm khi còn nháp; mở PDF theo phiên bản; export vượt trang; xóa một trong hai hồ sơ DACN/DAKH với bài/điểm/chat; R2 lỗi/retry; token cũ mất quyền; tệp dùng chung còn nguyên. Đối soát cả 208 hồ sơ legacy chưa ánh xạ và bảo toàn dữ liệu TT. `ACADEMIC_PREVIEW_PORT` cho phép chạy bộ UI test ở cổng khác khi có phiên làm việc song song. [Chi tiết API và tiêu chí](PROJECT_STUDENT_LIST.md).

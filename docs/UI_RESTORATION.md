@@ -4,7 +4,7 @@ Bố cục tham chiếu là commit `726271c`. Người dùng vẫn chọn **Họ
 
 ## Điều hướng và các vai trò
 
-- Khoa vào **Tổng quan Quản trị**, xem thẻ thống kê và các ô chức năng như giao diện cũ. Sinh viên, Phân công, Báo cáo và Bảng điểm là các màn riêng với cột và thao tác phù hợp; import mở bằng nút trong màn Sinh viên.
+- Khoa vào **Tổng quan Quản trị**, xem thẻ thống kê và các ô chức năng như giao diện cũ. Thực tập giữ Sinh viên, Phân công, Báo cáo và Bảng điểm riêng; Dự án dùng một Danh sách sinh viên với thao tác trực tiếp tại dòng, import mở bằng nút riêng.
 - Giảng viên vào danh sách sinh viên phụ trách; cửa sổ báo cáo có PDF bên cạnh nhận xét/chấm điểm. Tài khoản Khoa đồng thời giảng viên có thể chuyển sang các hồ sơ mình được phân công rồi trở lại quản trị.
 - Sinh viên xem thẻ thông tin, tiến độ, thời hạn và bộ bài. Người học hai môn chọn rõ từng hồ sơ; giao diện không nhận dữ liệu điểm.
 - Khung nhóm môn dùng một tiêu đề, bộ chọn học kỳ/nhóm cùng hàng và hàng chức năng chính; chức năng còn lại nằm trong **Thêm**. Header xanh, menu tài khoản và typography dùng hệ giao diện hiện có từ bản tham chiếu.
@@ -16,7 +16,7 @@ Các URL `#/campaigns/:campaignId?tab=...`, `#/classes/:classId` và đường d
 
 Dự án và Thực tập mới tiếp tục dùng API campaign/enrollment. Thực tập legacy dùng các màn cũ, mỗi lần chỉ mount một nguồn giao diện; mã học phần được chuẩn hóa để khớp cả tên lưu đầy đủ. Bộ lọc giảng viên/lớp của màn legacy được áp tại SQL trên toàn phạm vi, không giới hạn ở một trang. Hồ sơ chưa ánh xạ vẫn giữ lối vào riêng.
 
-Đợt thay giao diện không cần migration, import lại, tính lại điểm hoặc thay tệp R2. ID lớp/lần học/phiên bản, phân công, quyền truy cập và các mốc thời gian giữ nguyên.
+Đợt khôi phục bố cục không cần migration; đợt gộp bảng Dự án tiếp theo có migration bỏ riêng status, không import lại, tính lại điểm hoặc thay tệp R2. ID lớp/lần học/phiên bản, phân công, quyền truy cập và các mốc thời gian giữ nguyên.
 
 ## Kiểm chứng
 
@@ -59,6 +59,8 @@ Không đổi API, database, quy tắc nghiệp vụ hoặc cơ chế cache. H�
 
 ## Phân công GV nhận xét do người phụ trách thực hiện
 
-Khoa/Quản trị viên mở **Dự án → Phân công → Phân công**, kiểm tra phương án rồi bấm **Xác nhận phân công** để lưu. Đóng cửa sổ hoặc hủy không thay đổi GVNX; mở trang, đăng nhập, import và tải lại không tự phân công. Giữ các quy tắc ưu tiên bộ môn, cân bằng DACN/DAKH, quota và chỉ bổ sung hồ sơ chưa có GVNX.
+Khoa/Quản trị viên mở **Dự án → Danh sách sinh viên → Phân công**, kiểm tra phương án rồi bấm **Xác nhận phân công** để lưu. Đóng cửa sổ hoặc hủy không thay đổi GVNX; mở trang, đăng nhập, import và tải lại không tự phân công. Giữ các quy tắc ưu tiên bộ môn, cân bằng DACN/DAKH, quota và chỉ bổ sung hồ sơ chưa có GVNX.
 
 Công cụ `npm run academic:reviewers-reset` mặc định chỉ xem trước. `--apply` yêu cầu nguồn database tường minh, campaign Dự án, tài khoản quản trị, revision đã đối soát, lý do và backup mới. Công cụ chặn toàn bộ tác vụ nếu có hồ sơ đã chấm/khóa, nhóm không hoạt động hoặc revision đã đổi; một lệnh ghi nguyên tử chỉ gỡ vai trò reviewer và lưu lịch sử trước/sau. Giữ GVHD, đề tài, bài nộp, điểm, quota, tệp và dữ liệu Thực tập; không gửi email/thông báo. Chạy lại sau khi gỡ xong không tạo thay đổi mới.
+
+Chi tiết bảng gộp, bản nháp nhiều dòng, PDF riêng và xóa lần học: [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md).

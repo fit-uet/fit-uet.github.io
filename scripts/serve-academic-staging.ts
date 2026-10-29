@@ -45,6 +45,7 @@ app.post('/api/auth/google', (_req, res) => res.status(409).json({ error: 'Stagi
 const projectRoot = process.cwd(); const storage = join(directory, '.storage'); await mkdir(storage, { recursive: true, mode: 0o700 });
 app.use(await createApp({ vite: { root: projectRoot, configFile: false, envDir: false, cacheDir: join(directory, '.vite'), plugins: [react(), tailwindcss()], server: {
   hmr: { server },
+  watch: { ignored: ['**/scratch/**', '**/private/**'] },
   fs: { deny: ['.env', '.env.*', '**/*.env', '*.{crt,pem}', '**/.git/**', '**/*.db*', '**/*.sqlite*', '**/.storage/**', '**/report.json', '**/import-preview.json', '**/REPORT.md', '**/*.xlsx'] },
 }, define: { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify('') } } }));
 process.chdir(directory);

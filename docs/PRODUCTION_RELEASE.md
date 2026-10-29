@@ -39,7 +39,7 @@ Render Blueprint khai báo `/api/ready` làm health check. Với service đã t�
 npm run production:check -- --api=https://internship-api-dplz.onrender.com --release=<sha-commit-day-du>
 ```
 
-Lệnh chỉ gửi GET: `/api/health`, `/api/ready`, `/api/me/campaigns`. Yêu cầu JSON, environment `production`, schema 2, SHA đúng và HTTP 401 cho danh sách chưa xác thực. Trang HTML trả 200 từ SPA cũ không được coi là API đã sẵn sàng. Có thể dùng `--attempts=60 --interval-ms=10000` để chờ Render.
+Lệnh chỉ gửi GET: `/api/health`, `/api/ready`, `/api/me/campaigns`. Yêu cầu JSON, environment `production`, schema 4, SHA đúng và HTTP 401 cho danh sách chưa xác thực. Trang HTML trả 200 từ SPA cũ không được coi là API đã sẵn sàng. Có thể dùng `--attempts=60 --interval-ms=10000` để chờ Render.
 
 ## Sau phát hành và khôi phục
 
@@ -48,3 +48,5 @@ Kiểm tra giao diện Pages tải được asset, Google client ID thống nh�
 Khoa mở **Thông báo hệ thống** (`/#/system/notifications`) → **Kiểm tra kết nối email**. API `GET /api/admin/email/diagnostics` chỉ dành cho quản trị viên, không ghi database hoặc gửi email, không cache kết quả. Yêu cầu được gửi từ chính máy chủ Render đến Brevo; kết quả từ local không đại diện cho IP của Render. Nếu `ip_blocked`, cho phép đúng IP hiển thị trong Brevo → Security → Authorized IPs rồi kiểm tra lại; không suy luận khóa API sai từ riêng HTTP 401 và không cần tắt bảo vệ IP. Khi `connected`, đã xác thực kết nối API nhưng vẫn phải nghiệm thu thư đến hộp thư thử. Kết quả không chứa API key, thông tin chủ tài khoản hoặc phản hồi thô của provider. Tham khảo [xác thực API Brevo](https://developers.brevo.com/docs/api-key-authentication) và [quyền theo IP](https://developers.brevo.com/docs/ip-security).
 
 Nếu deploy thất bại trước khi phát hành Pages, giữ phiên bản giao diện hiện tại và xem log Render. Rollback code về commit trước không tự rollback database. Schema học vụ được bổ sung và nguồn TT cũ còn nguyên; không xóa bảng học vụ hoặc phục hồi đè backup sau khi đã có dữ liệu mới. Khi phải phục hồi database/file, dừng ghi, sao lưu trạng thái sau lỗi, đối soát delta/audit và kiểm tra khôi phục trên bản sao trước.
+
+Đợt gộp Danh sách sinh viên Dự án có chuyển metadata schema 4 và hàng đợi xóa tệp; chạy preview/backup theo [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) trước khi cập nhật main. Nếu Turso hết quota, giữ nhánh triển khai riêng, chưa kích hoạt pipeline production.

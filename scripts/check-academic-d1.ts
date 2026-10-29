@@ -45,5 +45,12 @@ try {
   const payload = { semesters: [newSemester(2027, '1')], users: ['first', 'second'].map(name => ({ studentId: '24020002', email: `${name}@vnu.edu.vn`, name, dob: '', className: '' })) };
   await assert.rejects(run(['--command', insert('academic_commands', { ...commands.at(-1), id: 'atomic-rollback-check', expected_revision: 4, payload: JSON.stringify(payload) })]), e => /UNIQUE constraint failed.*users.student_id/i.test(String(e)));
   assert.deepEqual(await inspect(), before);
-  console.log('D1 local: schema, admissions, stale-command rejection and full rollback passed.');
+  await run(['--command', `INSERT INTO academic_messages(id,class_id,enrollment_id,lecturer_id,sender_id,body,created_at) VALUES('private',${literal(c.id)},${literal(e.id)},1,1,'Delete','now'); INSERT INTO academic_message_reads VALUES('private',1); INSERT INTO academic_messages(id,class_id,lecturer_id,sender_id,body,created_at) VALUES('group',${literal(c.id)},1,1,'Keep','now');`]);
+  const deletion = { deletedEnrollmentIds: [e.id], purgeCommands: [{id:commands.at(-1)!.id,paths:['$.enrollments[0]']}], cleanupFiles: [{id:'file',jobId:'delete-check',kind:'report',objectKey:'test/key'}], deletionJob: {id:'delete-check',campaignId:c.campaignId,enrollmentIds:[e.id]} };
+  await run(['--command', insert('academic_commands', { ...commands.at(-1), id: 'delete-check', expected_revision: 4, action:'admin.project.delete',reason:'D1 local only',payload:JSON.stringify(deletion) })]);
+  const removed=(await run(['--command',"SELECT (SELECT count(*) FROM academic_enrollments) enrollments,(SELECT count(*) FROM academic_messages WHERE enrollment_id IS NOT NULL) private,(SELECT count(*) FROM academic_messages WHERE enrollment_id IS NULL) groups,(SELECT count(*) FROM academic_message_reads) reads,(SELECT count(*) FROM academic_file_cleanup) files,(SELECT count(*) FROM academic_deletions) jobs"]))[0].results[0];
+  assert.deepEqual(removed,{enrollments:0,private:0,groups:1,reads:0,files:1,jobs:1});
+  const audit=(await run(['--command',`SELECT payload FROM academic_commands WHERE id=${literal(commands.at(-1)!.id)}`]))[0].results[0];assert.equal(JSON.parse(audit.payload).enrollments.length,0);
+  const minimal=(await run(['--command',"SELECT payload FROM academic_commands WHERE id='delete-check'"]))[0].results[0];assert.deepEqual(JSON.parse(minimal.payload),{deletedEnrollmentIds:[e.id],jobId:'delete-check'});
+  console.log('D1 local: schema, admissions, stale-command rejection, full rollback, scoped deletion and durable cleanup passed.');
 } finally { client.close(); await rm(directory, { recursive: true, force: true }); }
