@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -45,7 +46,7 @@ export function NotificationAdmin({ token }: { token: string }) {
 
   // Định nghĩa RealSubject fetcher uỷ nhiệm qua HTTP API
   const fetcher = useCallback(
-    async (query: PaginatedQuery): Promise<PaginatedResult<any>> => {
+    async (query: PaginatedQuery, forceRefresh = false, signal?: AbortSignal): Promise<PaginatedResult<any>> => {
       const params = new URLSearchParams();
       params.set('page', String(query.page));
       params.set('limit', String(query.limit));
@@ -54,6 +55,7 @@ export function NotificationAdmin({ token }: { token: string }) {
       if (query.filter?.type) params.set('type', query.filter.type);
 
       const res = await fetch(`${API_BASE}/api/admin/notifications?${params.toString()}`, {
+        signal, ...(forceRefresh ? {cache:'reload' as const} : {}),
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -90,7 +92,7 @@ export function NotificationAdmin({ token }: { token: string }) {
     pageSize: 25,
     search: searchTerm,
     filter: { status: statusFilter, type: typeFilter },
-    enablePrefetch: true,
+    enablePrefetch: false,
   });
 
   const fetchStats = async () => {
@@ -359,7 +361,7 @@ export function NotificationAdmin({ token }: { token: string }) {
         row.created_at || '',
         row.sent_at || '',
       ]);
-      saveXlsx('lich_su_thong_bao.xlsx', headers, sheetData, 'Thông báo');
+      await saveXlsx('lich_su_thong_bao.xlsx', headers, sheetData, 'Thông báo');
     } catch (e) {
       alert('Không thể xuất file Excel.');
     }

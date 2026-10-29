@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TOPIC_STATUS_NAMES, type EnrollmentView } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
-import { academicInput } from './EnrollmentPanel';
+import { academicInput } from './form';
 import { RecordBadge } from './CampaignRecords';
 
 export function ProjectTopic({ enrollment: e, owner, admin, busy, post }: { enrollment: EnrollmentView; owner: boolean; admin: boolean; busy: boolean; post: (path: string, body: any, method?: string) => Promise<void> }) {

@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Download, AlertCircle, Loader2,

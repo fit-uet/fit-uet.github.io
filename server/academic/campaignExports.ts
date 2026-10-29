@@ -5,13 +5,14 @@ import { snapshot, commit, fail } from './store';
 import { currentVersion, totalScore, text } from './domain';
 import { autoInternshipAdvisors } from './internship';
 import { TOPIC_STATUS_NAMES } from '../../src/shared/academic';
+import { readContext, readCampaignEnrollments } from './reads';
 
 export async function campaignExport(actor: AuthenticatedUser, id: string, dataset: string, query: Record<string, any>) {
   if (actor.role === 'student') fail(403, 'EXPORT_DENIED', 'Sinh viên không xuất danh sách quản lý.');
-  const s = await snapshot(); const p = requireCampaign(s, id, actor);
+  const ctx = await readContext(actor,id,'management'); const s = ctx.s; const p = ctx.campaigns.find(p=>p.id===id)!;
   if (!['students', 'assignments', 'reports', 'grades', 'registrations', 'final-internships'].includes(dataset)) fail(422, 'INVALID_EXPORT', 'Loại danh sách không hợp lệ.');
   if (['registrations', 'final-internships'].includes(dataset) && p.group !== 'internship') fail(422, 'WRONG_COURSE', 'Nhóm Dự án không có đăng ký nơi thực tập.');
-  const all = (await campaignEnrollments(actor, id, query, true)).items;
+  const all = (await readCampaignEnrollments(actor, id, {...query,projection:undefined}, true,ctx)).items;
   if (dataset === 'grades' && !all.some(e => e.canSeeGrades) && actor.role !== 'admin') fail(403, 'GRADES_PRIVATE', 'Bạn không có quyền xuất điểm.');
   const name = (e: typeof all[number], role: string) => e.assignments.filter(a => a.role === role).map(a => s.lecturers.find(l => l.id === a.lecturerId)?.name || '').join('; ');
   const base = (e: typeof all[number]) => ({ 'Học kỳ': s.semesters.find(x => x.id === p.semesterId)!.name, 'Nhóm môn': p.group === 'project' ? 'Dự án' : 'Thực tập', 'Học phần': e.courseCode, 'Lớp học phần': e.classCode, MSSV: e.studentId, 'Họ tên': e.name, ...(p.group === 'project' ? { 'Trạng thái đề tài': e.topicReview ? TOPIC_STATUS_NAMES[e.topicReview.status] : '', 'Phiên bản đề tài': e.topicReview?.version, 'Người duyệt': e.topicReview?.source === 'legacy' ? 'Công nhận dữ liệu cũ' : e.topicReview?.approvedByName || '', 'Duyệt lúc': e.topicReview?.approvedAt || '', 'Cần nộp lại theo đề tài': e.topicPermissions?.requiresResubmission ? 'Có' : 'Không', 'Hạn nộp bổ sung': e.topicSubmissionUntil || '' } : {}) });

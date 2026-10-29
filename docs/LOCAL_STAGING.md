@@ -109,3 +109,7 @@ Sau bước local, Khoa đã chọn triển khai trên production hiện có. Đ
 ## Duyệt đề tài Dự án
 
 Bản sao chuẩn bị mới chạy cả chuyển đổi metadata schema v3. Dùng `academic:topics-preview` trên file nguồn trước khi tạo bản sao để đối chiếu số đề tài được công nhận. Nghiệm thu SV gửi Pending, GVHD chính duyệt/sửa và nộp lại theo đề tài mới trên bản sao, không dùng tài khoản thử trên production. Quy tắc và API tại [TOPIC_APPROVAL.md](TOPIC_APPROVAL.md).
+
+## Nghiệm thu tải dữ liệu và cache
+
+Áp dụng [PERFORMANCE.md](PERFORMANCE.md) trên bản sao có 535 hồ sơ Dự án và nguồn Thực tập cũ. Kiểm tra Network: Tổng quan/Kế hoạch/Thiết lập không gọi danh sách hoặc PDF; danh sách chỉ lấy 25 dòng; quay lại nhận 304; F5 và Tải lại nhận JSON mới. Export phải đủ các trang và đúng bộ lọc. Mở hai tab cùng tài khoản để kiểm tra lưu ở tab này cập nhật màn đang mở ở tab kia; đổi vai trò/nhóm hoặc bị thu hồi quyền không nhận dữ liệu cũ. Không gửi email thật trong nghiệm thu local.

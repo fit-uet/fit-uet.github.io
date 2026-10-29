@@ -4,6 +4,7 @@ import type { AuthenticatedUser } from '../types';
 import { getClass, now, requireAdmin, requireRead, text } from './domain';
 import { commit, fail, readPreview, savePreview, snapshot, type AcademicEvent, type Snapshot } from './store';
 import { campaignClasses, requireCampaign } from './campaigns';
+import { readCommunicationContext } from './reads';
 const legacyQuestionRevision = (q: any) => createHash('sha256').update(`${q.answer || ''}\n${q.answered_at || ''}`).digest().readUInt32BE(0);
 
 function context(s: Snapshot, target: string, actor: AuthenticatedUser, writing = false) {
@@ -13,7 +14,7 @@ function context(s: Snapshot, target: string, actor: AuthenticatedUser, writing 
   const classes = campaignClasses(s, p.id); return { p, classes, ids: JSON.stringify(classes.map(c => c.id)) };
 }
 export async function classQuestions(actor: AuthenticatedUser, target: string) {
-  const s = await snapshot(); const { p, ids } = context(s, target, actor);
+  const { s } = await readCommunicationContext(actor, target); const { p, ids } = context(s, target, actor);
   const rows = (await db.execute({ sql: `SELECT q.id,q.question,q.answer,q.created_at,q.answered_at,q.user_id,q.revision,CASE WHEN ?='admin' THEN u.name ELSE NULL END asker_name
     FROM academic_questions q JOIN users u ON u.id=q.user_id WHERE q.class_id IN (SELECT value FROM json_each(?)) AND (q.answer IS NOT NULL OR q.user_id=? OR ?='admin') ORDER BY q.created_at DESC LIMIT 200`, args: [actor.role, ids, actor.id, actor.role] })).rows;
   if (p.legacy && (await db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='faq_questions'")).rows.length) {

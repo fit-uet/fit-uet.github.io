@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, Upload, Download, Search, RefreshCw, Save, Plus, Trash2, X, Edit2 } from 'lucide-react';
@@ -76,7 +77,7 @@ export function StudentRegistry({ token }: { token: string }) {
   const pagination = paginationBounds(filteredAndSortedStudents.length, currentPage, pageSize);
   const paginatedStudents = filteredAndSortedStudents.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
     const headers = ['STT', 'Mã SV', 'Họ và tên', 'Ngày sinh', 'SĐT', 'Email cá nhân', 'Lớp khoá học'];
     const rows = filteredAndSortedStudents.map((s, idx) => [
       idx + 1,
@@ -87,7 +88,7 @@ export function StudentRegistry({ token }: { token: string }) {
       s.personal_email || '',
       s.class_name
     ]);
-    saveXlsx('danh_sach_sinh_vien.xlsx', headers, rows, 'Sinh viên');
+    await saveXlsx('danh_sach_sinh_vien.xlsx', headers, rows, 'Sinh viên');
   };
 
   const handleFileUpload = async (e: any) => {

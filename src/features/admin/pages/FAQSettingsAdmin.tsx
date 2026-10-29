@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useNavigate } from 'react-router-dom';

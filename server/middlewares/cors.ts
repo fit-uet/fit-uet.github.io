@@ -31,5 +31,6 @@ export function createCorsOptions() {
       return callback(null, false);
     },
     credentials: true,
+    exposedHeaders: ['ETag', 'Content-Disposition', 'Server-Timing'],
   };
 }

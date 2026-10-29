@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { AcademicClassSummary, LecturerInfo } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
 import { academicApi } from './client';
-import { academicInput } from './EnrollmentPanel';
+import { academicInput } from './form';
 
 const reasons: Record<string, string> = { same_work_unit: 'Cùng bộ môn', cross_work_unit: 'Khác bộ môn', missing_work_unit: 'Thiếu bộ môn', missing_primary: 'Chưa có GVHD', no_eligible_reviewer: 'Không có GV phù hợp', quota_exhausted: 'Hết chỉ tiêu', manual_preview: 'Khoa điều chỉnh' };
 export function ReviewerPanel({ token, c, lecturers, quotas, refresh }: { token: string; c: AcademicClassSummary; lecturers: LecturerInfo[]; quotas: any[]; refresh: () => Promise<void> }) {

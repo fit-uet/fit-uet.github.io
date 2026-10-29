@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import {

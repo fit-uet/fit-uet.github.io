@@ -58,8 +58,19 @@ export async function applyLegacy(actor: AuthenticatedUser, id: string) {
 }
 export async function hydrateLegacy(s: Snapshot) {
   const legacy = s.campaigns?.filter(p => p.legacy) || [];
+  const studentIds = JSON.stringify(s.enrollments.filter(e => e.legacy).map(e => e.studentId));
+  const ids = `SELECT id FROM users WHERE student_id IN (SELECT value FROM json_each(?))`;
+  const [settingsResult, rowsResult, assignmentsResult, tablesResult] = await Promise.all([
+    legacy.length ? db.execute('SELECT key,value FROM settings') : Promise.resolve({rows:[]}),
+    studentIds !== '[]' ? db.execute({sql:`SELECT u.id,u.student_id,u.name,u.dob,u.class_name,
+      fr.id report_id,fr.object_key,fr.original_filename,fr.file_size,fr.submitted_at,fr.lecturer_comment,
+      g.progress_score,g.report_score,g.company_score,g.lecturer_id grade_lecturer_id,g.comment grade_comment,g.locked_at,g.updated_at grade_updated_at
+      FROM users u LEFT JOIN final_reports fr ON fr.user_id=u.id LEFT JOIN grades g ON g.user_id=u.id WHERE u.role='student' AND u.student_id IN (SELECT value FROM json_each(?))`,args:[studentIds]}) : Promise.resolve({rows:[]}),
+    studentIds !== '[]' ? db.execute({sql:`SELECT * FROM advisor_assignments WHERE user_id IN (${ids})`,args:[studentIds]}) : Promise.resolve({rows:[]}),
+    studentIds !== '[]' ? db.execute("SELECT name FROM sqlite_master WHERE type='table'") : Promise.resolve({rows:[]}),
+  ]);
   if (legacy.length) {
-    const settings = Object.fromEntries((await db.execute('SELECT key,value FROM settings')).rows.map(r => [String(r.key), String(r.value || '')]));
+    const settings = Object.fromEntries(settingsResult.rows.map(r => [String(r.key), String(r.value || '')]));
     for (const p of legacy) {
       const keys = { topic: 'topic', registration: 'registration', confirmation: 'confirmation', advisorRequest: 'advisor_request', submission: 'final_report', grading: 'grading' };
       for (const [field, old] of Object.entries(keys)) for (const [suffix, key] of [['OpenAt', 'open_at'], ['CloseAt', 'close_at']]) {
@@ -73,14 +84,13 @@ export async function hydrateLegacy(s: Snapshot) {
     }
   }
   if (!s.enrollments.some(e => e.legacy)) return;
-  const rows = (await db.execute(`SELECT u.id,u.student_id,u.name,u.dob,u.class_name,
-    fr.id report_id,fr.object_key,fr.original_filename,fr.file_size,fr.submitted_at,fr.lecturer_comment,
-    g.progress_score,g.report_score,g.company_score,g.lecturer_id grade_lecturer_id,g.comment grade_comment,g.locked_at,g.updated_at grade_updated_at
-    FROM users u LEFT JOIN final_reports fr ON fr.user_id=u.id LEFT JOIN grades g ON g.user_id=u.id WHERE u.role='student'`)).rows as any[];
-  const assignments = (await db.execute('SELECT * FROM advisor_assignments')).rows as any[];
-  const sourceTables = new Set((await db.execute("SELECT name FROM sqlite_master WHERE type='table'")).rows.map(r => String(r.name)));
-  const preferences = sourceTables.has('registrations') ? (await db.execute('SELECT r.*,c.name company_name FROM registrations r LEFT JOIN companies c ON c.id=r.company_id ORDER BY r.preference_order,r.id')).rows as any[] : [];
-  const finals = sourceTables.has('final_internships') ? (await db.execute('SELECT f.*,c.name company_name FROM final_internships f LEFT JOIN companies c ON c.id=f.company_id')).rows as any[] : [];
+  const rows = rowsResult.rows as any[], assignments = assignmentsResult.rows as any[];
+  const sourceTables = new Set(tablesResult.rows.map(r => String(r.name)));
+  const [preferencesResult, finalsResult] = await Promise.all([
+    sourceTables.has('registrations') ? db.execute({sql:`SELECT r.*,c.name company_name FROM registrations r LEFT JOIN companies c ON c.id=r.company_id WHERE r.user_id IN (${ids}) ORDER BY r.preference_order,r.id`,args:[studentIds]}) : Promise.resolve({rows:[]}),
+    sourceTables.has('final_internships') ? db.execute({sql:`SELECT f.*,c.name company_name FROM final_internships f LEFT JOIN companies c ON c.id=f.company_id WHERE f.user_id IN (${ids})`,args:[studentIds]}) : Promise.resolve({rows:[]}),
+  ]);
+  const preferences = preferencesResult.rows as any[], finals = finalsResult.rows as any[];
   for (const e of s.enrollments.filter(e => e.legacy)) {
     const row = rows.find(r => r.student_id === e.studentId); if (!row) continue;
     e.name = row.name; e.dob = row.dob || ''; e.className = row.class_name || '';

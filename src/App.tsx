@@ -1,3 +1,4 @@
+import { requestJson } from './shared/utils/requestCache';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { HashRouter, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -16,7 +17,7 @@ function RoleSwitchButton({ user, onNavigate }: { user: any; onNavigate?: () => 
   if (isLecturerView) {
     return (
       <Link
-        to="/admin"
+        to={location.pathname.startsWith('/campaigns/') ? `${location.pathname}?tab=overview` : '/admin'}
         onClick={onNavigate}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/15 hover:bg-white/25 border border-white/25 shadow-xs transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer backdrop-blur-sm"
         title="Chuyển sang Trang Quản trị (Admin Dashboard)"
@@ -30,7 +31,7 @@ function RoleSwitchButton({ user, onNavigate }: { user: any; onNavigate?: () => 
 
   return (
     <Link
-      to="/lecturer"
+      to={location.pathname.startsWith('/campaigns/') ? `${location.pathname}?tab=students&view=lecturer` : '/lecturer'}
       onClick={onNavigate}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-white/15 hover:bg-white/25 border border-white/25 shadow-xs transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer backdrop-blur-sm"
       title="Chuyển sang Trang Giảng viên (xem SV hướng dẫn & chấm điểm)"
@@ -118,33 +119,19 @@ function App() {
     return () => window.removeEventListener('auth-expired', listener);
   }, [token]);
 
-  const refreshUnreadNotifications = async () => {
+  const refreshUnreadCounts = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/api/notifications/my`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (isAuthExpiredResponse(res, data)) return handleAuthExpired();
-      if (res.ok) setUnreadNotifications(Number(data.unread || 0));
-    } catch (e) { }
+      const data = await requestJson<{notifications:number;chats:number}>(`${API_BASE}/api/me/unread-counts`, {headers:{Authorization:`Bearer ${token}`}});
+      setUnreadNotifications(data.notifications); setUnreadChats(data.chats);
+    } catch {}
   };
-
-  const refreshUnreadChats = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/chat/threads`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (isAuthExpiredResponse(res, data)) return handleAuthExpired();
-      if (res.ok && Array.isArray(data)) {
-        const total = data.reduce((sum, t) => sum + Number(t.unread_count || 0), 0);
-        setUnreadChats(total);
-      }
-    } catch (e) { }
-  };
+  const refreshUnreadNotifications = refreshUnreadCounts;
+  const refreshUnreadChats = refreshUnreadCounts;
 
   useEffect(() => {
     if (!token || !user) return;
-    refreshUnreadNotifications();
-    refreshUnreadChats();
+    refreshUnreadCounts();
 
     let lastFetchTime = Date.now();
     const onVisibilityChange = () => {
@@ -152,8 +139,7 @@ function App() {
         const now = Date.now();
         if (now - lastFetchTime >= 60000) {
           lastFetchTime = now;
-          refreshUnreadNotifications();
-          refreshUnreadChats();
+          refreshUnreadCounts();
         }
       }
     };
@@ -162,8 +148,7 @@ function App() {
     const timer = window.setInterval(() => {
       if (document.visibilityState === 'visible') {
         lastFetchTime = Date.now();
-        refreshUnreadNotifications();
-        refreshUnreadChats();
+        refreshUnreadCounts();
       }
     }, 180000);
 

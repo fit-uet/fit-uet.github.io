@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, RefreshCw, AlertTriangle, Mail } from 'lucide-react';
 import { API_BASE } from '../../../shared';

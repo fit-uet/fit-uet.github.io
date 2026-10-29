@@ -1,29 +1,34 @@
+import { refreshRequestCache } from '../../shared/utils/requestCache';
+import { academicInput } from './form';
+import { hasLegacyPanel } from './legacyPresentation';
 import { ArrowLeft, RefreshCw, Upload, FileText, MessageCircle, CircleHelp, BookOpen } from 'lucide-react';
 import { CampaignDashboard } from './CampaignDashboard';
 import { CampaignRecords, RecordBadge } from './CampaignRecords';
 import { EnrollmentDialog } from './EnrollmentDialog';
 import { campaignModules, campaignQuery, panelForPage, recordPages, gradeNames, type CampaignMeta as Meta, type CampaignRecordPage as Page, type CampaignRecord, type EnrollmentPanelMode } from './campaignPresentation';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Button, FormField } from '../../shared/ui';
 import { GROUP_NAMES, TOPIC_STATUS_NAMES, type CampaignSummary, type AcademicClassSummary, type EnrollmentView, type LecturerInfo } from '../../shared/academic';
-import { academicApi, academicDownload, clearAcademicCache } from './client';
+import { academicApi, academicDownload, clearAcademicPdfCache } from './client';
 import { clearReportReviewCache } from '../lecturer/pages/ReportReviewPanel';
-import { EnrollmentPanel, academicInput } from './EnrollmentPanel';
-import { ImportPanel } from './ImportPanel';
-import { ReviewerPanel } from './ReviewerPanel';
-import { CampaignSettingsPanel } from './CampaignSettings';
-import { CampaignMigration } from './CampaignMigration';
-import { ClassChat, ClassQuestions, ClassAnnouncement } from './ClassCommunications';
-import { LegacyCampaignPanels, hasLegacyPanel } from './LegacyCampaignPanels';
+const CampaignMarkdown = lazy(() => import('./CampaignMarkdown').then(module => ({ default: module.CampaignMarkdown })));
+
+const LegacyCampaignPanels = lazy(() => import('./LegacyCampaignPanels').then(module => ({ default: module.LegacyCampaignPanels })));
+const ClassAnnouncement = lazy(() => import('./ClassCommunications').then(module => ({ default: module.ClassAnnouncement })));
+const ClassQuestions = lazy(() => import('./ClassCommunications').then(module => ({ default: module.ClassQuestions })));
+const ClassChat = lazy(() => import('./ClassCommunications').then(module => ({ default: module.ClassChat })));
+const CampaignMigration = lazy(() => import('./CampaignMigration').then(module => ({ default: module.CampaignMigration })));
+const CampaignSettingsPanel = lazy(() => import('./CampaignSettings').then(module => ({ default: module.CampaignSettingsPanel })));
+const ReviewerPanel = lazy(() => import('./ReviewerPanel').then(module => ({ default: module.ReviewerPanel })));
+const ImportPanel = lazy(() => import('./ImportPanel').then(module => ({ default: module.ImportPanel })));
+const EnrollmentPanel = lazy(() => import('./EnrollmentPanel').then(module => ({ default: module.EnrollmentPanel })));
 
 export function CampaignPage({ token, user }: { token: string; user: any }) {
   const { campaignId = '' } = useParams(); return <CampaignWorkspace key={campaignId} id={campaignId} token={token} user={user} />;
 }
 function CampaignWorkspace({ id, token, user }: { id: string; token: string; user: any }) {
-  useEffect(() => { clearAcademicCache(); clearReportReviewCache(); return () => { clearAcademicCache(); clearReportReviewCache(); }; }, [id, token]);
+  useEffect(() => { clearAcademicPdfCache(); clearReportReviewCache(); return () => { clearAcademicPdfCache(); clearReportReviewCache(); }; }, [id, token]);
   const [query, setQuery] = useSearchParams();
   const teachingView = user.role === 'admin' && !!user.is_lecturer && query.get('view') === 'lecturer';
   const actor = teachingView ? { ...user, role: 'lecturer' } : user;
@@ -34,26 +39,36 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
   const [chat, setChat] = useState<any>(null), [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
   const filters = Object.fromEntries(['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'q', 'page'].map(k => [k, query.get(k) || '']).filter(([, v]) => v));
   if (teachingView) filters.lecturerId = String(data?.lecturers.find(l => l.email.toLowerCase() === user.email.toLowerCase())?.id ?? -1);
+  const [search, setSearch] = useState(query.get('q') || '');
+  useEffect(() => { const timer = window.setTimeout(() => setSearch(query.get('q') || ''), 300); return () => window.clearTimeout(timer); }, [query.get('q')]);
+  if (search) filters.q = search; else delete filters.q;
+  const section = tab === 'overview' ? 'overview' : tab === 'plan' ? 'content' : tab === 'settings' ? 'full' : ['students','assignments','reports','grades','settings','chat'].includes(tab) ? 'management' : 'base';
   const filterKey = new URLSearchParams(filters).toString(); const selectedId = query.get('enrollmentId') || '';
+  const cacheScope = `${user.id}:${actor.role}:${id}`;
+  const metaKey = `${token}:${cacheScope}:${section}`, rowsKey = `${token}:${cacheScope}:${tab}:${filterKey}`, detailKey = `${token}:${cacheScope}:${tab}:${selectedId}`;
+  const active = useRef({metaKey,rowsKey,detailKey}); active.current = {metaKey,rowsKey,detailKey};
   const editQuery = (patch: Record<string, string>) => setQuery(old => campaignQuery(old, patch));
   const go = (next: string) => { setShowImport(false); setError(''); setNotice(''); editQuery({ tab: next, enrollmentId: '', panel: '' }); };
   useEffect(() => { if (user.role === 'student' && tab === 'students' && !selectedId && rows?.total === 1 && rows.items.length === 1) setQuery(old => { const next = new URLSearchParams(old); next.set('enrollmentId', rows.items[0].id); return next; }, { replace: true }); }, [user.role, tab, selectedId, rows, setQuery]);
   const loadMeta = useCallback(async (signal?: AbortSignal) => {
-    const result = await academicApi<Meta>(token, `/api/campaigns/${id}`, 'GET', undefined, signal); if (signal?.aborted) return; setData(result); sessionStorage.setItem('academic:campaign', id); sessionStorage.setItem('academic:semester', result.campaign.semesterId);
-  }, [token, id]);
+    const result = await academicApi<Meta>(token, `/api/campaigns/${id}?section=${section}`, 'GET', undefined, signal, {scope:cacheScope}); if (signal?.aborted || active.current.metaKey !== metaKey) return; setData(result); sessionStorage.setItem('academic:campaign', id); sessionStorage.setItem('academic:semester', result.campaign.semesterId);
+  }, [token, id, section, cacheScope, metaKey]);
   const loadRows = useCallback(async (signal?: AbortSignal) => {
-    const result = await academicApi<Page>(token, `/api/campaigns/${id}/enrollments?${filterKey}`, 'GET', undefined, signal);
-    if (!signal?.aborted) setRows(result);
-  }, [token, id, filterKey]);
-  const refresh = useCallback(async () => { await Promise.all([loadMeta(), loadRows()]); if (selectedId) setSelected(await academicApi(token, `/api/enrollments/${selectedId}`)); }, [loadMeta, loadRows, selectedId, token]);
+    const result = await academicApi<Page>(token, `/api/campaigns/${id}/enrollments?${filterKey}${['students','assignments','reports','grades'].includes(tab) ? '&projection=' + tab : ''}`, 'GET', undefined, signal, {scope:cacheScope});
+    if (!signal?.aborted && active.current.rowsKey === rowsKey) setRows(result);
+  }, [token, id, filterKey, tab, cacheScope, rowsKey]);
+  const needsRows = recordPages.includes(tab) && !(data?.campaign.legacy && data.campaign.status === 'active' && hasLegacyPanel(actor, tab));
+  const refresh = useCallback(async () => { await Promise.all([loadMeta(), ...(needsRows ? [loadRows()] : [])]); if (selectedId && needsRows) { const detail = await academicApi<EnrollmentView>(token, `/api/enrollments/${selectedId}`, 'GET', undefined, undefined, {scope:cacheScope}); if (active.current.detailKey === detailKey) setSelected(detail); } }, [loadMeta, loadRows, selectedId, token, needsRows, cacheScope, detailKey]);
   useEffect(() => { const a = new AbortController(); loadMeta(a.signal).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => a.abort(); }, [loadMeta]);
-  useEffect(() => { const a = new AbortController(); setRows(null); loadRows(a.signal).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => a.abort(); }, [loadRows]);
+  useEffect(() => { if (!data || !needsRows) return; const a = new AbortController(); setRows(null); loadRows(a.signal).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => a.abort(); }, [loadRows, !!data, needsRows]);
   useEffect(() => {
-    const a = new AbortController(); setSelected(null); if (selectedId) academicApi<EnrollmentView>(token, `/api/enrollments/${selectedId}`, 'GET', undefined, a.signal).then(e => setSelected(e)).catch(e => { if (e.name !== 'AbortError') setError(e.message); });
+    const a = new AbortController(); setSelected(null); if (selectedId && recordPages.includes(tab) && !(data?.campaign.legacy && hasLegacyPanel(actor, tab))) academicApi<EnrollmentView>(token, `/api/enrollments/${selectedId}`, 'GET', undefined, a.signal, {scope:cacheScope}).then(e => { if (!a.signal.aborted && active.current.detailKey === detailKey) setSelected(e); }).catch(e => { if (e.name !== 'AbortError') setError(e.message); });
     return () => a.abort();
-  }, [token, id, selectedId]);
+  }, [token, id, selectedId, tab, data?.campaign.legacy, cacheScope, detailKey]);
   useEffect(() => { if (tab !== 'chat') return; const a = new AbortController(); academicApi(token, `/api/campaigns/${id}/chat-context`, 'GET', undefined, a.signal).then(setChat).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => a.abort(); }, [token, id, tab]);
+  useEffect(() => { const revalidate = () => { if (document.visibilityState === 'visible') refresh().catch(error => { if (error.name !== 'AbortError') setError(error.message); }); }; window.addEventListener('api-data-changed', revalidate); document.addEventListener('visibilitychange', revalidate); return () => { window.removeEventListener('api-data-changed', revalidate); document.removeEventListener('visibilitychange', revalidate); }; }, [refresh]);
   const run = async (fn: () => Promise<unknown>) => { setBusy(true); setError(''); try { await fn(); await refresh(); } catch (e) { setError(e.message); } finally { setBusy(false); } };
+  const runOnly = async (fn: () => Promise<unknown>) => { setBusy(true); setError(''); try { await fn(); } catch (error) { setError(error.message); } finally { setBusy(false); } };
   if (!data) return <p role="status">{error || 'Đang tải nhóm môn…'}</p>;
   const p = data.campaign, admin = actor.role === 'admin', student = actor.role === 'student', project = p.group === 'project';
   const chosenClass = data.classes.find(c => c.id === query.get('classId'));
@@ -63,11 +78,11 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
   const currentModule = modules.find(item => item.id === tab)!;
   const panel = ['profile', 'assignments', 'reports', 'grades'].includes(query.get('panel') || '') ? query.get('panel') as EnrollmentPanelMode : panelForPage(tab);
   const open = (e: CampaignRecord, mode: EnrollmentPanelMode = panelForPage(tab)) => editQuery({ enrollmentId: e.id, panel: mode });
-  const exportFile = () => run(() => academicDownload(token, `/api/campaigns/${id}/exports/${tab}.xlsx?${filterKey}`, `${tab}-${chosenClass?.code || p.group}-${p.semesterId}.xlsx`));
+  const exportFile = () => runOnly(() => academicDownload(token, `/api/campaigns/${id}/exports/${tab}.xlsx?${filterKey}`, `${tab}-${chosenClass?.code || p.group}-${p.semesterId}.xlsx`));
   const statuses = tab === 'grades' ? Object.entries(gradeNames) : tab === 'reports' ? [['notSubmitted', 'Chưa nộp đủ bài'], ['complete', 'Đã hoàn tất điểm']] : [['active', 'Đang học'], ['withdrawn', 'Đã rút']];
-  return <div className="max-w-7xl mx-auto space-y-6">
+  return <Suspense fallback={<p role="status">Đang tải chức năng…</p>}><div className="max-w-7xl mx-auto space-y-6">
     <nav aria-label="Điều hướng nhóm môn" className="flex flex-wrap items-center gap-2 text-xs text-slate-500"><Link to="/classes" className="text-[#034ea1] hover:underline">Học kỳ và nhóm môn</Link><span>/</span><button className="hover:text-[#034ea1]" onClick={() => go(admin ? 'overview' : 'students')}>{GROUP_NAMES[p.group]} · {p.semesterName}</button>{tab !== 'overview' && <><span>/</span><span className="text-slate-700">{currentModule.title}</span></>}</nav>
-    <header className="flex flex-col sm:flex-row sm:items-start justify-between gap-4"><div><h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{tab === 'overview' ? 'Tổng quan Quản trị' : currentModule.title}</h1><p className="text-xs text-slate-500 mt-1">{GROUP_NAMES[p.group]} · {p.semesterName}</p><div className="flex flex-wrap items-center gap-3 mt-3"><RecordBadge tone={p.status === 'active' ? 'success' : 'neutral'}>{p.pendingMigration ? 'Chờ chuyển đổi' : p.status === 'active' ? 'Đang hoạt động' : p.status === 'archived' ? 'Lưu trữ · Chỉ xem' : 'Nhóm nháp'}</RecordBadge><span className="text-xs text-slate-500">{p.classCount} lớp · {p.studentCount} sinh viên · {p.enrollmentCount} lần học</span></div></div><div className="flex flex-wrap gap-2 items-center">{tab !== 'overview' && admin && <Button size="sm" leadingIcon={<ArrowLeft size={14} />} onClick={() => go('overview')}>Tổng quan</Button>}<Button size="sm" disabled={busy} leadingIcon={<RefreshCw size={14} />} onClick={() => run(refresh)}>Tải lại</Button>{admin && project && tab === 'students' && p.status !== 'archived' && <Button size="sm" variant="primary" leadingIcon={<Upload size={14} />} onClick={() => setShowImport(value => !value)}>{showImport ? 'Đóng import' : 'Import danh sách'}</Button>}</div></header>
+    <header className="flex flex-col sm:flex-row sm:items-start justify-between gap-4"><div><h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{tab === 'overview' ? 'Tổng quan Quản trị' : currentModule.title}</h1><p className="text-xs text-slate-500 mt-1">{GROUP_NAMES[p.group]} · {p.semesterName}</p><div className="flex flex-wrap items-center gap-3 mt-3"><RecordBadge tone={p.status === 'active' ? 'success' : 'neutral'}>{p.pendingMigration ? 'Chờ chuyển đổi' : p.status === 'active' ? 'Đang hoạt động' : p.status === 'archived' ? 'Lưu trữ · Chỉ xem' : 'Nhóm nháp'}</RecordBadge><span className="text-xs text-slate-500">{p.classCount} lớp · {p.studentCount} sinh viên · {p.enrollmentCount} lần học</span></div></div><div className="flex flex-wrap gap-2 items-center">{tab !== 'overview' && admin && <Button size="sm" leadingIcon={<ArrowLeft size={14} />} onClick={() => go('overview')}>Tổng quan</Button>}<Button size="sm" disabled={busy} leadingIcon={<RefreshCw size={14} />} onClick={() => runOnly(async () => { refreshRequestCache(); await refresh(); window.dispatchEvent(new Event('api-force-refresh')); })}>Tải lại</Button>{admin && project && tab === 'students' && p.status !== 'archived' && <Button size="sm" variant="primary" leadingIcon={<Upload size={14} />} onClick={() => setShowImport(value => !value)}>{showImport ? 'Đóng import' : 'Import danh sách'}</Button>}</div></header>
     {error && <p role="alert" className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-sm">{error}</p>}{notice && <p role="status" className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-xl text-sm">{notice}</p>}
     {p.pendingMigration ? <CampaignMigration token={token} refresh={refresh} /> : <>
       {tab !== 'overview' && <nav className="flex flex-wrap items-center justify-between gap-3" aria-label="Chức năng nhóm môn"><FormField label="Chức năng"><select className={`${academicInput} min-w-[220px]`} value={tab} onChange={event => go(event.target.value)}>{modules.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></FormField>{student && <div className="flex flex-wrap gap-2">{[{ id: 'students', label: 'Hồ sơ và bài nộp', Icon: FileText }, { id: 'plan', label: 'Kế hoạch', Icon: BookOpen }, { id: 'chat', label: 'Trao đổi', Icon: MessageCircle }, { id: 'questions', label: 'Hỏi đáp', Icon: CircleHelp }].filter(item => item.id !== tab).map(({ id, label, Icon }) => <Button key={id} size="sm" leadingIcon={<Icon size={14} />} onClick={() => go(id)}>{label}</Button>)}</div>}</nav>}
@@ -93,19 +108,5 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
       {tab === 'chat' && chat && <ClassChat token={token} user={actor} data={{ class: synthetic, enrollments: chat.enrollments, lecturers: data.lecturers }} />}
       {student && p.group === 'internship' && data.classes.some(c => c.canJoin) && <section className="bg-white border rounded-xl p-5 space-y-3"><h3 className="font-semibold">Tham gia lớp Thực tập</h3>{data.classes.filter(c => c.canJoin).map(c => <Button key={c.id} disabled={busy} onClick={() => run(() => academicApi(token, `/api/classes/${c.id}/enrollments/join`, 'POST'))}>Tham gia {c.code}</Button>)}</section>}
     </>}
-  </div>;
-}
-function CampaignMarkdown({ content }: { content: string }) {
-  return <div className="min-w-0 text-sm text-slate-700 leading-relaxed"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-    h1: ({ node, ...props }) => <h1 className="text-xl font-bold text-slate-900 mb-4" {...props} />,
-    h2: ({ node, ...props }) => <h2 className="text-base font-semibold text-[#034ea1] mt-6 mb-3" {...props} />,
-    h3: ({ node, ...props }) => <h3 className="font-semibold text-slate-900 mt-5 mb-2" {...props} />,
-    p: ({ node, ...props }) => <p className="mb-3 break-words" {...props} />,
-    ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2" {...props} />,
-    ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2" {...props} />,
-    a: ({ node, ...props }) => <a className="text-[#034ea1] underline break-words" {...props} />,
-    table: ({ node, ...props }) => <div className="max-w-full overflow-x-auto border border-slate-200 rounded-lg my-5"><table className="w-full min-w-[700px] text-sm" {...props} /></div>,
-    th: ({ node, ...props }) => <th className="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700" {...props} />,
-    td: ({ node, ...props }) => <td className="border-t border-slate-200 px-4 py-3 align-top" {...props} />,
-  }}>{content}</ReactMarkdown></div>;
+  </div></Suspense>;
 }

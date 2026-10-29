@@ -3,7 +3,7 @@ import { convertDocxFileToMarkdown } from '../../shared';
 import type { CampaignSummary } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
 import { academicApi } from './client';
-import { academicInput, isoLocal } from './EnrollmentPanel';
+import { academicInput, isoLocal } from './form';
 export function CampaignSettingsPanel({ token, c, run, busy }: { token: string; c: CampaignSummary; run: (fn: () => Promise<unknown>) => Promise<void>; busy: boolean }) {
   const form = useRef<HTMLFormElement>(null); const [importMessage, setImportMessage] = useState('');
   const local = (value: string) => value ? new Date(value).toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(' ', 'T').slice(0, 16) : '';

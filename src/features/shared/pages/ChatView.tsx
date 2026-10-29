@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate, useParams } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, RefreshCw, X, Send, MessageCircle, Paperclip } from 'lucide-react';

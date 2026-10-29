@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { academicApi } from './client';
 export function ContextRedirect({ token, tab, internshipOnly = false, view }: { token: string; tab: string; internshipOnly?: boolean; view?: string }) {
   const [target, setTarget] = useState('');
-  useEffect(() => { const a = new AbortController(); academicApi(token, '/api/me/campaigns', 'GET', undefined, a.signal).then(data => {
+  useEffect(() => { const a = new AbortController(); academicApi(token, '/api/me/campaigns?section=base', 'GET', undefined, a.signal).then(data => {
     if (a.signal.aborted) return;
     const choices = data.campaigns.filter(p => !internshipOnly || p.group === 'internship');
     if (data.legacyInternshipUnmapped && !choices.some(p => p.legacy) && (internshipOnly || !choices.length)) {

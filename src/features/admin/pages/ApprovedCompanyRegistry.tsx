@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Upload, Download, Search, RefreshCw, Save, Plus, Trash2, X, Edit2, Shield } from 'lucide-react';
@@ -134,10 +135,10 @@ export function ApprovedCompanyRegistry({ token }: { token: string }) {
     }
   };
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
     const headers = ['STT', 'Tên công ty', 'Nguồn', 'Ngày tạo'];
     const rows = filteredAndSorted.map((c, idx) => [idx + 1, c.name || '', c.source || '', c.created_at || '']);
-    saveXlsx('danh_sach_cong_ty_tham_dinh_noi_bo.xlsx', headers, rows, 'Thẩm định nội bộ');
+    await saveXlsx('danh_sach_cong_ty_tham_dinh_noi_bo.xlsx', headers, rows, 'Thẩm định nội bộ');
   };
 
   return (

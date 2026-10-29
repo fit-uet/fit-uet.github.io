@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir,readFile } from 'node:fs/promises';
+import * as XLSX from 'xlsx';
 
 // Opt-in acceptance on a prepared private SQLite copy, never on a remote host.
 test('restored role screens on a prepared local copy of production data', async ({ browser }) => {
@@ -73,4 +74,23 @@ test('project topic approval works on a prepared private copy without changing t
     expect(after.items.find(x=>x.id===e.id)).not.toHaveProperty('evaluations');
     await sv.page.screenshot({animations:'disabled',path:'scratch/academic-ui-results/private-local-copy/topic-approved.png',fullPage:true});
   } finally { for (const context of contexts) await context.close(); }
+});
+
+
+test('legacy reports export all pages and assigned legacy students remain available on the private copy',async({browser})=>{
+  const base=process.env.ACADEMIC_ACCEPTANCE_BASE;test.skip(!base,'Requires a prepared private local copy.');
+  const origin=new URL(base!);expect(origin.protocol).toBe('http:');expect(['127.0.0.1','localhost']).toContain(origin.hostname);
+  const context=await browser.newContext();await context.route('**/*',r=>new URL(r.request().url()).origin===origin.origin||/^(blob|data):/.test(r.request().url())?r.continue():r.abort());
+  const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  try{
+    await page.goto(origin.origin+'/__local_staging/login');await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    const token=await page.evaluate(()=>localStorage.getItem('token'));const headers={Authorization:`Bearer ${token}`};
+    const response=await context.request.get(origin.origin+'/api/admin/reports/final?pagination=1&limit=25',{headers});const records=await response.json();expect(records.total).toBeGreaterThan(25);
+    await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=reports');await expect(page.locator('tbody tr')).toHaveCount(25);
+    const pending=page.waitForEvent('download');await page.getByRole('button',{name:/^Xuất XLSX/}).click();const download=await pending;
+    const wb=XLSX.read(await readFile((await download.path())!),{type:'buffer'});expect(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])).toHaveLength(records.total);
+    await page.goto(origin.origin+'/__local_staging/login?email='+encodeURIComponent(process.env.ACADEMIC_ACCEPTANCE_LECTURER!));await expect(page.getByRole('heading',{name:'Học kỳ và nhóm môn'})).toBeVisible();
+    await page.goto(origin.origin+'/#/campaigns/2025-2026-summer:internship?tab=students');await expect(page.locator('tbody tr').first()).toBeVisible();expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(25);
+    expect(errors).toEqual([]);
+  }finally{await context.close();}
 });

@@ -1,3 +1,4 @@
+import { unreadCounts } from '../services/unread';
 import { Router } from 'express';
 import { db } from '../db';
 import { requireAuth, requireStudentOrAdmin } from '../middlewares/auth';
@@ -127,6 +128,8 @@ commonRouter.put('/api/users/profile', requireAuth, async (req: any, res: any) =
     res.status(500).json({ error: 'Database error: ' + e.message });
   }
 });
+
+commonRouter.get('/api/me/unread-counts', requireAuth, async (req: any, res: any) => { try { res.json(await unreadCounts(req.user)); } catch (error) { console.error('[unread]', error); res.status(500).json({error:'Không tải được số thông báo chưa đọc.'}); } });
 
 // Notifications
 commonRouter.get('/api/notifications/my', requireAuth, async (req: any, res: any) => {

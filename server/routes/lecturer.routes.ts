@@ -1,3 +1,4 @@
+import { legacyRows } from '../services/legacyPaging';
 import { Router } from 'express';
 import { db } from '../db';
 import { requireAuth } from '../middlewares/auth';
@@ -84,8 +85,7 @@ lecturerRouter.get('/api/lecturer/students', requireAuth, async (req: any, res: 
   if (req.user.role !== 'lecturer' && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
   const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [req.user.email] })).rows[0] as any;
   if (!lecturer) return res.json([]);
-  const rows = (await db.execute({
-    sql: `SELECT aa.id as assignment_id, aa.user_id, aa.lecturer_id, aa.role as advisor_role, aa.assigned_at, aa.note as assignment_note,
+  const rows = await legacyRows(req, `SELECT aa.id as assignment_id, aa.user_id, aa.lecturer_id, aa.role as advisor_role, aa.assigned_at, aa.note as assignment_note,
                  aa.contacted_at, aa.contact_note,
                  u.student_id, u.name as student_name, u.email, u.class_name, u.course_code, u.phone, u.personal_email,
                  COALESCE(f.internship_type, CASE WHEN sr.school_place IS NOT NULL THEN 'school' ELSE NULL END) as internship_type,
@@ -118,9 +118,7 @@ lecturerRouter.get('/api/lecturer/students', requireAuth, async (req: any, res: 
           LEFT JOIN final_reports fr ON fr.user_id = aa.user_id
           LEFT JOIN grades g ON g.user_id = aa.user_id
           WHERE aa.lecturer_id = ?
-          ORDER BY u.student_id ASC`,
-    args: [Number(lecturer.id)],
-  })).rows;
+          ORDER BY u.student_id ASC`, [Number(lecturer.id)]);
   res.json(rows);
 });
 
@@ -221,8 +219,7 @@ lecturerRouter.get('/api/lecturer/grades', requireAuth, async (req: any, res: an
   if (req.user.role !== 'lecturer' && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
   const lecturer = (await db.execute({ sql: 'SELECT id FROM lecturers WHERE lower(trim(email)) = lower(trim(?)) LIMIT 1', args: [req.user.email] })).rows[0] as any;
   if (!lecturer) return res.json([]);
-  const rows = (await db.execute({
-    sql: `SELECT aa.user_id, aa.role as advisor_role, u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
+  const rows = await legacyRows(req, `SELECT aa.user_id, aa.role as advisor_role, u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
                  CASE
                    WHEN c.name = 'Công ty khác' THEN r.other_company_name
                    WHEN c.name IS NOT NULL THEN c.name
@@ -248,9 +245,7 @@ lecturerRouter.get('/api/lecturer/grades', requireAuth, async (req: any, res: an
           LEFT JOIN final_reports fr ON fr.user_id = aa.user_id
           LEFT JOIN grades g ON g.user_id = aa.user_id
           WHERE aa.lecturer_id = ?
-          ORDER BY u.student_id ASC`,
-    args: [Number(lecturer.id)],
-  })).rows;
+          ORDER BY u.student_id ASC`, [Number(lecturer.id)]);
   res.json(rows);
 });
 

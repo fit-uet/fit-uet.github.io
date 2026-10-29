@@ -1,3 +1,4 @@
+import { refreshRequestCache } from '../../shared/utils/requestCache';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, CalendarDays, ArrowRight, RefreshCw } from 'lucide-react';
@@ -15,7 +16,7 @@ export function AcademicHome({ token, user }: { token: string; user: any }) {
   const admin = user.role === 'admin';
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
-      const data = await academicApi(token, '/api/me/campaigns', 'GET', undefined, signal);
+      const data = await academicApi(token, '/api/me/campaigns?section=base', 'GET', undefined, signal);
       setClasses(data.campaigns); setSemesters([...data.semesters].sort((a, b) => b.year - a.year || a.term.localeCompare(b.term)));
       setUnmappedLegacy(data.legacyInternshipUnmapped === true);
       setSelected(value => data.semesters.some(s => s.id === value) ? value : data.semesters.find(s => s.term === '1' && s.year === 2026)?.id || data.semesters[0]?.id || '');
@@ -25,12 +26,14 @@ export function AcademicHome({ token, user }: { token: string; user: any }) {
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true); setMessage(''); try { await action(); await load(); } catch (error) { setMessage(error.message); } finally { setBusy(false); }
   };
+  const downloadOnly = async (action: () => Promise<unknown>) => { setBusy(true); try { await action(); } catch (error) { setMessage(error.message); } finally { setBusy(false); } };
+  useEffect(() => { const update = () => { if (document.visibilityState === 'visible') load(); }; window.addEventListener('api-data-changed', update); document.addEventListener('visibilitychange', update); return () => { window.removeEventListener('api-data-changed', update); document.removeEventListener('visibilitychange', update); }; }, [load]);
   const filtered = classes.filter(c => (!selected || c.semesterId === selected) && (group === 'all' || c.group === group));
   return <div className="max-w-7xl mx-auto space-y-6">
-    <PageHeader title="Học kỳ và nhóm môn" description="Thực tập · Dự án công nghệ · Dự án khoa học" icon={<BookOpen size={22} />} actions={<><Button onClick={() => load()} leadingIcon={<RefreshCw size={15} />}>Tải lại</Button>{admin && <Button variant="primary" onClick={() => setManage(!manage)}>{manage ? 'Đóng quản lý' : 'Quản lý học kỳ / nhóm môn'}</Button>}</>} />
+    <PageHeader title="Học kỳ và nhóm môn" description="Thực tập · Dự án công nghệ · Dự án khoa học" icon={<BookOpen size={22} />} actions={<><Button onClick={() => { refreshRequestCache(); load(); }} leadingIcon={<RefreshCw size={15} />}>Tải lại</Button>{admin && <Button variant="primary" onClick={() => setManage(!manage)}>{manage ? 'Đóng quản lý' : 'Quản lý học kỳ / nhóm môn'}</Button>}</>} />
     <div className="flex flex-wrap gap-3 items-end"><FormField label="Học kỳ"><select aria-label="Học kỳ" className={inputClass} value={selected} onChange={e => { setSelected(e.target.value); sessionStorage.setItem('academic:semester', e.target.value); }}><option value="">Tất cả học kỳ</option>{semesters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></FormField>
       <FormField label="Nhóm môn"><select className={inputClass} value={group} onChange={e => { setGroup(e.target.value); sessionStorage.setItem('academic:group', e.target.value); }}><option value="all">Tất cả nhóm môn</option><option value="internship">Thực tập</option><option value="project">Dự án</option></select></FormField>
-      {admin && selected && <Button disabled={busy} onClick={() => run(() => academicDownload(token, `/api/admin/semesters/${selected}/grades/export.xlsx?group=${group}`, `bang-diem-${selected}.xlsx`))}>Xuất điểm học kỳ</Button>}
+      {admin && selected && <Button disabled={busy} onClick={() => downloadOnly(() => academicDownload(token, `/api/admin/semesters/${selected}/grades/export.xlsx?group=${group}`, `bang-diem-${selected}.xlsx`))}>Xuất điểm học kỳ</Button>}
 
     </div>
     {message && <div role="status" className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-lg text-sm">{message}</div>}

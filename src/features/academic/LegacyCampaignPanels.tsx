@@ -1,15 +1,24 @@
+import { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../shared/ui';
-import { AdminPanel, AdvisorAssignmentAdmin, FinalInternshipListAdmin, FinalReportAdmin, GradeAdmin, FAQQuestionsAdmin } from '../admin';
-import { LecturerHome, LecturerGradeView } from '../lecturer';
-import { Dashboard, StudentFinalReportView } from '../student';
 import { LegacyListScope } from './LegacyListScope';
 import { useParams } from 'react-router-dom';
-export function hasLegacyPanel(user: any, tab: string) {
-  if (user.role === 'admin') return ['registrations', 'final-internships', 'assignments', 'reports', 'grades'].includes(tab);
-  if (user.role === 'lecturer' || user.is_lecturer) return ['students', 'reports', 'grades'].includes(tab);
-  return user.role === 'student' && tab === 'students';
-}
+const StudentFinalReportView = lazy(() => import('../student/pages/StudentFinalReportView').then(module => ({ default: module.StudentFinalReportView })));
+const Dashboard = lazy(() => import('../student/pages/Dashboard').then(module => ({ default: module.Dashboard })));
+const LecturerGradeView = lazy(() => import('../lecturer/pages/LecturerGradeView').then(module => ({ default: module.LecturerGradeView })));
+const LecturerHome = lazy(() => import('../lecturer/pages/LecturerHome').then(module => ({ default: module.LecturerHome })));
+const FAQQuestionsAdmin = lazy(() => import('../admin/pages/FAQQuestionsAdmin').then(module => ({ default: module.FAQQuestionsAdmin })));
+const GradeAdmin = lazy(() => import('../admin/pages/GradeAdmin').then(module => ({ default: module.GradeAdmin })));
+const FinalReportAdmin = lazy(() => import('../admin/pages/FinalReportAdmin').then(module => ({ default: module.FinalReportAdmin })));
+const FinalInternshipListAdmin = lazy(() => import('../admin/pages/FinalInternshipListAdmin').then(module => ({ default: module.FinalInternshipListAdmin })));
+const AdvisorAssignmentAdmin = lazy(() => import('../admin/pages/AdvisorAssignmentAdmin').then(module => ({ default: module.AdvisorAssignmentAdmin })));
+const AdminPanel = lazy(() => import('../admin/pages/AdminPanel').then(module => ({ default: module.AdminPanel })));
+export { hasLegacyPanel } from './legacyPresentation';
+
+
+
+
+
 export function LegacyCampaignPanels({ token, user, tab, courseCode }: { token: string; user: any; tab: string; courseCode: string }) {
   const { campaignId = '' } = useParams();
   const [query, setQuery] = useSearchParams(); const view = ['requests', 'quotas'].includes(query.get('view') || '') ? query.get('view') as 'requests' | 'quotas' : 'assignments';
@@ -25,5 +34,5 @@ export function LegacyCampaignPanels({ token, user, tab, courseCode }: { token: 
     if (['students', 'assignments', 'reports'].includes(tab)) content = <LecturerHome {...props} user={user} />;
     if (tab === 'grades') content = <LecturerGradeView {...props} user={user} />;
   } else if (tab === 'students') content = <><Dashboard token={token} user={user} setUser={value => { localStorage.setItem('user', JSON.stringify(value)); window.location.reload(); }} onAuthExpired={() => window.dispatchEvent(new Event('auth-expired'))} /><StudentFinalReportView token={token} user={user} /></>;
-  return content ? <LegacyListScope token={token} campaignId={campaignId}><section key={`${tab}:${courseCode}`} className="space-y-4">{content}</section></LegacyListScope> : null;
+  return content ? <Suspense fallback={<p role="status">Đang tải chức năng…</p>}><LegacyListScope token={token} campaignId={campaignId}><section key={`${tab}:${courseCode}`} className="space-y-4">{content}</section></LegacyListScope></Suspense> : null;
 }

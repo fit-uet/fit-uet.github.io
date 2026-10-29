@@ -1,9 +1,10 @@
+import { useLegacyPager } from '../../academic/useLegacyPager';
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, CheckCircle2, Download, ArrowUpDown, Search, Building2, RefreshCw, Save, Plus, X, ChevronDown, FileText, Edit2, Clock, Send, Trash2, UserX } from 'lucide-react';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, xlsxArrayBuffer, paginationBounds, CACHE_TTL, cachedJsonFetch, PaginationControls, formatCourseCode, cleanStudentName } from '../../../shared';
 
@@ -57,26 +58,21 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   const [editOtherContact, setEditOtherContact] = useState({ contact_name: '', contact_phone: '', contact_email: '' });
   const [registrationPage, setRegistrationPage] = useState(1);
   const registrationPageSize = 25;
+  const paging = useLegacyPager(token, '/api/admin/registrations', {page:registrationPage,q:searchTerm,courseCode:initialCourseCode || filterCourse,status:filterStatus,sort:sortConfig?.key,direction:sortConfig?.direction});
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchRegistrations();
-    fetchRegistrationCompanies();
-    fetchApprovedCompanyNames();
-    fetchAdminStudents();
-    fetchAdminLecturers();
-  }, []);
+  useEffect(() => { fetchRegistrations(); }, [token,paging.key]);
+  useEffect(() => { if (addingRegistration || editingRegistration) { fetchRegistrationCompanies(); fetchApprovedCompanyNames(); fetchAdminStudents(); fetchAdminLecturers(); } }, [token,addingRegistration,!!editingRegistration]);
 
   const fetchRegistrations = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/registrations`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      setRegistrations(Array.isArray(data) ? data : []);
-    } catch (e) { }
+      setRegistrations(await paging.load());
+    } catch (e) { if(e.name==='AbortError')return;setRegistrations([]); }
     setLoading(false);
   };
 
+  paging.bind(fetchRegistrations);
   const fetchRegistrationCompanies = async () => {
     try {
       const data = await cachedJsonFetch<any[]>(`${API_BASE}/api/companies`, {
@@ -201,16 +197,20 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
     return { headers, rows };
   };
 
-  const handleExportCurrent = () => {
+  const handleExportCurrent = async () => {
+    const filteredRegistrations = await paging.allRows();
     const { headers, rows } = registrationExportData(filteredRegistrations);
-    saveXlsx('danh_sach_hien_tai.xlsx', headers, rows, 'Danh sách');
+    await saveXlsx('danh_sach_hien_tai.xlsx', headers, rows, 'Danh sách');
     setIsExportMenuOpen(false);
   };
 
   const handleExportByCourse = async () => {
+    const registrations = await paging.allRows();
+    const uniqueCourses = Array.from(new Set(registrations.map(r => r.course_code)));
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
     const headers = ['STT', 'Mã SV', 'Họ và tên', 'Ngày sinh', 'Lớp khóa học'];
-    uniqueCourses.forEach(course => {
+    await Promise.all(uniqueCourses.map(async course => {
       const data = registrations.filter(r => r.course_code === course);
       if (data.length > 0) {
         const uniqueStudents = Array.from(
@@ -227,30 +227,34 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
           row.dob || '',
           row.class_name || '',
         ]);
-        zip.file(`Lop_${course || 'KhongXacDinh'}.xlsx`, xlsxArrayBuffer(headers, rows, 'Danh sách'));
+        zip.file(`Lop_${course || 'KhongXacDinh'}.xlsx`, await xlsxArrayBuffer(headers, rows, 'Danh sách'));
       }
-    });
+    }));
     const blob = await zip.generateAsync({ type: 'blob' });
     saveAs(blob, 'DanhSachTheoLop.zip');
     setIsExportMenuOpen(false);
   };
 
   const handleExportByCompany = async () => {
+    const registrations = await paging.allRows();
+    const uniqueCompanies = Array.from(new Set(registrations.map(r => r.company_name)));
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
-    uniqueCompanies.forEach(company => {
+    await Promise.all(uniqueCompanies.map(async company => {
       const data = registrations.filter(r => r.company_name === company);
       if (data.length > 0) {
         const safeName = (company as string).replace(/[^a-z0-9]/gi, '_');
         const { headers, rows } = registrationExportData(data);
-        zip.file(`CongTy_${safeName}.xlsx`, xlsxArrayBuffer(headers, rows, 'Danh sách'));
+        zip.file(`CongTy_${safeName}.xlsx`, await xlsxArrayBuffer(headers, rows, 'Danh sách'));
       }
-    });
+    }));
     const blob = await zip.generateAsync({ type: 'blob' });
     saveAs(blob, 'DanhSachTheoCongTy.zip');
     setIsExportMenuOpen(false);
   };
 
   const handleExportUnconfirmed = async () => {
+    const registrations = await paging.allRows();
     if (exportingUnconfirmed) return;
     setExportingUnconfirmed(true);
     setIsExportMenuOpen(false);
@@ -359,7 +363,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
         item.note || ''
       ]);
 
-      saveXlsx('danh_sach_sinh_vien_chua_xac_nhan_thuc_tap.xlsx', headers, rows, 'Chưa xác nhận TT');
+      await saveXlsx('danh_sach_sinh_vien_chua_xac_nhan_thuc_tap.xlsx', headers, rows, 'Chưa xác nhận TT');
     } catch (e: any) {
       alert('Lỗi xuất danh sách chưa xác nhận: ' + (e?.message || e));
     } finally {
@@ -368,6 +372,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   };
 
   const handleExportRegisteredStudents = async () => {
+    const registrations = await paging.allRows();
     if (exportingRegisteredStudents) return;
     setExportingRegisteredStudents(true);
     setIsExportMenuOpen(false);
@@ -499,7 +504,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
         item.final_internship_place || 'Chưa xác nhận',
       ]);
 
-      saveXlsx('danh_sach_dang_ky_thuc_tap.xlsx', headers, rows, 'DS đăng ký');
+      await saveXlsx('danh_sach_dang_ky_thuc_tap.xlsx', headers, rows, 'DS đăng ký');
     } catch (e: any) {
       alert('Lỗi xuất danh sách đăng ký: ' + (e?.message || e));
     } finally {
@@ -900,23 +905,23 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
   });
   useEffect(() => {
     setRegistrationPage(1);
-  }, [searchTerm, filterCourse, filterStatus, sortConfig, registrations.length]);
-  const registrationPagination = paginationBounds(filteredRegistrations.length, registrationPage, registrationPageSize);
-  const paginatedRegistrations = filteredRegistrations.slice(
+  }, [searchTerm, filterCourse, filterStatus, sortConfig]);
+  const registrationPagination = paginationBounds(paging.page?.total ?? filteredRegistrations.length, registrationPage, registrationPageSize);
+  const paginatedRegistrations = paging.page ? filteredRegistrations : filteredRegistrations.slice(
     (registrationPagination.safePage - 1) * registrationPageSize,
     registrationPagination.safePage * registrationPageSize
   );
 
-  const totalRegistrations = registrations.length;
-  const totalStudents = new Set(registrations.map(r => r.user_id || r.student_id || r.email).filter(Boolean)).size;
-  const totalCompanies = new Set(registrations.map(r => (
+  const totalRegistrations = paging.page?.total ?? registrations.length;
+  const totalStudents = paging.page?.studentCount ?? new Set(registrations.map(r => r.user_id || r.student_id || r.email).filter(Boolean)).size;
+  const totalCompanies = paging.summary?.places ?? new Set(registrations.map(r => (
     r.company_name === 'Công ty khác'
       ? (r.other_company_name || r.company_name)
       : r.company_name
   )).filter(Boolean)).size;
-  const pendingRegistrations = registrations.filter(r => r.status === 'pending').length;
-  const approvedRegistrations = registrations.filter(r => r.status === 'approved').length;
-  const rejectedRegistrations = registrations.filter(r => r.status === 'rejected').length;
+  const pendingRegistrations = paging.summary?.registration_pending ?? registrations.filter(r => r.status === 'pending').length;
+  const approvedRegistrations = paging.summary?.registration_approved ?? registrations.filter(r => r.status === 'approved').length;
+  const rejectedRegistrations = paging.summary?.registration_rejected ?? registrations.filter(r => r.status === 'rejected').length;
   const clearRegistrationFilters = () => {
     setSearchTerm('');
     setFilterCourse('');
@@ -1272,7 +1277,7 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
           </table>
         </div>
         <PaginationControls
-          total={filteredRegistrations.length}
+          total={paging.page?.total ?? filteredRegistrations.length}
           currentPage={registrationPage}
           pageSize={registrationPageSize}
           onPageChange={setRegistrationPage}

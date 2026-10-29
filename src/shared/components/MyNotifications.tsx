@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../utils/requestCache';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, ArrowUpRight, CheckCheck } from 'lucide-react';

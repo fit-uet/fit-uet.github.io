@@ -1,7 +1,7 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { User as UserIcon, Upload, Download, ArrowUpDown, Search, RefreshCw, Save, Plus, Trash2, X, Edit2, Send } from 'lucide-react';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, xlsxArrayBuffer, xlsxBlob, getGoogleDriveAccessToken, pickDriveFolder, uploadXlsxToDrive, readSpreadsheetRows, paginationBounds, clearJsonCache, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
 
@@ -208,7 +208,7 @@ Khoa Công nghệ Thông tin`);
     if (students.length === 0) throw new Error(`${lecturer.name}: chưa có sinh viên được phân công.`);
     const { headers, rows } = lecturerStudentXlsxData(lecturer, students);
     const safeName = (lecturer.name || 'giang_vien').replace(/[^a-z0-9]+/gi, '_');
-    const file = xlsxBlob(headers, rows, 'Sinh viên');
+    const file = await xlsxBlob(headers, rows, 'Sinh viên');
     const link = await uploadXlsxToDrive(accessToken, folderId, `sinh_vien_${safeName}.xlsx`, file);
     await saveLecturerDriveLink(Number(lecturer.id), link);
     return link;
@@ -299,12 +299,13 @@ Khoa Công nghệ Thông tin`);
 
   const exportLecturerMailMergeZip = async () => {
     if (mailMergeItems.length === 0) return alert('Không có dữ liệu để xuất.');
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
-    mailMergeItems.forEach(item => {
+    await Promise.all(mailMergeItems.map(async item => {
       const { headers, rows } = lecturerStudentXlsxData(item.lecturer, item.students);
       const safeName = (item.lecturer.name || 'giang_vien').replace(/[^a-z0-9]+/gi, '_');
-      zip.file(`sinh_vien_${safeName}.xlsx`, xlsxArrayBuffer(headers, rows, 'Sinh viên'));
-    });
+      zip.file(`sinh_vien_${safeName}.xlsx`, await xlsxArrayBuffer(headers, rows, 'Sinh viên'));
+    }));
     const blob = await zip.generateAsync({ type: 'blob' });
     saveAs(blob, 'danh_sach_sinh_vien_theo_giang_vien.zip');
   };
@@ -388,10 +389,10 @@ Khoa Công nghệ Thông tin`);
     });
   };
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
     const headers = ['STT', 'Họ và tên', 'Email', 'Đơn vị công tác', 'Số sinh viên hướng dẫn', 'Link Drive'];
     const rows = filteredAndSorted.map((l, idx) => [idx + 1, l.name, l.email || '', l.work_unit || '', getLecturerStudentRows(l).length, l.students_drive_link || '']);
-    saveXlsx('danh_sach_giang_vien.xlsx', headers, rows, 'Giảng viên');
+    await saveXlsx('danh_sach_giang_vien.xlsx', headers, rows, 'Giảng viên');
   };
 
   const handleFileUpload = async (e: any) => {

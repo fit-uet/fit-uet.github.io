@@ -1,3 +1,4 @@
+import { requestJson, clearRequestCache, invalidateRequestCache } from './requestCache';
 export const isAuthExpiredResponse = (res: Response, data?: any) =>
   res.status === 401 || (res.status === 403 && /token|hết hạn|unauthorized/i.test(String(data?.error || '')));
 
@@ -14,6 +15,7 @@ export const jwtExpiresAtMs = (token: string | null | undefined) => {
 };
 
 export const JSON_CACHE_PREFIX = 'irs-cache:json:';
+if (typeof window !== 'undefined') { try { Object.keys(localStorage).filter(key => key.startsWith(JSON_CACHE_PREFIX)).forEach(key => localStorage.removeItem(key)); } catch {} }
 
 export const CACHE_TTL = {
   campaign: 5 * 60 * 1000,
@@ -31,34 +33,12 @@ export type JsonCacheEntry<T = any> = {
 
 export const jsonCacheStorageKey = (key: string) => `${JSON_CACHE_PREFIX}${key}`;
 
-export const readJsonCache = <T,>(key: string, allowExpired = false): T | null => {
-  try {
-    const raw = localStorage.getItem(jsonCacheStorageKey(key));
-    if (!raw) return null;
-    const entry = JSON.parse(raw) as JsonCacheEntry<T>;
-    if (!entry || typeof entry.expiresAt !== 'number') return null;
-    if (!allowExpired && Date.now() > entry.expiresAt) return null;
-    return entry.data;
-  } catch (e) {
-    return null;
-  }
-};
-
-export const writeJsonCache = (key: string, data: any, ttlMs: number) => {
-  try {
-    const now = Date.now();
-    const entry: JsonCacheEntry = { data, savedAt: now, expiresAt: now + ttlMs };
-    localStorage.setItem(jsonCacheStorageKey(key), JSON.stringify(entry));
-  } catch (e) { }
-};
-
-export const clearJsonCache = (prefix = '') => {
-  try {
-    const fullPrefix = `${JSON_CACHE_PREFIX}${prefix}`;
-    Object.keys(localStorage)
-      .filter(key => key.startsWith(fullPrefix))
-      .forEach(key => localStorage.removeItem(key));
-  } catch (e) { }
+// Legacy storage is purged; business data is cached only in memory now.
+export const readJsonCache = <T,>(_key: string, _allowExpired = false): T | null => null;
+export const writeJsonCache = (_key: string, _data: any, _ttlMs: number) => {};
+export const clearJsonCache = (_prefix = '') => {
+  clearRequestCache(_prefix || undefined);
+  try { Object.keys(localStorage).filter(key => key.startsWith(JSON_CACHE_PREFIX)).forEach(key => localStorage.removeItem(key)); } catch {}
 };
 
 export const cachedJsonFetch = async <T,>(
@@ -77,25 +57,5 @@ export const cachedJsonFetch = async <T,>(
     onAuthExpired?: () => void;
   }
 ): Promise<T> => {
-  if (!forceRefresh) {
-    const cached = readJsonCache<T>(cacheKey);
-    if (cached !== null) return cached;
-  }
-  const stale = readJsonCache<T>(cacheKey, true);
-  try {
-    const res = await fetch(url, { headers });
-    const data = await res.json().catch(() => null);
-    if (isAuthExpiredResponse(res, data)) {
-      clearJsonCache();
-      window.dispatchEvent(new CustomEvent('auth-expired'));
-      onAuthExpired?.();
-      throw new Error(data?.error || 'Phiên đăng nhập không hợp lệ.');
-    }
-    if (!res.ok) throw new Error(data?.error || `Không tải được dữ liệu (${res.status}).`);
-    writeJsonCache(cacheKey, data, ttlMs);
-    return data as T;
-  } catch (e) {
-    if (stale !== null) return stale;
-    throw e;
-  }
+  return requestJson<T>(url, { headers, forceRefresh, scope: cacheKey }).catch(error => { if (error.status === 401) onAuthExpired?.(); throw error; });
 };

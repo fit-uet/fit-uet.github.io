@@ -1,3 +1,4 @@
+import { legacyRows } from '../services/legacyPaging';
 import { Router } from 'express';
 import { parse } from 'csv-parse/sync';
 import { db, executeBatch, isTransientLibsqlError } from '../db';
@@ -681,7 +682,7 @@ adminRouter.post('/api/admin/companies/bulk', requireAuth, requireAdmin, async (
 
   // 6. Admin: Get all registrations
 adminRouter.get('/api/admin/registrations', requireAuth, requireAdmin, async (req, res) => {
-    const data = (await db.execute(`
+    const data = await legacyRows(req, `
       SELECT 
         r.id as registration_id,
         r.user_id,
@@ -710,7 +711,7 @@ adminRouter.get('/api/admin/registrations', requireAuth, requireAdmin, async (re
       JOIN users u ON r.user_id = u.id
       LEFT JOIN companies c ON r.company_id = c.id
       ORDER BY r.created_at DESC
-    `)).rows;
+    `, [], { status: 'status' });
     res.json(data);
   });
 adminRouter.post('/api/admin/registrations', requireAuth, requireAdmin, async (req: any, res: any) => {
@@ -1153,8 +1154,8 @@ adminRouter.post('/api/admin/companies/send-applicants-email', requireAuth, requ
     }
   });
 adminRouter.get('/api/admin/final-internships', requireAuth, requireAdmin, async (req, res) => {
-    await backfillSchoolFinalInternshipsFromRegistrations((req as any).user?.id);
-    const rows = (await db.execute(`
+    if (req.query.pagination !== '1') await backfillSchoolFinalInternshipsFromRegistrations((req as any).user?.id);
+    const rows = await legacyRows(req, `
       SELECT f.*, u.email, u.name as student_name, u.student_id, u.class_name, u.course_code, u.phone, u.personal_email,
              c.name as company_name, r.other_company_name, r.other_company_role, r.other_company_contact
       FROM final_internships f
@@ -1162,7 +1163,7 @@ adminRouter.get('/api/admin/final-internships', requireAuth, requireAdmin, async
       LEFT JOIN companies c ON f.company_id = c.id
       LEFT JOIN registrations r ON f.registration_id = r.id
       ORDER BY f.confirmed_at DESC
-    `)).rows;
+    `, [], {status:'internship_type',sort:{school_lecturer:'school_lecturer',note:'note'}});
     res.json(rows);
   });
 adminRouter.get('/api/admin/unconfirmed-internships', requireAuth, requireAdmin, async (req, res) => {
@@ -1341,7 +1342,7 @@ adminRouter.put('/api/admin/final-internships/:userId/lock', requireAuth, requir
   });
 adminRouter.get('/api/admin/advisor-assignments', requireAuth, requireAdmin, async (req: any, res: any) => {
     try {
-      const rows = (await db.execute(`
+      const rows = req.query.catalogOnly === '1' ? [] : await legacyRows(req, `
         WITH participants AS (
           SELECT user_id FROM final_internships
           UNION
@@ -1391,7 +1392,7 @@ adminRouter.get('/api/admin/advisor-assignments', requireAuth, requireAdmin, asy
         LEFT JOIN lecturers l ON l.id = aa.lecturer_id
         GROUP BY p.user_id
         ORDER BY u.student_id ASC
-      `)).rows;
+      `);
       const quotaSettings = rowsToSettings((await db.execute("SELECT key, value FROM settings WHERE key IN ('advisor_quota_pgs', 'advisor_quota_ts', 'advisor_quota_ths')")).rows as any[]);
       const lecturersRaw = (await db.execute(`
         SELECT l.*, q.max_total_students as quota_override,
@@ -1411,6 +1412,9 @@ adminRouter.get('/api/admin/advisor-assignments', requireAuth, requireAdmin, asy
         return { ...lecturer, max_total_students: lecturer.quota_override !== null && lecturer.quota_override !== undefined ? Number(lecturer.quota_override) : defaultQuota, assignment_count: Number(lecturer.assignment_count || 0) };
       });
       res.json({ rows, lecturers });
+      // New paginated/catalog reads are side-effect free. The legacy unpaged
+      // contract retains its historical scheduling; explicit auto-assign remains available.
+      if (req.query.pagination === '1' || req.query.catalogOnly === '1') return;
       setTimeout(() => {
         if (advisorAutoAssignRunning) return;
         advisorAutoAssignRunning = true;
@@ -1469,7 +1473,7 @@ adminRouter.post('/api/admin/advisor-requests/sync-legacy', requireAuth, require
   });
 adminRouter.get('/api/admin/advisor-requests', requireAuth, requireAdmin, async (req: any, res: any) => {
     try {
-      const rows = (await db.execute(`
+      const rows = await legacyRows(req, `
         SELECT ar.*, u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
                l.name as lecturer_name, l.email as lecturer_email,
                cl.name as co_lecturer_name, cl.email as co_lecturer_email,
@@ -1483,7 +1487,7 @@ adminRouter.get('/api/admin/advisor-requests', requireAuth, requireAdmin, async 
         LEFT JOIN registrations r ON r.id = f.registration_id
         WHERE NOT (ar.request_type = 'agreed' AND ar.status = 'approved')
         ORDER BY CASE ar.status WHEN 'pending' THEN 0 ELSE 1 END, ar.updated_at DESC
-      `)).rows;
+      `);
       res.json(rows);
     } catch (error: any) {
       console.error('[advisor] failed to load advisor requests:', error);
@@ -1578,7 +1582,7 @@ adminRouter.put('/api/admin/lecturer-quotas/:id', requireAuth, requireAdmin, asy
     res.json({ success: true });
   });
 adminRouter.get('/api/admin/reports/final', requireAuth, requireAdmin, async (req: any, res: any) => {
-    const rows = (await db.execute(`
+    const rows = await legacyRows(req, `
       SELECT f.user_id, f.internship_type, f.confirmed_at,
              u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
              CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
@@ -1596,28 +1600,16 @@ adminRouter.get('/api/admin/reports/final', requireAuth, requireAdmin, async (re
       LEFT JOIN lecturers l ON l.id = aa.lecturer_id
       GROUP BY f.user_id
       ORDER BY u.student_id ASC
-    `)).rows;
+    `);
     res.json(rows);
   });
 adminRouter.get('/api/admin/grades', requireAuth, requireAdmin, async (req: any, res: any) => {
-    await db.execute(`
-      UPDATE grades
-      SET status = 'submitted',
-          submitted_at = COALESCE(submitted_at, datetime('now', '+7 hours'))
-      WHERE status = 'draft'
-    `).catch(() => {});
-    await db.execute(`
-      UPDATE grades
-      SET final_score = ROUND(progress_score * 0.2 + report_score * 0.2 + company_score * 0.6, 1)
-      WHERE progress_score IS NOT NULL AND report_score IS NOT NULL AND company_score IS NOT NULL AND final_score IS NULL
-    `).catch(() => {});
-
-    const rows = (await db.execute(`
+    const rows = await legacyRows(req, `
       SELECT f.user_id, f.internship_type, f.confirmed_at,
              u.student_id, u.name as student_name, u.email, u.class_name, u.course_code,
              CASE WHEN c.name = 'Công ty khác' THEN r.other_company_name ELSE c.name END as internship_place,
              fr.status as report_status,
-             g.progress_score, g.report_score, g.company_score, g.final_score,
+             g.progress_score, g.report_score, g.company_score, COALESCE(g.final_score, ROUND(g.progress_score * 0.2 + g.report_score * 0.2 + g.company_score * 0.6, 1)) final_score,
              CASE WHEN g.status = 'draft' THEN 'submitted' ELSE COALESCE(g.status, 'missing') END as grade_status, g.comment, g.submitted_at as grade_submitted_at, g.locked_at,
              CASE
                WHEN g.id IS NULL THEN NULL
@@ -1637,14 +1629,7 @@ adminRouter.get('/api/admin/grades', requireAuth, requireAdmin, async (req: any,
       LEFT JOIN lecturers l ON l.id = aa.lecturer_id
       GROUP BY f.user_id
       ORDER BY u.student_id ASC
-    `)).rows as any[];
-
-    for (const r of rows) {
-      const clean = cleanStudentName(r.student_name, r.student_id, r.email);
-      if (clean && clean !== r.student_name) {
-        db.execute({ sql: 'UPDATE users SET name = ? WHERE id = ?', args: [clean, r.user_id] }).catch(() => {});
-      }
-    }
+    `);
 
     res.json(rows.map(r => ({
       ...r,

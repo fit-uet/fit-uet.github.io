@@ -1,7 +1,7 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { Upload, CheckCircle2, Download, Search, Building2, RefreshCw, Save, Plus, Trash2, X, ChevronDown, FileText, Edit2, Shield, Send } from 'lucide-react';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { GOOGLE_API_KEY, API_BASE, saveXlsx, xlsxArrayBuffer, xlsxBlob, getDriveAccessToken, pickDriveFolder, uploadXlsxToDrive, readSpreadsheetRows, clearJsonCache, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
 
@@ -240,7 +240,7 @@ Trường Đại học Công nghệ, ĐHQGHN`;
   const createDriveLinkForCompany = async (accessToken: string, folderId: string, company: any, data: any[]) => {
     const { headers, rows } = companyApplicantsXlsxData(company, data);
     const safeName = (company.name || 'cong_ty').replace(/[^a-z0-9]+/gi, '_');
-    const file = xlsxBlob(headers, rows, 'Đăng ký');
+    const file = await xlsxBlob(headers, rows, 'Đăng ký');
     const link = await uploadXlsxToDrive(accessToken, folderId, `dang_ky_${safeName}.xlsx`, file);
     await saveApplicantsDriveLink(company, link);
     return link;
@@ -391,17 +391,18 @@ Trường Đại học Công nghệ, ĐHQGHN`;
   const exportMailMergeZip = async () => {
     const items = mailMergeItems.filter(item => item.data.length > 0);
     if (items.length === 0) return alert('Không có dữ liệu để xuất.');
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
-    items.forEach(item => {
+    await Promise.all(items.map(async item => {
       const { headers, rows } = companyApplicantsXlsxData(item.company, item.data);
       const safeName = (item.company.name || 'cong_ty').replace(/[^a-z0-9]+/gi, '_');
-      zip.file(`dang_ky_${safeName}.xlsx`, xlsxArrayBuffer(headers, rows, 'Đăng ký'));
-    });
+      zip.file(`dang_ky_${safeName}.xlsx`, await xlsxArrayBuffer(headers, rows, 'Đăng ký'));
+    }));
     const blob = await zip.generateAsync({ type: 'blob' });
     saveAs(blob, 'mail_merge_danh_sach_theo_cong_ty.zip');
   };
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
     const headers = ['STT', 'Loại', 'Tên doanh nghiệp', 'Chỉ tiêu', 'Ứng viên', 'Đã duyệt', 'Đã gửi DN', 'Link Drive', 'Email liên hệ', 'Người liên hệ', 'SĐT', 'Địa chỉ'];
     const rows = filteredAndSorted.map((c, idx) => [
       idx + 1,
@@ -417,10 +418,10 @@ Trường Đại học Công nghệ, ĐHQGHN`;
       c.phone || '',
       c.address || ''
     ]);
-    saveXlsx('danh_sach_cong_ty.xlsx', headers, rows, 'Công ty');
+    await saveXlsx('danh_sach_cong_ty.xlsx', headers, rows, 'Công ty');
   };
 
-  const exportApplicantsForCompany = (company: any) => {
+  const exportApplicantsForCompany = async (company: any) => {
     const data = getCompanyRegistrations(company);
     if (data.length === 0) return alert('Công ty này chưa có đăng ký.');
     const headers = ['STT', 'Mã SV', 'Họ và tên', 'Ngày sinh', 'SĐT', 'Email cá nhân', 'Lớp KH', 'Mã môn học', 'Ghi chú', 'Trạng thái', 'Đã gửi DN', 'Thời gian đăng ký'];
@@ -439,7 +440,7 @@ Trường Đại học Công nghệ, ĐHQGHN`;
       r.created_at ? new Date(r.created_at).toLocaleString('vi-VN') : ''
     ]);
     const safeName = (company.name || 'cong_ty').replace(/[^a-z0-9]+/gi, '_');
-    saveXlsx(`dang_ky_${safeName}.xlsx`, headers, rows, 'Đăng ký');
+    await saveXlsx(`dang_ky_${safeName}.xlsx`, headers, rows, 'Đăng ký');
   };
 
   const companyApplicantsXlsxData = (company: any, data: any[]) => {
@@ -499,7 +500,7 @@ Trường Đại học Công nghệ, ĐHQGHN`;
           const accessToken = await getDriveAccessToken();
           const folder = await pickDriveFolder(accessToken);
           const { headers, rows } = companyApplicantsXlsxData(company, data);
-          const file = xlsxBlob(headers, rows, 'Đăng ký');
+          const file = await xlsxBlob(headers, rows, 'Đăng ký');
           driveLink = await uploadXlsxToDrive(accessToken, folder.id, `dang_ky_${safeName}.xlsx`, file);
           if (company.id) await saveApplicantsDriveLink(company, driveLink);
           alert(`Đã tạo file trong thư mục "${folder.name}" và bật quyền xem bằng link.`);

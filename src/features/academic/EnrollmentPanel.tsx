@@ -5,8 +5,7 @@ import { academicApi, academicPdf, academicDownload } from './client';
 import type { EnrollmentPanelMode } from './campaignPresentation';
 import { ProjectTopic } from './ProjectTopic';
 
-export const academicInput = 'w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500';
-export const isoLocal = (value: FormDataEntryValue | null) => value ? `${value}:00+07:00` : '';
+import { academicInput, isoLocal } from './form';
 type Props = { token: string; user: any; courseClass: AcademicClassSummary; enrollment: EnrollmentView; lecturers: LecturerInfo[]; refresh: () => Promise<void>; mode?: EnrollmentPanelMode };
 function PdfView({ token, enrollmentId, version }: { token: string; enrollmentId: string; version: SubmissionVersion }) {
   const [url, setUrl] = useState(''); const [error, setError] = useState('');

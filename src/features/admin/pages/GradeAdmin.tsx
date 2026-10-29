@@ -1,3 +1,5 @@
+import { useLegacyPager } from '../../academic/useLegacyPager';
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +49,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
   const [currentPage, setCurrentPage] = useState(1);
   const [lockingBatch, setLockingBatch] = useState(false);
   const pageSize = 25;
+  const paging = useLegacyPager(token, '/api/admin/grades', { page: currentPage, q: searchTerm, status: statusFilter, courseCode: initialCourseCode || courseCodeFilter, advisor: advisorFilter });
 
   // Pending lecturers state for reminders and multi-sheet export
   const [pendingLecturers, setPendingLecturers] = useState<any[]>([]);
@@ -75,19 +78,16 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
   const fetchRows = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/grades`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      const normalized = (Array.isArray(data) ? data : []).map((r) => ({
-        ...r,
-        grade_status: r.grade_status === 'draft' ? 'submitted' : r.grade_status,
-      }));
-      setRows(normalized);
+      setRows(await paging.load());
     } catch (e) {
+      if (e.name === 'AbortError') return;
+      setRows([]);
       alert('Không tải được bảng điểm.');
     } finally {
       setLoading(false);
     }
   };
+  paging.bind(fetchRows);
 
   const fetchPendingLecturers = async () => {
     try {
@@ -106,9 +106,9 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
 
   useEffect(() => {
     fetchRows();
-    fetchPendingLecturers();
-  }, [token]);
+  }, [token, paging.key]);
 
+  useEffect(() => { if (showRemindModal) fetchPendingLecturers(); }, [showRemindModal]);
   const handleDeleteGradeRow = async (row: any) => {
     const displayName = cleanStudentName(row.student_name, row.student_id, row.email);
     if (
@@ -191,7 +191,8 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
 
   const advisorOptions = useMemo(() => {
     const set = new Set<string>();
-    rows.forEach((r) => {
+    const source = paging.summary?.advisorOptions ? JSON.parse(paging.summary.advisorOptions).map(primary_advisors=>({primary_advisors})) : rows;
+    source.forEach((r) => {
       if (r.primary_advisors) {
         r.primary_advisors.split(',').forEach((name: string) => {
           const trimmed = name.trim();
@@ -200,7 +201,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
       }
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
-  }, [rows]);
+  }, [rows, paging.summary]);
 
   const lecturerStatsMap = useMemo(() => {
     const map = new Map<string, { total: number; submitted: number; missing: number }>();
@@ -245,16 +246,16 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, courseCodeFilter, advisorFilter, rows.length]);
+  }, [searchTerm, statusFilter, courseCodeFilter, advisorFilter]);
 
-  const pagination = paginationBounds(filtered.length, currentPage, pageSize);
-  const paginatedRows = filtered.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
+  const pagination = paginationBounds(paging.page?.total ?? filtered.length, currentPage, pageSize);
+  const paginatedRows = paging.page ? filtered : filtered.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
 
   const gradeStats = {
-    total: rows.length,
-    submitted: rows.filter((r) => r.grade_status === 'submitted').length,
-    missing: rows.filter((r) => (r.grade_status || 'missing') === 'missing').length,
-    pendingLecturersCount: pendingLecturers.length,
+    total: paging.page?.total ?? rows.length,
+    submitted: paging.summary?.graded ?? rows.filter((r) => r.grade_status === 'submitted').length,
+    missing: paging.summary?.grade_missing ?? rows.filter((r) => (r.grade_status || 'missing') === 'missing').length,
+    pendingLecturersCount: paging.summary?.pendingLecturersCount ?? pendingLecturers.length,
   };
 
   const formatGradingLecturer = (name?: string) => {
@@ -262,7 +263,8 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
     return name;
   };
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
+    const filtered = await paging.allRows();
     const headers = [
       'STT',
       'Mã SV',
@@ -305,7 +307,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
       row.grade_submitted_at || '',
       row.comment || '',
     ]);
-    saveXlsx('bang_diem_thuc_tap.xlsx', headers, data, 'Bảng điểm');
+    await saveXlsx('bang_diem_thuc_tap.xlsx', headers, data, 'Bảng điểm');
   };
 
   const exportPendingLecturersXlsx = async () => {
@@ -420,7 +422,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
       });
     });
 
-    saveMultiSheetXlsx('danh_sach_gv_chua_nop_du_diem.xlsx', [
+    await saveMultiSheetXlsx('danh_sach_gv_chua_nop_du_diem.xlsx', [
       { sheetName: 'Tổng hợp GV', headers: summaryHeaders, rows: summaryRows },
       { sheetName: 'Chi tiết SV thiếu điểm', headers: detailHeaders, rows: detailRows },
     ]);
@@ -807,7 +809,7 @@ export function GradeAdmin({ token, initialCourseCode = '' }: { token: string; i
           </table>
         </div>
         <PaginationControls
-          total={filtered.length}
+          total={paging.page?.total ?? filtered.length}
           currentPage={currentPage}
           pageSize={pageSize}
           onPageChange={setCurrentPage}

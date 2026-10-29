@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, FormField } from '../../shared/ui';
 import { academicApi } from './client';
-import { academicInput } from './EnrollmentPanel';
+import { academicInput } from './form';
 export function CampaignMigration({ token, refresh }: { token: string; refresh: () => Promise<void> }) {
   const [preview, setPreview] = useState<any>(null), [resolutions, setResolutions] = useState<Record<string, any>>({}), [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const inspect = async () => { setBusy(true); setError(''); try { setPreview(await academicApi(token, '/api/admin/campaign-migrations/preview', 'POST', { resolutions })); setDirty(false); } catch (e) { setError(e.message); } finally { setBusy(false); } };

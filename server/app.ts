@@ -1,3 +1,5 @@
+import { legacyPagingMiddleware } from './services/legacyPaging';
+import { jsonCacheMiddleware } from './services/httpCache';
 import express from 'express';
 import cors from 'cors';
 import { join } from 'path';
@@ -34,6 +36,8 @@ export async function createApp(options: { vite?: import('vite').InlineConfig } 
   });
 
   app.use(express.json());
+  app.use(jsonCacheMiddleware);
+  app.use(legacyPagingMiddleware);
 
   // Mount API routers
   app.use(healthRouter);

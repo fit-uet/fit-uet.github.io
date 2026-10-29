@@ -1,11 +1,14 @@
+import { requestJson, clearRequestCache, invalidateRequestCache } from '../../shared/utils/requestCache';
 import { API_BASE } from '../../shared/config';
 
 const pdfs = new Map<string, { url: string; etag: string }>();
-export function clearAcademicCache() {
+export function clearAcademicCache() { clearRequestCache(); clearAcademicPdfCache(); }
+export function clearAcademicPdfCache() {
   for (const pdf of pdfs.values()) URL.revokeObjectURL(pdf.url);
   pdfs.clear();
 }
-export async function academicApi<T = any>(token: string, path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
+export async function academicApi<T = any>(token: string, path: string, method = 'GET', body?: unknown, signal?: AbortSignal, options?: { forceRefresh?: boolean; scope?: string }): Promise<T> {
+  if (method === 'GET') return requestJson<T>(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` }, signal, ...options });
   const multipart = body instanceof FormData;
   const response = await fetch(`${API_BASE}${path}`, { method, headers: { Authorization: `Bearer ${token}`, ...(!multipart && body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body === undefined ? undefined : multipart ? body : JSON.stringify(body), signal });
   let result: any;
@@ -23,6 +26,7 @@ export async function academicApi<T = any>(token: string, path: string, method =
     if (response.status === 403) clearAcademicCache();
     throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Không xử lý được yêu cầu.');
   }
+  invalidateRequestCache(path, result);
   return result;
 }
 export async function academicPdf(token: string, enrollmentId: string, versionId: string, signal: AbortSignal) {

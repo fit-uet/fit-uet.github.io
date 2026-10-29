@@ -1,9 +1,10 @@
+import { useLegacyPager } from '../../academic/useLegacyPager';
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { Users, Upload, Download, ArrowUpDown, Search, RefreshCw, Save, Plus, Trash2, FileText, Settings } from 'lucide-react';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { API_BASE, saveXlsx, xlsxArrayBuffer, readSpreadsheetRows, paginationBounds, PaginationControls, PageDescriptionTooltip, SegmentedControl, formatCourseCode, cleanStudentName } from '../../../shared';
 
@@ -29,25 +30,31 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
   const [deletingSelected, setDeletingSelected] = useState(false);
   const [isAssignExportMenuOpen, setIsAssignExportMenuOpen] = useState(false);
   const pageSize = 25;
+  const paging = useLegacyPager(token, view === 'requests' ? '/api/admin/advisor-requests' : '/api/admin/advisor-assignments', {page:currentPage,q:searchTerm,courseCode:initialCourseCode,sort:advisorSortConfig.key,direction:advisorSortConfig.direction});
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const reqRes = await fetch(`${API_BASE}/api/admin/advisor-requests`, { headers: { Authorization: `Bearer ${token}` } });
-      const requestData = await reqRes.json();
-      const res = await fetch(`${API_BASE}/api/admin/advisor-assignments`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      setRows(Array.isArray(data.rows) ? data.rows : []);
-      setLecturers(Array.isArray(data.lecturers) ? data.lecturers : []);
-      setAdvisorRequests(Array.isArray(requestData) ? requestData : []);
+      if (view === 'assignments') {
+        const items = await paging.load();
+        setRows(items); setLecturers(paging.response.current?.lecturers || []); setAdvisorRequests([]);
+      } else {
+        const res = await fetch(`${API_BASE}/api/admin/advisor-assignments?catalogOnly=1`, {headers:{Authorization:`Bearer ${token}`}});
+        const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Không tải được giảng viên.');
+        setLecturers(data.lecturers || []); setRows([]);
+        setAdvisorRequests(view === 'requests' ? await paging.load() : []);
+      }
     } catch (e) {
+      if (e.name === 'AbortError') return;
+      setRows([]);
       alert('Không tải được danh sách phân công.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, [token]);
+  paging.bind(fetchData);
+  useEffect(() => { fetchData(); }, [token, paging.key, view]);
 
   const parseAssignments = (value: string | null) => String(value || '')
     .split(',')
@@ -111,9 +118,9 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
   );
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, rows.length, advisorSortConfig.key, advisorSortConfig.direction]);
-  const pagination = paginationBounds(sortedRows.length, currentPage, pageSize);
-  const paginatedRows = sortedRows.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
+  }, [searchTerm, advisorSortConfig.key, advisorSortConfig.direction]);
+  const pagination = paginationBounds(paging.page?.total ?? sortedRows.length, currentPage, pageSize);
+  const paginatedRows = paging.page ? sortedRows : sortedRows.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
 
   const assign = async (row: any) => {
     const key = String(row.user_id);
@@ -295,7 +302,8 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
     }
   };
 
-  const exportXlsxSummary = () => {
+  const exportXlsxSummary = async () => {
+    const sortedRows = await paging.allRows();
     if (sortedRows.length === 0) return alert('Không có dữ liệu để xuất.');
     const headers = ['STT', 'Mã SV', 'Họ tên', 'Email VNU', 'Email khác', 'Lớp', 'Mã môn', 'Nơi thực tập', 'GVHD chính', 'Đồng hướng dẫn'];
     const summaryRows = sortedRows.map((row, idx) => [
@@ -310,12 +318,16 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
       parseAssignments(row.primary_assignments).map(a => a.name).join('; '),
       parseAssignments(row.co_assignments).map(a => a.name).join('; ')
     ]);
-    saveXlsx('phan_cong_gvhd_tong_hop.xlsx', headers, summaryRows, 'Tong hop');
+    await saveXlsx('phan_cong_gvhd_tong_hop.xlsx', headers, summaryRows, 'Tong hop');
     setIsAssignExportMenuOpen(false);
   };
 
   const exportXlsxByLecturer = async () => {
+    const sortedRows = await paging.allRows();
+    const filteredRows = sortedRows;
+    const rows = sortedRows;
     if (sortedRows.length === 0) return alert('Không có dữ liệu để xuất.');
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
     const lecturerMap = new Map<string, { lecturerName: string; rows: any[][] }>();
     const unassignedRows: any[][] = [];
@@ -367,13 +379,13 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
 
     const lecturerHeaders = ['STT', 'Mã SV', 'Họ tên', 'Email VNU', 'Email khác', 'Lớp', 'Mã môn', 'Nơi thực tập', 'Vai trò của giảng viên', 'GVHD chính', 'Đồng hướng dẫn'];
 
-    lecturerMap.forEach((entry, name) => {
+    await Promise.all(Array.from(lecturerMap.entries()).map(async ([name, entry]) => {
       const safeName = name.replace(/[^a-z0-9_ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂĐỔÔÚNhíợ]{1,30}/gi, '_');
-      zip.file(`phan_cong_gvhd_${safeName}.xlsx`, xlsxArrayBuffer(lecturerHeaders, entry.rows, 'Sinh viên hướng dẫn'));
-    });
+      zip.file(`phan_cong_gvhd_${safeName}.xlsx`, await xlsxArrayBuffer(lecturerHeaders, entry.rows, 'Sinh viên hướng dẫn'));
+    }));
 
     if (unassignedRows.length > 0) {
-      zip.file('chua_phan_cong.xlsx', xlsxArrayBuffer(lecturerHeaders, unassignedRows, 'Chưa phân công'));
+      zip.file('chua_phan_cong.xlsx', await xlsxArrayBuffer(lecturerHeaders, unassignedRows, 'Chưa phân công'));
     }
 
     try {
@@ -514,7 +526,7 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {sortedAdvisorRequests.slice(0, 12).map(request => (
+                {(paging.page ? sortedAdvisorRequests : sortedAdvisorRequests.slice(0, 12)).map(request => (
                   <tr key={request.id} className="hover:bg-slate-50 align-top">
                     <td className="px-4 py-3">
                       <div className="font-semibold text-slate-900">{request.student_name}</div>
@@ -683,7 +695,7 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
           </table>
         </div>
         <PaginationControls
-          total={sortedRows.length}
+          total={paging.page?.total ?? sortedRows.length}
           currentPage={currentPage}
           pageSize={pageSize}
           onPageChange={setCurrentPage}
@@ -691,6 +703,7 @@ export function AdvisorAssignmentAdmin({ token, initialCourseCode = '', view = '
         />
       </div>}
 
+      {isRequestsView && paging.page && <PaginationControls total={paging.page.total} currentPage={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} label="đề xuất" />}
       {isQuotasView && <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h3 className="font-bold text-slate-800 text-sm">Chỉ tiêu giảng viên</h3>

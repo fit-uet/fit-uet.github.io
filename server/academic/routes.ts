@@ -1,3 +1,5 @@
+import { readCampaignCatalog, readCampaignDetail, readCampaignEnrollments, readContext, readEnrollment, readCommunicationContext } from './reads';
+import { validateJsonCache } from '../services/httpCache';
 import express, { Router } from 'express';
 import * as XLSX from 'xlsx';
 import { db } from '../db';
@@ -24,10 +26,12 @@ type Handler = (req: any, res: any) => Promise<unknown>;
 export function academicRoute(method: 'get' | 'post' | 'put' | 'patch' | 'delete', path: string, handler: Handler, parsers: any[] = []) {
   academicRouter[method](path, requireAuth, ...parsers, async (req: any, res: any) => {
     try {
+      const started = performance.now();
       const result = await handler(req, res);
       if (result === res) return;
       if (method !== 'get') await deliverAcademicOutbox().catch(error => console.error('[academic outbox]', error.message));
-      if (!res.headersSent && !res.writableEnded) res.json(result ?? { success: true });
+      if (!res.headersSent && !res.writableEnded) res.setHeader('Server-Timing', `app;dur=${(performance.now()-started).toFixed(1)}`);
+      if (!res.headersSent && !res.writableEnded && !validateJsonCache(req, res, result ?? { success: true })) res.json(result ?? { success: true });
     } catch (error) {
       if (res.headersSent) { res.destroy(); return; }
       if (error instanceof AcademicError) res.status(error.status).json({ error: { code: error.code, message: error.message, details: error.details } });
@@ -36,9 +40,9 @@ export function academicRoute(method: 'get' | 'post' | 'put' | 'patch' | 'delete
     }
   });
 }
-academicRoute('get', '/api/me/campaigns', async req => { const s = await snapshot(); return { campaigns: campaigns.campaignSummaries(s, req.user), semesters: s.semesters, courses: COURSE_CATALOG, legacyInternshipUnmapped: hasUnmappedLegacyInternship(s, req.user) }; });
-academicRoute('get', '/api/campaigns/:campaignId', req => campaigns.campaignDetail(req.user, req.params.campaignId));
-academicRoute('get', '/api/campaigns/:campaignId/enrollments', req => campaigns.campaignEnrollments(req.user, req.params.campaignId, req.query));
+academicRoute('get', '/api/me/campaigns', req => readCampaignCatalog(req.user, req.query.section === 'base' ? 'base' : 'full'));
+academicRoute('get', '/api/campaigns/:campaignId', req => readCampaignDetail(req.user, req.params.campaignId, req.query.section || 'full'));
+academicRoute('get', '/api/campaigns/:campaignId/enrollments', req => readCampaignEnrollments(req.user, req.params.campaignId, req.query));
 academicRoute('patch', '/api/admin/campaigns/:campaignId', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
 academicRoute('put', '/api/admin/campaigns/:campaignId/settings', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
 academicRoute('post', '/api/admin/campaign-migrations/preview', req => campaigns.campaignMigrationPreview(req.user, req.body?.resolutions || {}));
@@ -58,9 +62,8 @@ academicRoute('post', '/api/admin/campaigns/:campaignId/announcements', req => a
 academicRoute('post', '/api/admin/campaigns/:campaignId/announcements/preview', req => announcementPreview(req.user, req.params.campaignId, req.body));
 academicRoute('post', '/api/admin/announcement-previews/:previewId/apply', req => applyAnnouncementPreview(req.user, req.params.previewId));
 academicRoute('get', '/api/campaigns/:campaignId/chat-context', async req => {
-  const s = await snapshot(); campaigns.requireCampaign(s, req.params.campaignId, req.user);
-  const all = await campaigns.campaignEnrollments(req.user, req.params.campaignId, {}, true);
-  return { enrollments: all.items.map(e => ({ id: e.id, classId: e.classId, name: e.name, email: e.email, assignments: e.assignments })) };
+  const { s } = await readCommunicationContext(req.user,req.params.campaignId);
+  return { enrollments: s.enrollments.map(e => ({ id: e.id, classId: e.classId, name: e.name, email: e.email, assignments: e.assignments })) };
 });
 async function form(req: any) {
   try { return await new Response(req.body, { headers: { 'Content-Type': req.headers['content-type'] } }).formData(); }
@@ -81,8 +84,8 @@ academicRoute('delete', '/api/classes/:classId/chat/:messageId', req => retractC
 academicRoute('get', '/api/classes/:classId/chat/:messageId/attachment', async (req, res) => {
   const row = await findChatRow(req.params.messageId, req.params.classId);
   if (!row?.attachment_key) fail(404, 'ATTACHMENT_NOT_FOUND', 'Không có file đính kèm.');
-  const s = await snapshot(); const enrollmentId = await authorizeLegacyChatRow(s, getClass(s, req.params.classId), row);
-  await chatThread(req.user, req.params.classId, Number(row.lecturer_id), enrollmentId);
+  const { s } = await readCommunicationContext(req.user,req.params.classId); const enrollmentId = await authorizeLegacyChatRow(s, getClass(s, req.params.classId), row);
+  await chatThread(req.user, req.params.classId, Number(row.lecturer_id), enrollmentId, true);
   res.setHeader('Content-Type', 'application/octet-stream'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('Content-Disposition', `attachment; filename="attachment"; filename*=UTF-8''${encodeURIComponent(row.attachment_name || 'attachment')}`);
   if (!await streamChatAttachmentObject(row.attachment_key, res)) fail(404, 'ATTACHMENT_NOT_FOUND', 'Không tìm thấy nội dung file.'); return res;
@@ -94,15 +97,15 @@ for (const [suffix, action] of [['preferences', 'preference'], ['preferences/rem
 }
 academicRoute('post', '/api/admin/classes/:classId/internship/auto-advisors', req => autoInternshipAdvisors(req.user, req.params.classId));
 academicRoute('get', '/api/classes/:classId/companies', async req => {
-  const s = await snapshot(); const c = getClass(s, req.params.classId); requireRead(s, c, req.user);
+  const { s } = await readCommunicationContext(req.user,req.params.classId); const c = getClass(s, req.params.classId); requireRead(s, c, req.user);
   if (course(c).group !== 'internship') fail(422, 'WRONG_COURSE', 'Chỉ Thực tập có danh sách doanh nghiệp.');
   return (await db.execute('SELECT id,name,description,slots,address,contact_email FROM companies ORDER BY name')).rows;
 });
 
 academicRoute('get', '/api/me/classes', async req => {
-  const s = await snapshot(); return { classes: service.classSummaries(s, req.user), semesters: s.semesters, courses: COURSE_CATALOG };
+  const ctx = await readContext(req.user); return { classes: ctx.classes, semesters: ctx.s.semesters, courses: COURSE_CATALOG };
 });
-academicRoute('get', '/api/classes/:classId', req => service.classDetail(req.params.classId, req.user));
+academicRoute('get', '/api/classes/:classId', async req => { if (req.query.section !== 'base') return service.classDetail(req.params.classId, req.user); const ctx = await readContext(req.user); const c = ctx.classes.find(c => c.id === req.params.classId); if (!c) fail(403,'CLASS_ACCESS_DENIED','Bạn không được truy cập lớp này.'); return { class: c }; });
 academicRoute('get', '/api/classes/:classId/enrollments', async req => (await service.classDetail(req.params.classId, req.user)).enrollments);
 academicRoute('get', '/api/classes/:classId/settings', async req => (await service.classDetail(req.params.classId, req.user)).class.settings);
 academicRoute('get', '/api/admin/semesters', async req => { requireAdmin(req.user); const s = await snapshot(); return { semesters: s.semesters, classes: s.classes, lecturers: s.lecturers, quotas: s.quotas, courses: COURSE_CATALOG }; });
@@ -114,15 +117,15 @@ academicRoute('put', '/api/admin/classes/:classId/settings', req => service.upda
 academicRoute('post', '/api/classes/:classId/enrollments/join', req => service.joinInternship(req.user, req.params.classId));
 academicRoute('patch', '/api/admin/enrollments/:enrollmentId', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'status'));
 academicRoute('get', '/api/enrollments/:enrollmentId', async req => {
-  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); const c = getClass(s, e.classId); requireRead(s, c, req.user, e); return service.enrollmentView(s, c, e, req.user);
+  return (await readEnrollment(req.user, req.params.enrollmentId)).view;
 });
 academicRoute('get', '/api/enrollments/:enrollmentId/topic', async req => {
-  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); const c = getClass(s, e.classId); requireRead(s, c, req.user, e); const view = service.enrollmentView(s, c, e, req.user); return { title: e.topic, revision: e.revision, topicReview: e.topicReview, topicSubmissionUntil: e.topicSubmissionUntil, topicPermissions: view.topicPermissions };
+  const {e,view} = await readEnrollment(req.user, req.params.enrollmentId); return { title: e.topic, revision: e.revision, topicReview: e.topicReview, topicSubmissionUntil: e.topicSubmissionUntil, topicPermissions: view.topicPermissions };
 });
 academicRoute('put', '/api/enrollments/:enrollmentId/topic', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'topic'));
 academicRoute('post', '/api/enrollments/:enrollmentId/topic/approve', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'topicApprove'));
 academicRoute('get', '/api/enrollments/:enrollmentId/assignments', async req => {
-  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); requireRead(s, getClass(s, e.classId), req.user, e); return { assignments: e.assignments, revision: e.revision };
+  const { e } = await readEnrollment(req.user,req.params.enrollmentId); return { assignments: e.assignments, revision: e.revision };
 });
 academicRoute('put', '/api/admin/enrollments/:enrollmentId/assignments', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'assignments'));
 academicRoute('put', '/api/enrollments/:enrollmentId/submission/review', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'review'));
@@ -130,14 +133,14 @@ academicRoute('post', '/api/admin/enrollments/:enrollmentId/submission/reopen', 
 academicRoute('put', '/api/admin/enrollments/:enrollmentId/grade-lock', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'gradeLock'));
 academicRoute('put', '/api/admin/classes/:classId/grade-locks', req => service.bulkLock(req.user, req.params.classId, req.body));
 academicRoute('get', '/api/enrollments/:enrollmentId/submission', async req => {
-  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); requireRead(s, getClass(s, e.classId), req.user, e); return { versions: e.versions, needsRevision: e.needsRevision, comment: e.reviewComment, revision: e.revision, locked: !!e.submissionLockedAt };
+  const { e } = await readEnrollment(req.user,req.params.enrollmentId); return { versions: e.versions, needsRevision: e.needsRevision, comment: e.reviewComment, revision: e.revision, locked: !!e.submissionLockedAt };
 });
 academicRoute('post', '/api/enrollments/:enrollmentId/submission', async req => {
   const f = await form(req); const pdf = f.get('pdf');
   return submitBundle(req.user, req.params.enrollmentId, { expectedRevision: Number(f.get('expectedRevision')), slidesUrl: String(f.get('slidesUrl') || ''), demoUrl: String(f.get('demoUrl') || ''), reusePdfVersionId: String(f.get('reusePdfVersionId') || '') }, pdf && typeof pdf !== 'string' && pdf.size > 0 ? { bytes: Buffer.from(await pdf.arrayBuffer()), name: pdf.name, mime: pdf.type } : undefined);
 }, [upload]);
 for (const mode of ['view', 'download']) academicRoute('get', `/api/enrollments/:enrollmentId/submissions/:versionId/${mode}`, async (req, res) => {
-  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); const c = getClass(s, e.classId); requireRead(s, c, req.user, e);
+  const { e } = await readEnrollment(req.user, req.params.enrollmentId);
   const v = e.versions.find(v => v.id === req.params.versionId);
   if (!v?.objectKey) fail(404, 'PDF_NOT_FOUND', 'Phiên bản này chưa có PDF.');
   const etag = `"${v.id}-${v.size}"`;
@@ -152,8 +155,7 @@ for (const mode of ['view', 'download']) academicRoute('get', `/api/enrollments/
 academicRoute('put', '/api/enrollments/:enrollmentId/project-evaluations/:role', req => service.grade(req.user, req.params.enrollmentId, req.params.role, req.body));
 academicRoute('put', '/api/enrollments/:enrollmentId/internship-grade', req => service.grade(req.user, req.params.enrollmentId, 'internship', req.body));
 for (const path of ['project-evaluations', 'internship-grade']) academicRoute('get', `/api/enrollments/:enrollmentId/${path}`, async req => {
-  const s = await snapshot(); const e = getEnrollment(s, req.params.enrollmentId); const c = getClass(s, e.classId); requireRead(s, c, req.user, e);
-  const view = service.enrollmentView(s, c, e, req.user);
+  const { e, view } = await readEnrollment(req.user,req.params.enrollmentId);
   if (!view.canSeeGrades) fail(403, 'GRADES_PRIVATE', 'Điểm chỉ dành cho giảng viên có phân công chấm và Khoa.');
   return { evaluations: view.evaluations, internshipGrade: view.internshipGrade, finalScore: view.finalScore, lockedAt: e.lockedAt, revision: e.revision };
 });

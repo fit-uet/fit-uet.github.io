@@ -6,9 +6,9 @@ const screenshots = 'scratch/academic-ui-results/previews';
 
 test('Khoa checks mail connectivity without sending messages and sees the server IP restriction', async ({ browser }) => {
   const { page, context, errors } = await session(browser, 'admin');
-  const providerRequests: string[] = [];
+  const providerRequests: string[] = []; const historyRequests:string[]=[];
   try {
-    await context.route('**/api/admin/notifications?*', route => route.fulfill({ json: { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } }));
+    await context.route('**/api/admin/notifications?*', route => { historyRequests.push(route.request().url()); return route.fulfill({ json: { items: [], total: 0, page: 1, limit: 25, totalPages: 1 } }); });
     await context.route('**/api/admin/notifications/stats', route => route.fulfill({ json: { provider: 'brevo', daily_cap: 250, sent_today: 0, remaining_today: 250, statuses: {} } }));
     let checks = 0;
     await context.route('**/api/admin/email/diagnostics', route => {
@@ -25,7 +25,7 @@ test('Khoa checks mail connectivity without sending messages and sees the server
     await page.getByRole('button', { name: 'Kiểm tra kết nối email', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('đã kết nối Brevo thành công');
     await expect(page.getByText('IP máy chủ cần được cho phép:')).toHaveCount(0);
-    expect(providerRequests).toEqual(['GET', 'GET']); expect(errors).toEqual([]);
+    expect(providerRequests).toEqual(['GET', 'GET']); expect(historyRequests).toHaveLength(1); expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
 async function session(browser: Browser, role: 'admin' | 'student' | 'lecturer' | 'reviewer', mobile = false) {
@@ -92,7 +92,7 @@ test('legacy report screens render once and honor canonical course, lecturer and
   const { page, context, classes, errors } = await session(browser, 'admin');
   const c = classes.find(c => c.legacy && c.courseCode === 'INT4002');
   try {
-    await context.route('**/api/admin/reports/final', route => route.fulfill({ json: [
+    await context.route(/\/api\/admin\/reports\/final(?:\?.*)?$/,  route => route.fulfill({ json: [
       { user_id: 300, student_id: '23029901', student_name: 'Sinh viên TT Một', email: '23029901@vnu.edu.vn', course_code: 'Thực tập Doanh nghiệp INT4002', status: 'missing', primary_advisors: 'TS. Alpha' },
       { user_id: 301, student_id: '23029902', student_name: 'Sinh viên TT Hai', email: '23029902@vnu.edu.vn', course_code: 'Thực tập Chuyên ngành INT3508', status: 'missing', primary_advisors: 'TS. Beta' },
     ] }));
@@ -330,4 +330,56 @@ test('project topic becomes pending, adviser approves or edits, and changed subm
     expect(await sv.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect(sv.errors).toEqual([]); expect(gv.errors).toEqual([]);
   } finally { await sv.context.close(); await gv.context.close(); }
+});
+
+test('functions load on demand, revisit with ETag, debounce searches and export without refreshing the group', async ({ browser }) => {
+  const {page,context,classes,errors}=await session(browser,'admin'); const c=classes.find(c=>c.courseCode==='INT3132');
+  const calls:{url:string;tag?:string;status?:number}[]=[];
+  page.on('request',r=>{if(r.url().includes('/api/'))calls.push({url:r.url(),tag:r.headers()['if-none-match']});});
+  const listResponses:number[]=[];page.on('response',r=>{if(r.url().includes(`/campaigns/${c.campaignId}/enrollments`))listResponses.push(r.status());});
+  try {
+    await page.goto(`/#/campaigns/${c.campaignId}`);await expect(page.getByRole('heading',{name:'Tổng quan Quản trị'})).toBeVisible();
+    expect(calls.some(r=>/\/enrollments|\/submissions|chat-context|\/questions|import/.test(r.url))).toBe(false);
+    await page.getByRole('region',{name:'Chức năng quản lý'}).getByRole('button',{name:/^Kế hoạch/}).click();
+    await expect(page.getByRole('heading',{name:'Kế hoạch và hướng dẫn',exact:true})).toBeVisible();
+    await feature(page,'settings');await expect(page.getByRole('heading',{name:'Thiết lập',exact:true})).toBeVisible();
+    expect(calls.some(r=>/\/enrollments|\/submissions|chat-context|\/questions|import/.test(r.url))).toBe(false);
+    await feature(page,'students');await expect(page.getByRole('button',{name:'Sinh viên An',exact:true})).toHaveCount(2);
+    expect(listResponses).toEqual([200]);const first=calls.find(r=>r.url.includes('/enrollments?'))!;expect(new URL(first.url).searchParams.get('projection')).toBe('students');
+    await feature(page,'plan');await feature(page,'students');await expect.poll(()=>listResponses.length).toBe(2);expect(listResponses[1]).toBe(304);
+    const beforeSearch=calls.filter(r=>r.url.includes('/enrollments?')).length;
+    await page.getByLabel('Tìm sinh viên',{exact:true}).fill('2402');await page.getByLabel('Tìm sinh viên',{exact:true}).fill('24020001');
+    await expect.poll(()=>calls.filter(r=>r.url.includes('/enrollments?')).length).toBe(beforeSearch+1);
+    expect(new URL(calls.filter(r=>r.url.includes('/enrollments?')).at(-1)!.url).searchParams.get('q')).toBe('24020001');
+    const beforeExport=calls.length;const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Xuất XLSX theo bộ lọc',exact:true}).click();await downloaded;
+    expect(calls.slice(beforeExport).filter(r=>r.url.includes('/api/campaigns/')).every(r=>r.url.includes('/exports/'))).toBe(true);
+    const beforeReload=calls.length;await page.getByRole('button',{name:'Tải lại',exact:true}).click();await expect.poll(()=>calls.slice(beforeReload).some(r=>r.url.includes('/enrollments?'))).toBe(true);
+    expect(calls.slice(beforeReload).filter(r=>r.url.includes('/enrollments?')).every(r=>!r.tag)).toBe(true);
+    const beforeF5=calls.length;await page.reload();await expect(page.getByRole('columnheader',{name:'Liên hệ'})).toBeVisible();
+    await expect.poll(()=>calls.slice(beforeF5).some(r=>r.url.includes('/enrollments?'))).toBe(true);
+    expect(calls.slice(beforeF5).filter(r=>r.url.includes('/enrollments?')).every(r=>!r.tag)).toBe(true);expect(errors).toEqual([]);
+  } finally {await context.close();}
+});
+
+test('legacy pagination exports every filtered result and does not load campaign enrollments',async({browser})=>{
+  const {page,context,classes,errors}=await session(browser,'admin');const c=classes.find(c=>c.legacy);
+  const source=Array.from({length:127},(_,i)=>({user_id:9000+i,student_id:String(22029000+i),student_name:`Sinh viên đối soát ${i}`,email:`22029${i}@vnu.edu.vn`,class_name:'K67',course_code:'Thực tập Doanh nghiệp INT4002',report_status:'missing'}));
+  const sizes:number[]=[];const academicCalls:string[]=[];
+  await context.route(/\/api\/admin\/reports\/final(?:\?.*)?$/,route=>{const q=new URL(route.request().url()).searchParams;const page=Number(q.get('page')||1),limit=Number(q.get('limit')||25);sizes.push(limit);return route.fulfill({json:{items:source.slice((page-1)*limit,page*limit),total:127,studentCount:127,page,limit,totalPages:Math.ceil(127/limit),summary:{report_missing:127}}});});
+  page.on('request',r=>{if(r.url().includes('/enrollments'))academicCalls.push(r.url());});
+  try{
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=reports`);await expect(page.getByRole('cell').filter({hasText:'Sinh viên đối soát'})).toHaveCount(25);expect(sizes).toEqual([25]);expect(academicCalls).toEqual([]);
+    const pending=page.waitForEvent('download');await page.getByRole('button',{name:/^Xuất XLSX/}).click();const file=await pending;
+    const wb=XLSX.read(await readFile((await file.path())!),{type:'buffer'});expect(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])).toHaveLength(127);expect(sizes).toEqual([25,100,100]);expect(errors).toEqual([]);
+  }finally{await context.close();}
+});
+
+test('a successful save invalidates the active function in another browser tab',async({browser})=>{
+  const {page,context,classes,errors}=await session(browser,'admin');const p=classes.find(c=>c.courseCode==='INT3132').campaignId;const editor=await context.newPage();
+  try{
+    await page.goto(`/#/campaigns/${p}?tab=plan`);await expect(page.getByRole('heading',{name:'Kế hoạch và hướng dẫn',exact:true})).toBeVisible();
+    await editor.goto(`/#/campaigns/${p}?tab=settings`);await editor.getByRole('textbox',{name:'Kế hoạch (Markdown)',exact:true}).fill('Kế hoạch đồng bộ giữa hai tab nghiệm thu');
+    await editor.getByRole('button',{name:'Lưu thiết lập nhóm môn',exact:true}).click();
+    await expect(page.getByText('Kế hoạch đồng bộ giữa hai tab nghiệm thu',{exact:true})).toBeVisible();expect(errors).toEqual([]);
+  }finally{await context.close();}
 });

@@ -82,6 +82,7 @@ app.get('/__academic_preview/session', async (req, res) => {
 });
 app.get('/api/notifications/my', (_req, res) => res.json({ rows: [], unread: 0 }));
 app.get('/api/chat/threads', (_req, res) => res.json([]));
+app.get('/api/me/unread-counts', (_req,res) => res.json({notifications:0,chats:0}));
 app.use(academicRouter);
 const server = createHttpServer(app);
 process.chdir(storageRoot);

@@ -5,11 +5,15 @@ import { fail, snapshot } from './store';
 import { getClass, getEnrollment, lecturerFor, now, requireRead, requireWritable, text } from './domain';
 import { CHAT_DAILY_UPLOAD_LIMIT_BYTES, CHAT_THREAD_STORAGE_LIMIT_BYTES, MAX_CHAT_ATTACHMENT_BYTES } from '../config';
 import { campaignClasses, requireCampaign } from './campaigns';
+import { readCommunicationContext } from './reads';
 import { legacyChatRows, findChatRow, authorizeLegacyChatRow } from './legacyChat';
 import { deleteChatAttachmentObject, isAllowedChatAttachment, normalizeChatAttachmentMime, safeFilename, saveChatAttachmentObject } from '../services/storage';
 
-export async function chatThread(actor: AuthenticatedUser, classId: string, lecturerId: number, enrollmentId?: string) {
-  const s = await snapshot(); const c = getClass(s, classId);
+export async function chatThread(actor: AuthenticatedUser, classId: string, lecturerId: number, enrollmentId?: string, readOnly = false) {
+  const s = readOnly ? await readCommunicationContext(actor,classId).then(ctx=>ctx.s).catch(error=>{
+    if (enrollmentId && error.code === 'CAMPAIGN_ACCESS_DENIED') fail(403,'CLASS_ACCESS_DENIED','Bạn không có quyền truy cập dữ liệu lớp này.');
+    throw error;
+  }) : await snapshot(); const c = getClass(s, classId);
   if (enrollmentId) requireRead(s, c, actor); else requireCampaign(s, c.campaignId, actor);
   const classIds = enrollmentId ? [c.id] : campaignClasses(s, c.campaignId).map(c => c.id);
   const l = lecturerFor(s, actor);
@@ -23,7 +27,7 @@ export async function chatThread(actor: AuthenticatedUser, classId: string, lect
   return { s, c, classIds };
 }
 export async function chatMessages(actor: AuthenticatedUser, classId: string, lecturerId: number, enrollmentId?: string) {
-  const { s, c, classIds } = await chatThread(actor, classId, lecturerId, enrollmentId);
+  const { s, c, classIds } = await chatThread(actor, classId, lecturerId, enrollmentId, true);
   const messages = (await db.execute({ sql: `SELECT m.id,m.body,m.sender_id,u.name sender_name,m.created_at,m.attachment_name,m.attachment_size,m.retracted_at,m.class_id FROM academic_messages m JOIN users u ON u.id=m.sender_id
     WHERE m.class_id IN (SELECT value FROM json_each(?)) AND m.lecturer_id=? AND COALESCE(m.enrollment_id,'')=? ORDER BY m.created_at DESC,m.id DESC LIMIT 100`, args: [JSON.stringify(classIds), lecturerId, enrollmentId || ''] })).rows;
   if (c.status === 'active') await db.execute({ sql: `INSERT OR IGNORE INTO academic_message_reads(message_id,user_id)

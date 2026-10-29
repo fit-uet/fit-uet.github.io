@@ -91,3 +91,7 @@ Kiểm thử trên D1 local không thay cho nghiệm thu D1 REST remote. Đã ki
 ## Duyệt đề tài Dự án
 
 Đã bổ sung Pending/duyệt theo lần học, quyền GVHD chính sửa và duyệt, hạn nộp riêng khi duyệt muộn và kiểm tra phiên bản đề tài khi chấm. Schema v3 công nhận tên có sẵn trước nâng cấp; không gán giả GV duyệt. Quy tắc, API và lệnh preview: [TOPIC_APPROVAL.md](TOPIC_APPROVAL.md).
+
+## Tải dữ liệu theo chức năng và cache phiên
+
+Luồng đọc học vụ dùng SQL theo campaign/enrollment, phân trang và projection; frontend nạp màn/chi tiết/PDF theo nhu cầu. API legacy có phân trang tùy chọn, export đủ bộ lọc. Cache RAM/ETag dùng chung với giới hạn 100 mục/20 MiB, kiểm lại quyền khi mở lại, vô hiệu hóa liên quan sau ghi và đồng bộ giữa tab. Thư viện XLSX, DOCX và ZIP nạp khi thao tác. Xem [PERFORMANCE.md](PERFORMANCE.md) cho API và nghiệm thu; không cần migration hoặc thay tệp R2.

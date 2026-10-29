@@ -1,16 +1,48 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { Dashboard, StudentFinalReportView } from '../features/student';
-import { LecturerGradeView, LecturerHome } from '../features/lecturer';
-import { AdminDashboard, AdminPanel, FinalInternshipListAdmin, AdvisorAssignmentAdmin, FinalReportAdmin, GradeAdmin, NotificationAdmin, LecturerRegistry, CompanyRegistry, ApprovedCompanyRegistry, AdminSettings, PlanSettingsAdmin, LecturerGuideSettingsAdmin, RegistrationRulesSettingsAdmin, FAQQuestionsAdmin, FAQSettingsAdmin, StudentRegistry, AdminRegistry } from '../features/admin';
-import { CompanyDetail, PlanView, LecturerGuideView, FAQView, ChatView, Profile } from '../features/shared';
 import { MyNotifications } from '../shared';
 import { canReviewRegistrations, isAdmin, isLecturer, isStudent } from '../auth/access';
-import { AcademicHome } from '../features/academic/AcademicHome';
 import { ContextRedirect } from '../features/academic/ContextRedirect';
-import { CampaignPage } from '../features/academic/CampaignWorkspace';
 import { AcademicClassPage } from '../features/academic/CourseWorkspace';
-import { UnmappedLegacyInternship } from '../features/academic/UnmappedLegacyInternship';
+const Profile = lazy(() => import('../features/shared/pages/Profile').then(module => ({ default: module.Profile })));
+const ChatView = lazy(() => import('../features/shared/pages/ChatView').then(module => ({ default: module.ChatView })));
+const FAQView = lazy(() => import('../features/shared/pages/FAQView').then(module => ({ default: module.FAQView })));
+const LecturerGuideView = lazy(() => import('../features/shared/pages/LecturerGuideView').then(module => ({ default: module.LecturerGuideView })));
+const PlanView = lazy(() => import('../features/shared/pages/PlanView').then(module => ({ default: module.PlanView })));
+const CompanyDetail = lazy(() => import('../features/shared/pages/CompanyDetail').then(module => ({ default: module.CompanyDetail })));
+const StudentFinalReportView = lazy(() => import('../features/student/pages/StudentFinalReportView').then(module => ({ default: module.StudentFinalReportView })));
+const Dashboard = lazy(() => import('../features/student/pages/Dashboard').then(module => ({ default: module.Dashboard })));
+const LecturerHome = lazy(() => import('../features/lecturer/pages/LecturerHome').then(module => ({ default: module.LecturerHome })));
+const LecturerGradeView = lazy(() => import('../features/lecturer/pages/LecturerGradeView').then(module => ({ default: module.LecturerGradeView })));
+const AdminRegistry = lazy(() => import('../features/admin/pages/AdminRegistry').then(module => ({ default: module.AdminRegistry })));
+const StudentRegistry = lazy(() => import('../features/admin/pages/StudentRegistry').then(module => ({ default: module.StudentRegistry })));
+const FAQSettingsAdmin = lazy(() => import('../features/admin/pages/FAQSettingsAdmin').then(module => ({ default: module.FAQSettingsAdmin })));
+const FAQQuestionsAdmin = lazy(() => import('../features/admin/pages/FAQQuestionsAdmin').then(module => ({ default: module.FAQQuestionsAdmin })));
+const RegistrationRulesSettingsAdmin = lazy(() => import('../features/admin/pages/RegistrationRulesSettingsAdmin').then(module => ({ default: module.RegistrationRulesSettingsAdmin })));
+const LecturerGuideSettingsAdmin = lazy(() => import('../features/admin/pages/LecturerGuideSettingsAdmin').then(module => ({ default: module.LecturerGuideSettingsAdmin })));
+const PlanSettingsAdmin = lazy(() => import('../features/admin/pages/PlanSettingsAdmin').then(module => ({ default: module.PlanSettingsAdmin })));
+const AdminSettings = lazy(() => import('../features/admin/pages/AdminSettings').then(module => ({ default: module.AdminSettings })));
+const ApprovedCompanyRegistry = lazy(() => import('../features/admin/pages/ApprovedCompanyRegistry').then(module => ({ default: module.ApprovedCompanyRegistry })));
+const CompanyRegistry = lazy(() => import('../features/admin/pages/CompanyRegistry').then(module => ({ default: module.CompanyRegistry })));
+const LecturerRegistry = lazy(() => import('../features/admin/pages/LecturerRegistry').then(module => ({ default: module.LecturerRegistry })));
+const NotificationAdmin = lazy(() => import('../features/admin/pages/NotificationAdmin').then(module => ({ default: module.NotificationAdmin })));
+const GradeAdmin = lazy(() => import('../features/admin/pages/GradeAdmin').then(module => ({ default: module.GradeAdmin })));
+const FinalReportAdmin = lazy(() => import('../features/admin/pages/FinalReportAdmin').then(module => ({ default: module.FinalReportAdmin })));
+const AdvisorAssignmentAdmin = lazy(() => import('../features/admin/pages/AdvisorAssignmentAdmin').then(module => ({ default: module.AdvisorAssignmentAdmin })));
+const FinalInternshipListAdmin = lazy(() => import('../features/admin/pages/FinalInternshipListAdmin').then(module => ({ default: module.FinalInternshipListAdmin })));
+const AdminPanel = lazy(() => import('../features/admin/pages/AdminPanel').then(module => ({ default: module.AdminPanel })));
+const AdminDashboard = lazy(() => import('../features/admin/pages/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+
+
+
+
+
+const AcademicHome = lazy(() => import('../features/academic/AcademicHome').then(module => ({ default: module.AcademicHome })));
+
+const CampaignPage = lazy(() => import('../features/academic/CampaignWorkspace').then(module => ({ default: module.CampaignPage })));
+
+const UnmappedLegacyInternship = lazy(() => import('../features/academic/UnmappedLegacyInternship').then(module => ({ default: module.UnmappedLegacyInternship })));
 
 type AppRoutesProps = {
   user: any;
@@ -47,7 +79,7 @@ export function AppRoutes({
 
   return (
     <div className={`feature-page feature-page--${roleClass}`}>
-      <Routes>
+      <Suspense fallback={<p role="status">Đang tải chức năng…</p>}><Routes>
       <Route path="/" element={<AcademicHome token={token} user={user} />} />
       <Route path="/classes" element={<AcademicHome token={token} user={user} />} />
       <Route path="/campaigns/:campaignId" element={<CampaignPage token={token} user={user} />} />
@@ -91,7 +123,7 @@ export function AppRoutes({
       <Route path="/chat/:studentUserId/:lecturerId" element={<GuardedRoute allowed={chatAllowed}><ContextRedirect token={token} tab="chat" internshipOnly /></GuardedRoute>} />
       <Route path="/notifications" element={<MyNotifications token={token} user={user} onChanged={onUnreadNotificationsChanged} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      </Routes></Suspense>
     </div>
   );
 }

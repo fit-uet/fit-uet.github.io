@@ -3,7 +3,7 @@ import { MessageCircle, Users } from 'lucide-react';
 import type { AcademicClassSummary, EnrollmentView, LecturerInfo } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
 import { academicApi, academicDownload } from './client';
-import { academicInput } from './EnrollmentPanel';
+import { academicInput } from './form';
 
 type ClassData = { class: AcademicClassSummary; enrollments: EnrollmentView[]; lecturers: LecturerInfo[] };
 export function ClassChat({ token, user, data }: { token: string; user: any; data: ClassData }) {

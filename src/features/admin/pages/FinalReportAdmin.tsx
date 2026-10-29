@@ -1,3 +1,5 @@
+import { useLegacyPager } from '../../academic/useLegacyPager';
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
@@ -17,11 +19,14 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
   const [advisorFilter, setAdvisorFilter] = useState('');
   const [showRemindModal, setShowRemindModal] = useState(false);
   const [reminding, setReminding] = useState(false);
+  const [pendingRows, setPendingRows] = useState<any[]>([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
   const [remindSuccess, setRemindSuccess] = useState<string | null>(null);
   const [customRemindNote, setCustomRemindNote] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
+  const paging = useLegacyPager(token, '/api/admin/reports/final', { page: currentPage, q: searchTerm, status: statusFilter, courseCode: initialCourseCode || courseCodeFilter, advisor: advisorFilter });
 
   const formatBytes = (bytes: number) => {
     if (!bytes) return '-';
@@ -41,19 +46,20 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
   const fetchRows = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/reports/final`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      setRows(Array.isArray(data) ? data : []);
+      setRows(await paging.load());
     } catch (e) {
+      if (e.name === 'AbortError') return;
+      setRows([]);
       alert('Không tải được danh sách báo cáo.');
     } finally {
       setLoading(false);
     }
   };
+  paging.bind(fetchRows);
 
   useEffect(() => {
     fetchRows();
-  }, [token]);
+  }, [token, paging.key]);
 
   const downloadReport = async (userId: number, filename: string) => {
     const res = await fetch(`${API_BASE}/api/reports/final/${userId}/download`, { headers: { Authorization: `Bearer ${token}` } });
@@ -74,7 +80,8 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
 
   const advisorOptions = useMemo(() => {
     const set = new Set<string>();
-    rows.forEach(r => {
+    const source = paging.summary?.advisorOptions ? JSON.parse(paging.summary.advisorOptions).map(primary_advisors => ({primary_advisors})) : rows;
+    source.forEach(r => {
       if (r.primary_advisors) {
         r.primary_advisors.split(',').forEach((name: string) => {
           const trimmed = name.trim();
@@ -83,11 +90,20 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
       }
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
-  }, [rows]);
+  }, [rows, paging.summary]);
 
   const pendingStudents = useMemo(() => {
-    return rows.filter(r => !r.report_status || r.report_status === 'missing' || r.report_status === 'needs_revision');
-  }, [rows]);
+    return pendingRows.filter(r => !r.report_status || r.report_status === 'missing' || r.report_status === 'needs_revision');
+  }, [pendingRows]);
+  const openReminders = async () => {
+    setShowRemindModal(true); setLoadingRecipients(true); setPendingRows([]); setSelectedStudentIds([]);
+    try {
+      const all = await paging.allRows();
+      const pending = all.filter(r => !r.report_status || r.report_status === 'missing' || r.report_status === 'needs_revision');
+      setPendingRows(pending); setSelectedStudentIds(pending.map(r=>Number(r.user_id)));
+    } catch { alert('Không tải được danh sách người nhận.'); }
+    finally { setLoadingRecipients(false); }
+  };
 
   const filtered = rows.filter((row) => {
     const term = searchTerm.trim().toLowerCase();
@@ -109,19 +125,20 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, courseCodeFilter, advisorFilter, rows.length]);
+  }, [searchTerm, statusFilter, courseCodeFilter, advisorFilter]);
 
-  const pagination = paginationBounds(filtered.length, currentPage, pageSize);
-  const paginatedRows = filtered.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
+  const pagination = paginationBounds(paging.page?.total ?? filtered.length, currentPage, pageSize);
+  const paginatedRows = paging.page ? filtered : filtered.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
 
   const reportStats = {
-    missing: rows.filter((row) => (row.report_status || 'missing') === 'missing').length,
-    submitted: rows.filter((row) => row.report_status === 'submitted').length,
-    needs_revision: rows.filter((row) => row.report_status === 'needs_revision').length,
-    accepted: rows.filter((row) => row.report_status === 'accepted').length,
+    missing: paging.summary?.report_missing ?? rows.filter((row) => (row.report_status || 'missing') === 'missing').length,
+    submitted: paging.summary?.report_submitted ?? rows.filter((row) => row.report_status === 'submitted').length,
+    needs_revision: paging.summary?.report_needs_revision ?? rows.filter((row) => row.report_status === 'needs_revision').length,
+    accepted: paging.summary?.report_accepted ?? rows.filter((row) => row.report_status === 'accepted').length,
   };
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
+    const filtered = await paging.allRows();
     const headers = [
       'STT',
       'Mã SV',
@@ -156,7 +173,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
       row.report_submitted_at || '',
       row.lecturer_comment || '',
     ]);
-    saveXlsx('bao_cao_thuc_tap.xlsx', headers, data, 'Báo cáo');
+    await saveXlsx('bao_cao_thuc_tap.xlsx', headers, data, 'Báo cáo');
   };
 
   const handleSendReminders = async () => {
@@ -224,15 +241,12 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
         {/* Top Actions */}
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button
-            onClick={() => {
-              setSelectedStudentIds(pendingStudents.map(s => Number(s.user_id)));
-              setShowRemindModal(true);
-            }}
+            onClick={openReminders}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#b45309] bg-amber-50 border border-amber-200 hover:bg-amber-100 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Gửi email nhắc nhở sinh viên chưa nộp báo cáo hoặc cần nộp lại"
           >
             <Mail size={14} className="text-amber-600" />
-            Nhắc SV chưa nộp ({pendingStudents.length})
+            Nhắc SV chưa nộp ({(paging.summary?.report_missing ?? rows.filter(r=>!r.report_status||r.report_status==='missing').length) + (paging.summary?.report_needs_revision ?? rows.filter(r=>r.report_status==='needs_revision').length)})
           </button>
           <button
             onClick={exportXlsx}
@@ -460,7 +474,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
         </div>
 
         <PaginationControls
-          total={filtered.length}
+          total={paging.page?.total ?? filtered.length}
           currentPage={currentPage}
           pageSize={pageSize}
           onPageChange={setCurrentPage}
@@ -538,7 +552,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
                   </div>
                 </div>
                 <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-[#f8fafc]">
-                  {pendingStudents.length === 0 ? (
+                  {loadingRecipients ? <div role="status" className="p-4">Đang tải đầy đủ người nhận…</div> : pendingStudents.length === 0 ? (
                     <div className="p-4 text-center text-slate-400 italic">Không có sinh viên nào đang thiếu báo cáo.</div>
                   ) : (
                     pendingStudents.map((s) => {
@@ -607,7 +621,7 @@ export function FinalReportAdmin({ token, initialCourseCode = '' }: { token: str
               </button>
               <button
                 type="button"
-                disabled={reminding || selectedStudentIds.length === 0}
+                disabled={reminding || loadingRecipients || selectedStudentIds.length === 0}
                 onClick={handleSendReminders}
                 className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >

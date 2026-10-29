@@ -1,3 +1,5 @@
+import { useLegacyPager } from '../../academic/useLegacyPager';
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useLegacySearch, useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
@@ -15,19 +17,21 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'confirmed_at', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
+  const paging = useLegacyPager(token, '/api/admin/final-internships', { page: currentPage, q: searchTerm, status: typeFilter, courseCode: initialCourseCode, sort: sortConfig?.key, direction: sortConfig?.direction });
 
   const fetchRows = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/final-internships`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      setRows(Array.isArray(data) ? data : []);
+      setRows(await paging.load());
     } catch (e) {
+      if (e.name === 'AbortError') return;
+      setRows([]);
       alert('Không tải được danh sách xác nhận thực tập.');
     } finally {
       setLoading(false);
     }
   };
+  paging.bind(fetchRows);
 
   const handleDeleteFinal = async (item: any) => {
     const displayName = cleanStudentName(item.student_name, item.student_id);
@@ -45,7 +49,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
     }
   };
 
-  useEffect(() => { fetchRows(); }, [token]);
+  useEffect(() => { fetchRows(); }, [token, paging.key]);
 
   const internshipPlace = (item: any) =>
     item.company_name === 'Công ty khác'
@@ -103,16 +107,17 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter, sortConfig, rows.length]);
+  }, [searchTerm, typeFilter, sortConfig]);
 
-  const pagination = paginationBounds(filteredRows.length, currentPage, pageSize);
-  const paginatedRows = filteredRows.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
-  const uniqueStudents = new Set(rows.map(item => item.user_id || item.student_id || item.email).filter(Boolean)).size;
-  const uniquePlaces = new Set(rows.map(internshipPlace).filter(Boolean)).size;
-  const companyCount = rows.filter(item => item.internship_type === 'company').length;
-  const schoolCount = rows.filter(item => item.internship_type === 'school').length;
+  const pagination = paginationBounds(paging.page?.total ?? filteredRows.length, currentPage, pageSize);
+  const paginatedRows = paging.page ? filteredRows : filteredRows.slice((pagination.safePage - 1) * pageSize, pagination.safePage * pageSize);
+  const uniqueStudents = paging.page?.studentCount ?? new Set(rows.map(item => item.user_id || item.student_id || item.email).filter(Boolean)).size;
+  const uniquePlaces = paging.summary?.places ?? new Set(rows.map(internshipPlace).filter(Boolean)).size;
+  const companyCount = paging.summary?.companies ?? rows.filter(item => item.internship_type === 'company').length;
+  const schoolCount = paging.summary?.schools ?? rows.filter(item => item.internship_type === 'school').length;
 
-  const exportXlsx = () => {
+  const exportXlsx = async () => {
+    const filteredRows = await paging.allRows();
     const headers = ['STT', 'Mã SV', 'Họ và tên', 'Email VNU', 'SĐT', 'Email cá nhân', 'Lớp KH', 'Mã môn học', 'Loại', 'Nơi thực tập', 'GVHD tại trường', 'Yêu cầu phân công', 'Thời gian xác nhận', 'Ghi chú'];
     const data = filteredRows.map((item, idx) => [
       idx + 1,
@@ -130,7 +135,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
       item.confirmed_at ? new Date(item.confirmed_at).toLocaleString('vi-VN') : '',
       item.note || '',
     ]);
-    saveXlsx('danh_sach_xac_nhan_thuc_tap.xlsx', headers, data, 'Xác nhận TT');
+    await saveXlsx('danh_sach_xac_nhan_thuc_tap.xlsx', headers, data, 'Xác nhận TT');
   };
 
   if (loading) return <div className="text-center py-20 text-gray-500">Đang tải danh sách xác nhận thực tập...</div>;
@@ -266,7 +271,7 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
           </table>
         </div>
         <PaginationControls
-          total={filteredRows.length}
+          total={paging.page?.total ?? filteredRows.length}
           currentPage={currentPage}
           pageSize={pageSize}
           onPageChange={setCurrentPage}

@@ -1,3 +1,6 @@
+import { useLegacyPager } from '../../academic/useLegacyPager';
+import { PaginationControls } from '../../../shared';
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
@@ -12,42 +15,30 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
   const legacyMembership = useLegacyMembership();
   const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
-  const [grades, setGrades] = useState<any[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [updatingContactIds, setUpdatingContactIds] = useState<Record<string, boolean>>({});
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const paging = useLegacyPager(token, '/api/lecturer/students', {page:currentPage,courseCode:initialCourseCode});
   const fetchStudents = async () => {
     setLoadingStudents(true);
     try {
-      const res = await fetch(`${API_BASE}/api/lecturer/students`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json().catch(() => []);
-      if (!res.ok) throw new Error(data?.error || 'Không tải được danh sách sinh viên phụ trách.');
-      setStudents(Array.isArray(data) ? data.filter(row => legacyStudentInScope(legacyMembership, row.student_id) && (!initialCourseCode || matchesCourseCode(row.course_code, initialCourseCode))) : []);
+      const data = await paging.load();
+      setStudents(data);
     } catch (e) {
+      if(e.name==='AbortError')return;
       setStudents([]);
     } finally {
       setLoadingStudents(false);
     }
   };
 
-  const fetchGrades = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/lecturer/grades`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json().catch(() => []);
-      setGrades(Array.isArray(data) ? data : []);
-    } catch {
-      setGrades([]);
-    }
-  };
-
   useEffect(() => {
     fetchStudents();
-    fetchGrades();
-  }, [token, initialCourseCode, legacyMembership]);
+  }, [token, initialCourseCode, legacyMembership, paging.key]);
 
+  paging.bind(fetchStudents);
   const formatBytes = (bytes: number) => {
     if (!bytes) return '-';
     if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
@@ -55,8 +46,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
   };
   const isStudentGraded = (student: any) => {
     return student.grade_status === 'submitted' ||
-      (student.final_score !== null && student.final_score !== undefined && student.final_score !== '') ||
-      grades.some((g: any) => Number(g.user_id) === Number(student.user_id) && (g.grade_status === 'submitted' || (g.final_score !== null && g.final_score !== undefined && g.final_score !== '')));
+      (student.final_score !== null && student.final_score !== undefined && student.final_score !== '');
   };
   const statusLabel = (student: any) => {
     if (isStudentGraded(student)) return 'Đã nộp điểm';
@@ -70,14 +60,14 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
       .filter((student: any) => student.user_id)
       .map((student: any) => [Number(student.user_id), student])
   ).values()) as any[];
-  const advisedStudentCount = uniqueStudents.length;
-  const uncontactedCount = uniqueStudents.filter((student: any) => !student.contacted_at).length;
+  const advisedStudentCount = paging.page?.studentCount ?? uniqueStudents.length;
+  const uncontactedCount = paging.summary?.uncontacted ?? uniqueStudents.filter((student: any) => !student.contacted_at).length;
   const groupLecturerId = students.find((student: any) => student.lecturer_id)?.lecturer_id;
 
   const registeredCount = advisedStudentCount;
-  const confirmedCount = uniqueStudents.filter((s: any) => s.confirmed_at || s.internship_place || s.internship_type).length;
-  const reportCount = uniqueStudents.filter((s: any) => s.report_submitted_at || ['submitted', 'accepted', 'needs_revision'].includes(s.report_status)).length;
-  const gradedCount = uniqueStudents.filter(isStudentGraded).length;
+  const confirmedCount = paging.summary?.confirmed ?? uniqueStudents.filter((s: any) => s.confirmed_at || s.internship_place || s.internship_type).length;
+  const reportCount = paging.summary ? Number(paging.summary.report_submitted || 0) + Number(paging.summary.report_accepted || 0) + Number(paging.summary.report_needs_revision || 0) : uniqueStudents.filter((s: any) => s.report_submitted_at || ['submitted', 'accepted', 'needs_revision'].includes(s.report_status)).length;
+  const gradedCount = paging.summary?.graded ?? uniqueStudents.filter(isStudentGraded).length;
 
   const downloadReport = async (student: any) => {
     const res = await fetch(`${API_BASE}/api/reports/final/${student.user_id}/download`, { headers: { Authorization: `Bearer ${token}` } });
@@ -86,7 +76,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
   };
 
   const studentToReviewTarget = (student: any): ReviewTarget => {
-    const grade = grades.find((g: any) => Number(g.user_id) === Number(student.user_id)) || {};
+    const grade = student;
     return {
       user_id: student.user_id,
       userId: student.user_id,
@@ -160,7 +150,8 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
     updateStudentContact(student, !!student.contacted_at, note);
   };
 
-  const exportLecturerStudentsXlsx = () => {
+  const exportLecturerStudentsXlsx = async () => {
+    const students = await paging.allRows();
     if (students.length === 0) return alert('Chưa có sinh viên để xuất.');
     const headers = [
       'STT',
@@ -201,7 +192,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
       student.report_submitted_at ? new Date(student.report_submitted_at).toLocaleString('vi-VN') : '',
     ]);
     const safeName = String(user?.name || 'giang_vien').replace(/[^a-zA-Z0-9À-ỹ_-]+/g, '_').slice(0, 60) || 'giang_vien';
-    saveXlsx(`sinh_vien_phu_trach_${safeName}.xlsx`, headers, rows, 'Sinh viên phụ trách');
+    await saveXlsx(`sinh_vien_phu_trach_${safeName}.xlsx`, headers, rows, 'Sinh viên phụ trách');
   };
 
   return (
@@ -213,11 +204,9 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
           onClose={() => setReviewIndex(null)}
           onReportStatusChange={() => {
             fetchStudents();
-            fetchGrades();
           }}
           onGradeChange={() => {
             fetchStudents();
-            fetchGrades();
           }}
           currentIndex={reviewIndex}
           totalCount={students.length}
@@ -457,6 +446,7 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
               ))}
             </tbody>
           </table>
+          {paging.page && <PaginationControls total={paging.page.total} currentPage={currentPage} pageSize={25} onPageChange={setCurrentPage} label="sinh viên" />}
         </div>
         </div>
       </div>

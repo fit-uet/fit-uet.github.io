@@ -390,8 +390,12 @@ Giữ viewer inline, tải PDF và panel chấm cùng màn hình. Cache key có 
 
 - Sửa điểm/yêu cầu sửa không đổi PDF thì không fetch lại. Version mới/đổi nhóm hoặc kỳ/đổi quyền/đăng xuất invalidate; revoke Blob URL và xóa cache khi session kết thúc.
 - ETag theo object/version; auth trước conditional response, cache private phải revalidate trước request tái sử dụng; không mở URL R2 công khai.
-- Giữ usePaginatedProxy/IPaginatedSource/RealPaginatedSource/PaginatedVirtualProxy với TTL/dedup/prefetch nhưng bổ sung context và lifecycle. Không để request cũ repopulate cache sau đổi lớp/thu hồi quyền.
+- `requestCache` dùng RAM chung tối đa 100 mục/20 MiB, idle 5 phút; ETag xác thực lại khi mở chức năng/quay lại tab. `PaginatedVirtualProxy` giữ facade tương thích, không cache payload riêng hoặc tự prefetch. Không để request cũ ghi lại dữ liệu sau đổi lớp/thu hồi quyền.
 - Không cam kết 0 ms hoặc phần trăm hiệu năng chưa đo. Nghiệm thu là đúng phiên bản/quyền và không tải PDF chỉ vì sửa điểm.
+
+### 8.5. Read model và module theo chức năng
+
+GET campaign hỗ trợ `section=base|overview|content|management`; danh sách hỗ trợ `projection=students|assignments|reports|grades`. SQL thực hiện phân quyền, lọc, đếm và phân trang trước khi trả dữ liệu; export dùng cùng bộ lọc và lấy đầy đủ. `server/academic/reads.ts` không dùng snapshot/hydrate toàn hệ thống cho GET Dự án. Snapshot CAS tiếp tục dành cho ghi và hợp đồng tương thích cũ. GET legacy mới dùng `pagination=1`; GET bảng điểm không UPDATE. Header chỉ lấy số chưa đọc; module và thư viện XLSX/DOCX/ZIP nạp theo nhu cầu. Chi tiết hợp đồng cache, invalidation giữa tab và cách đo tại [PERFORMANCE.md](PERFORMANCE.md).
 
 ## 9. Transaction, audit và xử lý xung đột
 

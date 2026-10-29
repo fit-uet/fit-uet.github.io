@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User as UserIcon, Plus, Trash2, Shield } from 'lucide-react';

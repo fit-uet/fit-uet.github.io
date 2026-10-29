@@ -1,5 +1,3 @@
-import mammoth from 'mammoth';
-import TurndownService from 'turndown';
 
 export const normalizeRegistrationRulesMarkdown = (content: string) => {
   const text = String(content || '').trim();
@@ -16,6 +14,7 @@ export const normalizeRegistrationRulesMarkdown = (content: string) => {
 };
 
 export const convertDocxFileToMarkdown = async (file: File) => {
+  const [{default:mammoth}, {default:TurndownService}] = await Promise.all([import('mammoth'), import('turndown')]);
   const arrayBuffer = await file.arrayBuffer();
   const result = await mammoth.convertToHtml({ arrayBuffer });
   const td = new TurndownService({

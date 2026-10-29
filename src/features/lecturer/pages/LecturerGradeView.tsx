@@ -1,3 +1,6 @@
+import { useLegacyPager } from '../../academic/useLegacyPager';
+import { PaginationControls } from '../../../shared';
+import { apiFetch as fetch } from '../../../shared/utils/requestCache';
 import { useLegacyMembership, legacyStudentInScope } from '../../academic/LegacyListScope';
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useNavigate } from 'react-router-dom';
@@ -20,10 +23,11 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({});
 
+  const [currentPage,setCurrentPage] = useState(1);
+  const paging = useLegacyPager(token, '/api/lecturer/grades', {page:currentPage,courseCode:initialCourseCode});
   const fetchGrades = () => {
     setLoadingGrades(true);
-    fetch(`${API_BASE}/api/lecturer/grades`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => res.json())
+    paging.load()
       .then((data) => {
         const list = Array.isArray(data) ? data : [];
         setGrades(list.filter(row => legacyStudentInScope(legacyMembership, row.student_id) && (!initialCourseCode || matchesCourseCode(row.course_code, initialCourseCode))));
@@ -42,10 +46,11 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
         );
         setScoreErrors({});
       })
-      .catch(() => setGrades([]))
+      .catch(error => { if(error.name!=='AbortError')setGrades([]); })
       .finally(() => setLoadingGrades(false));
   };
 
+  paging.bind(fetchGrades);
   useEffect(() => {
     fetchGrades();
     cachedJsonFetch<any>(`${API_BASE}/api/settings/campaign`, {
@@ -55,7 +60,7 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
     }).then((data) => {
       if (data && !data.error) setCampaign(data);
     });
-  }, [token, initialCourseCode, legacyMembership]);
+  }, [token, initialCourseCode, legacyMembership, paging.key]);
 
   const isRowGraded = (row: any) =>
     row.grade_status === 'submitted' ||
@@ -232,10 +237,10 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
   };
 
   const stats = {
-    total: grades.length,
-    missing: grades.filter((row) => !row.grade_status || row.grade_status === 'missing').length,
-    submitted: grades.filter((row) => row.grade_status === 'submitted').length,
-    locked: grades.filter((row) => row.locked_at).length,
+    total: paging.page?.total ?? grades.length,
+    missing: paging.summary?.grade_missing ?? grades.filter((row) => !row.grade_status || row.grade_status === 'missing').length,
+    submitted: paging.summary?.graded ?? grades.filter((row) => row.grade_status === 'submitted').length,
+    locked: paging.summary?.locked ?? grades.filter((row) => row.locked_at).length,
   };
 
   return (
@@ -521,6 +526,7 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
                 )}
               </tbody>
             </table>
+            {paging.page && <PaginationControls total={paging.page.total} currentPage={currentPage} pageSize={25} onPageChange={setCurrentPage} label="dòng điểm" />}
           </div>
         </div>
       </div>
