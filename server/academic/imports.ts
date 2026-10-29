@@ -16,7 +16,7 @@ export interface ImportRow {
   advisorName: string; advisorEmail: string; primaryId: number | null;
   excluded: boolean; useFile: boolean; issues: string[];
 }
-export interface ImportPlan { rows: ImportRow[]; changes: ChangeSet; summary: { rows: number; students: number; classes: number; created: number; updated: number; unchanged: number; excluded: number; errors: number } }
+export interface ImportPlan { semesterId: string; rows: ImportRow[]; changes: ChangeSet; summary: { rows: number; students: number; classes: number; created: number; updated: number; unchanged: number; excluded: number; errors: number } }
 const header = (v: unknown) => normalized(v).normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
 const lecturerName = (v: unknown) => normalized(v).replace(/^(?:(?:pgs|gs|ts|ths|cn)\.?\s*)+/iu, '').replace(/\s+/g, ' ').trim();
 
@@ -140,7 +140,7 @@ export function planImport(s: Snapshot, semesterId: string, bytes: Buffer, resol
     else { enrollments.push(e); if (old) updated++; else created++; }
   }
   return {
-    rows, changes: { classes, enrollments, users: enrollments.map(e => ({ studentId: e.studentId, email: e.email, name: e.name, dob: e.dob, className: e.className })) },
+    semesterId, rows, changes: { classes, enrollments, users: enrollments.map(e => ({ studentId: e.studentId, email: e.email, name: e.name, dob: e.dob, className: e.className })) },
     summary: { rows: count, students: rows.filter(r => !r.excluded).length, classes: new Set(rows.filter(r => !r.excluded).map(r => r.classCode)).size, created, updated, unchanged, excluded: rows.filter(r => r.excluded).length, errors: rows.filter(r => !r.excluded && r.issues.length > 0).length },
   };
 }

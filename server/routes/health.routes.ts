@@ -7,8 +7,8 @@ healthRouter.get('/api/health', (_req, res) => { res.setHeader('Cache-Control', 
 healthRouter.get('/api/ready', async (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
-    const result = await db.execute('SELECT version FROM academic_schema_migrations WHERE version=3');
+    const result = await db.execute('SELECT version FROM academic_schema_migrations WHERE version=4');
     if (!result.rows.length) throw new Error('Schema not ready');
-    res.json({ status: 'ready', ...metadata(), database: 'ok', academicSchema: 3 });
+    res.json({ status: 'ready', ...metadata(), database: 'ok', academicSchema: 4 });
   } catch { res.status(503).json({ status: 'unavailable', ...metadata() }); }
 });

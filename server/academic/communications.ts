@@ -51,7 +51,7 @@ function announcementPlan(s: Snapshot, actor: AuthenticatedUser, target: string,
   if (!subject || subject.length > 300 || !body || body.length > 10000 || !['website_only', 'website_and_email'].includes(input.deliveryMode)) fail(422, 'INVALID_ANNOUNCEMENT', 'Cần tiêu đề, nội dung và phương thức gửi hợp lệ.');
   const allowedIds = s.campaigns?.some(p => p.id === target) ? classes.filter(c => (!input.classId || c.id === input.classId) && (!input.courseCode || c.courseCode === input.courseCode)).map(c => c.id) : [target];
   if (input.classId && !classes.some(c => c.id === input.classId) || input.courseCode && !classes.some(c => c.courseCode === input.courseCode)) fail(422, 'INVALID_CAMPAIGN_FILTER', 'Lớp/học phần không thuộc nhóm môn.');
-  const enrollments = s.enrollments.filter(e => allowedIds.includes(e.classId) && e.status === 'active');
+  const enrollments = s.enrollments.filter(e => allowedIds.includes(e.classId) && e.status !== 'withdrawn');
   const events: AcademicEvent[] = []; const seen = new Set<string>(); const operation = randomUUID();
   for (const e of enrollments) {
     const emails = [e.email, ...(input.includeLecturers ? e.assignments.map(a => s.lecturers.find(l => l.id === a.lecturerId)?.email).filter(Boolean) : [])];

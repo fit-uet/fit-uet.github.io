@@ -37,7 +37,7 @@ export function CampaignDashboard({ data, navigate, token, reload }: Props) {
   return <AdminDashboard token={token} presentation={{
     stats, subtitle: `${GROUP_NAMES[p.group]} · ${p.semesterName}`,
     project: p.group === 'project', legacy: !!p.legacy,
-    onNavigate: path => destinations[path] ? navigate(destinations[path])
+    onNavigate: path => destinations[path] ? navigate(p.group==='project'&&['assignments','reports','grades'].includes(destinations[path])?'students':destinations[path])
       : route(path === '/admin/notifications' ? '/system/notifications' : path === '/admin/settings' ? '/system/settings' : path),
     actions: <button onClick={reload} className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"><RefreshCw size={14} />Tải lại</button>,
     context: <div className="flex flex-wrap gap-3 items-center text-xs text-slate-500">

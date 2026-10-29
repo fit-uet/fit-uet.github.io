@@ -20,11 +20,11 @@ test('restored role screens on a prepared local copy of production data', async 
       await page.goto(`${origin.origin}/__local_staging/login${email ? `?email=${encodeURIComponent(email)}` : ''}`);
       await expect(page.getByRole('heading', { name: 'Học kỳ và nhóm môn' })).toBeVisible();
       await page.goto(`${origin.origin}/#/campaigns/2026-2027-1:project`);
-      await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Sinh viên phụ trách' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
       if (role === 'admin') {
         await expect(page.getByText('Số lần học', {exact:true})).toBeVisible();
-        await page.getByRole('region', { name: 'Chức năng quản lý' }).getByRole('button', { name: /^Bảng điểm/ }).click();
-        await expect(page.getByRole('columnheader', { name: 'GVHD (60%)' })).toBeVisible();
+        await page.getByRole('region', { name: 'Chức năng quản lý' }).getByRole('button', { name: 'Danh sách sinh viên',exact:true }).click();
+        await expect(page.getByRole('columnheader', { name: 'Điểm GVHD — 60%' })).toBeVisible();
         await applyFilters(page, {'Lớp học phần': {label:'INT3132 1'}});
         await expect(page.getByText('80 lần học · 80 sinh viên', { exact: true })).toBeVisible();
       }
@@ -67,8 +67,7 @@ test('project topic approval works on a prepared private copy without changing t
     await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();
     await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Pending');
     await gv.page.goto(origin.origin+path);
-    await gv.page.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();
-    await expect(gv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Đã duyệt');
+    const row=gv.page.locator('#project-row-'+e.id);await row.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đã duyệt',{exact:true})).toBeVisible();
     await sv.page.reload(); await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Đã duyệt');
     const after=await (await sv.context.request.get(`${origin.origin}/api/campaigns/${campaign}/enrollments`,{headers:sv.headers})).json();
     expect(after.items.find(x=>x.courseCode==='INT3132').topic).toBe(list.items.find(x=>x.courseCode==='INT3132').topic);

@@ -16,7 +16,7 @@ test('campaign navigation preserves common filters but drops incompatible state 
 
 test('function cards respect course group and role without exposing management to students or lecturers', () => {
   const project = campaignModules(true, false, false).map(x => x.id);
-  assert.ok(project.includes('assignments') && project.includes('grades'));
+  assert.ok(project.includes('students'));assert.ok(!project.includes('assignments')&&!project.includes('grades')&&!project.includes('reports'));
   assert.ok(!project.includes('registrations') && !project.includes('final-internships'));
   assert.ok(campaignModules(true, false, true).some(x => x.id === 'registrations'));
   assert.deepEqual(campaignModules(false, true, false).map(x => x.id), ['students', 'plan', 'chat', 'questions']);

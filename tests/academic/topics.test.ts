@@ -135,8 +135,7 @@ test('missing grading close does not create an unlimited submission exception', 
 test('unassigned, archived and withdrawn records cannot bypass topic approval', async () => {
   let row = await fresh(); await enrollmentAction(admin, e.id, { expectedRevision: row.revision, assignments: [] }, 'assignments');
   await action(sv, 'topic', 'Chưa có GVHD'); await assert.rejects(submit(), errorCode('TOPIC_PENDING'));
-  row = await fresh(); await enrollmentAction(admin, e.id, { expectedRevision: row.revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status');
-  await assert.rejects(action(admin, 'topic', 'Sửa', 'Có lý do'), errorCode('ENROLLMENT_WITHDRAWN'));
+  row = await fresh(); await assert.rejects(enrollmentAction(admin, e.id, { expectedRevision: row.revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status'), errorCode('PROJECT_MEMBERSHIP_ONLY'));
   const s = await snapshot(); const p = s.campaigns!.find(p => p.id === c.campaignId)!; await updateCampaign(admin, p.id, { expectedRevision: p.revision, status: 'archived', reason: 'Lưu trữ' });
   await assert.rejects(action(admin, 'topic', 'Sửa', 'Có lý do'), errorCode('CLASS_READ_ONLY'));
 });

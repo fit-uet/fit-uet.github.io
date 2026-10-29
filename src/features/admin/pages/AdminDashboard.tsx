@@ -38,7 +38,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
 
   const isProject = !!presentation?.project;
   const navModules = [
-    { title: isProject ? 'Sinh viên & Đề tài Dự án' : 'Quản lý Đăng ký', path: isProject ? '/campaign/students' : '/admin/registrations', icon: <LayoutDashboard size={20} className="text-[#034ea1]" /> },
+    { title: isProject ? 'Danh sách sinh viên' : 'Quản lý Đăng ký', path: isProject ? '/campaign/students' : '/admin/registrations', icon: <LayoutDashboard size={20} className="text-[#034ea1]" /> },
     { title: 'Quản lý Sinh viên', path: '/admin/students', icon: <Users size={20} className="text-[#034ea1]" /> },
     { title: 'Quản lý Giảng viên', path: '/admin/lecturers', icon: <GraduationCap size={20} className="text-[#034ea1]" /> },
     ...(!isProject ? [{ title: 'Quản lý Doanh nghiệp', path: '/admin/companies', icon: <Building2 size={20} className="text-[#034ea1]" /> }] : []),
@@ -53,7 +53,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
     { title: 'Hướng dẫn GV', path: '/admin/lecturer-guide', icon: <BookOpen size={20} className="text-teal-600" /> },
     { title: 'Cài đặt FAQ', path: '/admin/faq', icon: <CircleHelp size={20} className="text-amber-600" /> },
     { title: 'Quản trị viên', path: '/admin/admins', icon: <Shield size={20} className="text-slate-600" /> },
-  ];
+  ].filter(item=>!isProject||!['/admin/advisors','/admin/reports','/admin/grades'].includes(item.path));
   if (presentation && !presentation.project) {
     navModules.splice(5, 0, { title: 'Nơi thực tập chính thức', path: '/admin/final-internships', icon: <Building2 size={20} className="text-[#034ea1]" /> });
   }

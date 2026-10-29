@@ -17,14 +17,14 @@ export function campaignModules(admin: boolean, student: boolean, internship: bo
   ];
   return [
     ...(admin ? [{ id: 'overview', title: 'Tổng quan', description: 'Tiến độ triển khai trong nhóm môn', icon: 'overview' }] : []),
-    { id: 'students', title: admin ? 'Sinh viên' : 'Sinh viên phụ trách', description: admin ? 'Danh sách sinh viên và import danh sách' : 'Hồ sơ được phân công hướng dẫn, nhận xét', icon: 'student' },
+    { id: 'students', title: internship ? (admin ? 'Sinh viên' : 'Sinh viên phụ trách') : 'Danh sách sinh viên', description: admin ? 'Danh sách sinh viên và import danh sách' : 'Hồ sơ được phân công hướng dẫn, nhận xét', icon: 'student' },
     ...(internship && admin ? [
       { id: 'registrations', title: 'Đăng ký', description: 'Nguyện vọng và kết quả tiếp nhận', icon: 'registrations' },
       { id: 'final-internships', title: 'Nơi thực tập', description: 'Danh sách thực tập chính thức', icon: 'company' },
     ] : []),
-    ...(admin ? [{ id: 'assignments', title: 'Phân công', description: internship ? 'GVHD chính và đồng hướng dẫn' : 'GVHD, đồng hướng dẫn và GV nhận xét', icon: 'assignments' }] : []),
-    { id: 'reports', title: 'Báo cáo', description: internship ? 'Xem PDF và nhận xét báo cáo' : 'PDF, slide và video demo', icon: 'reports' },
-    { id: 'grades', title: 'Bảng điểm', description: internship ? 'Chấm điểm, tổng hợp kết quả' : 'Điểm GVHD 60% và GVNX 40%', icon: 'grades' },
+    ...(admin && internship ? [{ id: 'assignments', title: 'Phân công', description: internship ? 'GVHD chính và đồng hướng dẫn' : 'GVHD, đồng hướng dẫn và GV nhận xét', icon: 'assignments' }] : []),
+    ...(internship ? [{ id: 'reports', title: 'Báo cáo', description: internship ? 'Xem PDF và nhận xét báo cáo' : 'PDF, slide và video demo', icon: 'reports' },
+    { id: 'grades', title: 'Bảng điểm', description: internship ? 'Chấm điểm, tổng hợp kết quả' : 'Điểm GVHD 60% và GVNX 40%', icon: 'grades' }] : []),
     { id: 'chat', title: 'Trao đổi', description: 'Trao đổi riêng và nhóm hướng dẫn', icon: 'chat' },
     { id: 'plan', title: 'Kế hoạch và hướng dẫn', description: 'Kế hoạch triển khai và hướng dẫn giảng viên', icon: 'plan' },
     { id: 'guide', title: 'Hướng dẫn sử dụng', description: 'Hướng dẫn giảng viên', icon: 'plan' },
@@ -59,7 +59,7 @@ export function campaignNavigation(modules: ReturnType<typeof campaignModules>, 
     ? ['overview', 'students', ...(internship ? ['registrations', 'final-internships'] : []), 'assignments', 'reports', 'grades']
     : role === 'student' ? ['students', 'chat', ...(internship ? ['reports'] : [])] : ['students', 'reports', 'grades', 'chat'];
   const visible = primaryIds.filter(id => modules.some(m => m.id === id)).slice(0, wide ? undefined : 2);
-  const labels: Record<string, string> = { students: role === 'student' ? 'Hồ sơ' : 'Sinh viên', reports: 'Báo cáo' };
+  const labels: Record<string, string> = { students: role === 'student' ? 'Hồ sơ' : internship ? 'Sinh viên' : 'Danh sách sinh viên', reports: 'Báo cáo' };
   return {
     primary: visible.map(id => ({ ...modules.find(m => m.id === id)!, label: labels[id] || modules.find(m => m.id === id)!.title })),
     more: modules.filter(m => !visible.includes(m.id)),
@@ -72,4 +72,12 @@ export function campaignSwitchQuery(current: URLSearchParams, modules: ReturnTyp
   if (modules.some(m => m.id === tab)) next.set('tab', tab);
   if (preserveTeaching && current.get('view') === 'lecturer') next.set('view', 'lecturer');
   return next;
+}
+
+export function projectListQuery(current:URLSearchParams){
+  const next=new URLSearchParams(current),tab=next.get('tab'),status=next.get('status');
+  if(['assignments','reports','grades'].includes(tab||''))next.set('tab','students');
+  if(status&&tab==='grades')next.set('gradeStatus',status);
+  if(status&&tab==='reports'){if(status==='complete')next.set('gradeStatus','complete');else next.set('submissionStatus',status);}
+  next.delete('status');return next;
 }

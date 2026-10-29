@@ -177,6 +177,8 @@ export async function deleteReportObject(key: string | null | undefined) {
   if (process.env.NODE_ENV !== 'production') {
     const localPath = localReportPath(key);
     if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
+  } else {
+    throw new Error('Chưa cấu hình Cloudflare R2 để xóa báo cáo PDF.');
   }
 }
 
@@ -245,6 +247,8 @@ export async function deleteChatAttachmentObject(key: string | null | undefined)
   if (process.env.NODE_ENV !== 'production') {
     const localPath = localChatAttachmentPath(key);
     if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
+  } else {
+    throw new Error('Chưa cấu hình Cloudflare R2 để xóa tệp trao đổi.');
   }
 }
 

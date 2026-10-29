@@ -12,7 +12,7 @@ export function academicRecipientAllowed(s: Snapshot, row: any, sending = false)
     const ids = typeof row.academic_audience_class_ids === 'string' ? JSON.parse(row.academic_audience_class_ids) : [];
     audience = s.classes.filter(x => x.campaignId === row.academic_campaign_id && (!ids.length || ids.includes(x.id))).map(x => x.id);
   }
-  const enrollments = s.enrollments.filter(e => audience.includes(e.classId) && e.status === 'active' && (row.type === 'course_announcement' || !row.academic_enrollment_id || e.id === row.academic_enrollment_id));
+  const enrollments = s.enrollments.filter(e => audience.includes(e.classId) && e.status !== 'withdrawn' && (row.type === 'course_announcement' || !row.academic_enrollment_id || e.id === row.academic_enrollment_id));
   return enrollments.some(e => normalized(e.email) === email || lecturer && e.assignments.some(a => a.lecturerId === lecturer.id));
 }
 export async function visibleAcademicNotifications(rows: any[], email: string) {

@@ -1,3 +1,4 @@
+import {drainProjectCleanup} from './academic/projectCleanup';
 import { db } from './db';
 import { initDb, seedCompaniesIfEmpty } from './db/initDb';
 import { createApp } from './app';
@@ -11,6 +12,7 @@ export async function startServer() {
   await initDb();
   await initAcademicSchema(db);
   await deliverAcademicOutbox();
+  await drainProjectCleanup();
   await seedCompaniesIfEmpty();
 
   const app = await createApp();
@@ -42,6 +44,7 @@ export async function startServer() {
 
   if (stagingJobsEnabled()) {
     setTimeout(runAutoQueueDrain, 10000);
+    setInterval(()=>drainProjectCleanup().catch(()=>{}),60_000);
     setInterval(runAutoQueueDrain, 30 * 60 * 1000);
   }
 }

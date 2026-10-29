@@ -24,7 +24,7 @@ export async function queueAcademicReminders() {
   const today = now().slice(0, 10);
   const near = (at: string) => at && Date.parse(at) > Date.now() && Date.parse(at) - Date.now() <= 72 * 60 * 60_000;
   for (const c of s.classes.filter(c => c.status === 'active' && !c.legacy)) {
-    for (const e of s.enrollments.filter(e => e.classId === c.id && e.status === 'active')) {
+    for (const e of s.enrollments.filter(e => e.classId === c.id && e.status !== 'withdrawn')) {
       if (near(c.settings.submissionCloseAt) && (currentVersion(e).state !== 'submitted' || e.needsRevision)) events.push(event(e, 'course_submission_reminder', `Nhắc nộp báo cáo ${c.code}`, `Bạn cần hoàn tất bộ bài nộp trước ${c.settings.submissionCloseAt} (hiển thị múi giờ theo thời điểm đã cấu hình).`, `${e.id}:${today}:submission-reminder`));
       if (near(c.settings.gradingCloseAt) && totalScore(c, e) == null) {
         for (const a of e.assignments.filter(a => a.role === 'primary' || a.role === 'reviewer')) {

@@ -1,3 +1,4 @@
+import {removeProjectFixture} from './delete-fixture';
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createClient, type Client } from '@libsql/client';
@@ -238,7 +239,7 @@ test('chat membership is scoped to class and revoked immediately', async () => {
   const c = await activeClass(); const e = await admit(c); await admit(c, '24020002', 2);
   await sendChat(student(e.studentId), c.id, 1, e.id, 'Xin chào'); assert.equal((await chatMessages(alpha, c.id, 1, e.id)).length, 1);
   await assert.rejects(chatMessages(beta, c.id, 1, e.id), rejects('CHAT_ACCESS_DENIED'));
-  await enrollmentAction(admin, e.id, { expectedRevision: (await fresh(e.id)).revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status');
+  await removeProjectFixture(admin, e.id);
   await assert.rejects(chatMessages(student(e.studentId), c.id, 1, e.id), rejects('CLASS_ACCESS_DENIED'));
 });
 test('completion outbox contains no scores and delivery retries do not duplicate notifications', async () => {
@@ -325,7 +326,7 @@ test('class announcements deduplicate recipients and revoked access removes web/
   const result = await announce(admin, c.id, { subject: 'Lịch nộp', body: 'Lịch riêng của lớp', deliveryMode: 'website_only', includeLecturers: true }); assert.equal(result.created, 3);
   await deliverAcademicOutbox(); const rows = (await db.execute("SELECT * FROM notifications WHERE type='course_announcement'")).rows;
   assert.equal(rows.length, 3); assert.ok(rows.every(r => r.status === 'website_only')); assert.equal((await visibleAcademicNotifications(rows, e.email)).length, 1);
-  await enrollmentAction(admin, e.id, { expectedRevision: (await fresh(e.id)).revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status');
+  await removeProjectFixture(admin, e.id);
   assert.equal((await visibleAcademicNotifications(rows, e.email)).length, 0); assert.equal((await allowedAcademicQueue(rows)).size, 2);
 });
 test('expired grading window still applies after Khoa unlocks scores', async () => {

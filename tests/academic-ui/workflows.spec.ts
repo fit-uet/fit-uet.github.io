@@ -3,6 +3,7 @@ import { test, expect, type Browser, type BrowserContext, type Page } from '@pla
 import { mkdir, readFile } from 'node:fs/promises';
 import * as XLSX from 'xlsx';
 
+const previewOrigin = `http://127.0.0.1:${process.env.ACADEMIC_PREVIEW_PORT || 4318}`;
 const screenshots = 'scratch/academic-ui-results/previews';
 
 test('Khoa checks mail connectivity without sending messages and sees the server IP restriction', async ({ browser }) => {
@@ -32,16 +33,14 @@ test('Khoa checks mail connectivity without sending messages and sees the server
 async function session(browser: Browser, role: 'admin' | 'student' | 'lecturer' | 'reviewer', mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } });
   await context.route('**/*', route => { const url = new URL(route.request().url()); return ['127.0.0.1', 'localhost'].includes(url.hostname) || url.protocol === 'blob:' || url.protocol === 'data:' ? route.continue() : route.abort(); });
-  const response = await context.request.get(`http://127.0.0.1:4318/__academic_preview/session?role=${role}`); const data = await response.json();
+  const response = await context.request.get(`${previewOrigin}/__academic_preview/session?role=${role}`); const data = await response.json();
   await context.addInitScript(data => { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); }, data);
   const page = await context.newPage(); const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  const classes = (await (await context.request.get('http://127.0.0.1:4318/api/me/classes', { headers: { Authorization: `Bearer ${data.token}` } })).json()).classes;
+  const classes = (await (await context.request.get(`${previewOrigin}/api/me/classes`, { headers: { Authorization: `Bearer ${data.token}` } })).json()).classes;
   return { context, page, token: data.token, classes, errors };
 }
-async function openReport(page: Page) {
-  await feature(page, 'reports');
-  await page.getByRole('row').filter({ has: page.getByRole('button', { name: 'Sinh viên An', exact: true }) }).getByRole('button', { name: 'Xem báo cáo', exact: true }).click();
-}
+async function openReport(page:Page){await feature(page,'students');await page.getByRole('row').filter({hasText:'24020001'}).getByRole('button',{name:'Xem PDF',exact:true}).click();}
+
 function pdf() {
   const stream = 'BT /F1 18 Tf 30 350 Td (Academic project report) Tj ET';
   const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>', `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
@@ -51,39 +50,18 @@ function pdf() {
   return Buffer.from(output);
 }
 
-test('restored overview opens dedicated screens, preserves scope and returns focus after closing a report', async ({ browser }) => {
-  const { page, context, classes, errors } = await session(browser, 'admin');
-  const c = classes.find(c => c.courseCode === 'INT3132');
-  try {
-    await page.goto(`/#/campaigns/${c.campaignId}`);
-    await expect(page.getByRole('heading', { name: 'Tổng quan Quản trị' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Chức năng quản lý' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Import danh sách', exact: true })).toHaveCount(0);
-    await page.screenshot({ animations: 'disabled', path: `${screenshots}/restored-admin-overview.png`, fullPage: true });
-    await page.getByRole('region', { name: 'Chức năng quản lý' }).getByRole('button', { name: /^Sinh viên/ }).click();
-    await applyFilters(page, {'Lớp học phần': c.id});
-    await page.getByLabel('Tìm sinh viên', { exact: true }).fill('24020001');
-    await applyFilters(page, {'Trạng thái':'active'});
-    await expect(page.getByRole('columnheader', { name: 'Liên hệ' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Nhập danh sách Dự án', exact: false })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Import danh sách', exact: true }).click();
-    await expect(page.locator('input[type=file]').first()).toBeVisible();
-    await feature(page, 'reports');
-    expect(new URLSearchParams(new URL(page.url()).hash.split('?')[1]).get('classId')).toBe(c.id);
-    await expect(page.getByLabel('Tìm sinh viên', { exact: true })).toHaveValue('24020001');
-    expect(new URLSearchParams(new URL(page.url()).hash.split('?')[1]).has('status')).toBe(false);
-    await expect(page.getByRole('columnheader', { name: 'Tài liệu bổ sung' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Liên hệ' })).toHaveCount(0);
-    const button = page.getByRole('button', { name: 'Xem báo cáo', exact: true }); await button.click();
-    await expect(page.getByRole('dialog', { name: 'Báo cáo và đánh giá' })).toBeVisible();
-    await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0); await expect(button).toBeFocused();
-    await feature(page, 'grades'); await expect(page.getByRole('columnheader', { name: 'GVHD (60%)' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'GVNX (40%)' })).toBeVisible();
-    await page.screenshot({ animations: 'disabled', path: `${screenshots}/restored-admin-grades.png`, fullPage: true });
-    await page.getByRole('button', { name: 'Tổng quan', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Tổng quan Quản trị' })).toBeVisible();
-    expect(new URL(page.url()).hash).toContain(`classId=${c.id}`); expect(errors).toEqual([]);
-  } finally { await context.close(); }
+test('project overview opens a single student list with stage filters and no profile action',async({browser})=>{
+ const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
+ try{
+  await page.goto(`/#/campaigns/${c.campaignId}`);await expect(page.getByRole('heading',{name:'Tổng quan Quản trị'})).toBeVisible();
+  await page.getByRole('region',{name:'Chức năng quản lý'}).getByRole('button',{name:'Danh sách sinh viên',exact:true}).click();
+  await applyFilters(page,{'Lớp học phần':c.id,'Phân công':'missingReviewer'});await page.getByLabel('Tìm sinh viên',{exact:true}).fill('24020001');
+  await expect(page.getByText('Sinh viên An',{exact:true})).toHaveCount(1);
+  for(const name of ['Tư cách','Thao tác'])await expect(page.getByRole('columnheader',{name,exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/^(Mở|Xem) hồ sơ$/})).toHaveCount(0);await expect(page.getByRole('columnheader',{name:'Điểm GVHD — 60%',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Import danh sách',exact:true}).click();await expect(page.locator('input[type=file]').first()).toBeVisible();
+  await feature(page,'overview');await expect(page.getByRole('heading',{name:'Tổng quan Quản trị'})).toBeVisible();expect(page.url()).toContain('classId='+c.id);expect(errors).toEqual([]);
+ }finally{await context.close();}
 });
 
 test('legacy report screens render once and honor canonical course, lecturer and search filters', async ({ browser }) => {
@@ -110,9 +88,9 @@ test('an administrator who teaches can switch to assigned records and return to 
     await page.goto(`/#/campaigns/${p}`);
     await page.getByRole('link', { name: 'Trang Giảng viên', exact: true }).click();
     await expect(page).toHaveURL(/view=lecturer/);
-    await expect(page.getByRole('heading', { name: 'Sinh viên phụ trách' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sinh viên Bình', exact: true })).toHaveCount(2);
-    await expect(page.getByRole('button', { name: 'Sinh viên An', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Danh sách sinh viên' })).toBeVisible();
+    await expect(page.getByText('Sinh viên Bình',{exact:true})).toHaveCount(2);
+    await expect(page.getByText('Sinh viên An',{exact:true})).toHaveCount(0);
     await feature(page, 'grades'); await expect(page).toHaveURL(/view=lecturer/);
     await page.getByRole('link', { name: 'Trang Quản trị', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Tổng quan Quản trị' })).toBeVisible();
@@ -137,20 +115,13 @@ test('visual references and restored role pages fit desktop and mobile', async (
         await page.goto(`/__academic_preview/baseline?role=${role}`); await expect(page.locator(role === 'student' ? 'h3' : 'h1').first()).toBeVisible();
         await page.screenshot({ animations: 'disabled', path: `${screenshots}/reference-726271c-${role}-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
         // The fixture baseline stores a legacy user for the old student page; restore the actual role session.
-        const data = await (await context.request.get(`http://127.0.0.1:4318/__academic_preview/session?role=${role}`)).json();
+        const data = await (await context.request.get(`${previewOrigin}/__academic_preview/session?role=${role}`)).json();
         await page.evaluate(data => { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); }, data);
         await page.goto(`/#/campaigns/${p}`);
-        await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Sinh viên phụ trách' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
+        await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
         await page.screenshot({ animations: 'disabled', path: `${screenshots}/restored-${role}-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-        if (role === 'lecturer' && mobile) {
-          await feature(page, 'reports');
-          await page.getByRole('button', { name: 'Xem báo cáo', exact: true }).first().click();
-          await expect(page.getByRole('dialog')).toBeVisible();
-          expect(await page.getByRole('dialog').evaluate(element => element.getBoundingClientRect().width <= window.innerWidth)).toBe(true);
-          await page.screenshot({ animations: 'disabled', path: `${screenshots}/restored-lecturer-mobile-review.png`, fullPage: true });
-          await page.keyboard.press('Escape');
-        }
+        if(role==='lecturer'&&mobile){await expect(page.getByRole('columnheader',{name:'Đề tài',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Nhập điểm',exact:true}).first()).toBeVisible();}
       }
       expect(errors).toEqual([]);
     } finally { await context.close(); }
@@ -168,7 +139,7 @@ test('admin creates semester/classes and previews balanced reviewers', async ({ 
     await page.getByRole('button', { name: 'Tạo lớp nháp', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Thực tập', exact: true })).toBeVisible();
     const target = classes.find(c => c.courseCode === 'INT3132'); await page.goto(`/#/classes/${target.id}`);
     await feature(page, 'assignments'); const trigger=page.getByRole('button',{name:'Phân công GV nhận xét',exact:true});await expect(trigger).toBeVisible();expect(calls).toEqual([]);
-    const auth={Authorization:`Bearer ${token}`};const reviewers=async()=>{const r=await context.request.get(`http://127.0.0.1:4318/api/campaigns/${target.campaignId}/enrollments`,{headers:auth});return(await r.json()).items.flatMap(e=>e.assignments.filter(a=>a.role==='reviewer')).length;};
+    const auth={Authorization:`Bearer ${token}`};const reviewers=async()=>{const r=await context.request.get(`${previewOrigin}/api/campaigns/${target.campaignId}/enrollments`,{headers:auth});return(await r.json()).items.flatMap(e=>e.assignments.filter(a=>a.role==='reviewer')).length;};
     const before=await reviewers();await trigger.click();await expect(page.getByText('Cùng bộ môn').first()).toBeVisible();expect(calls).toHaveLength(1);expect(await reviewers()).toBe(before);
     await page.screenshot({animations:'disabled',path:`${screenshots}/manual-reviewer-preview-desktop.png`,fullPage:true});
     await page.setViewportSize({width:390,height:844});expect((await page.getByRole('dialog',{name:'Phân công GV nhận xét'}).boundingBox())!.width).toBeLessThanOrEqual(390);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({animations:'disabled',path:`${screenshots}/manual-reviewer-preview-mobile.png`,fullPage:true});await page.setViewportSize({width:1440,height:1000});
@@ -190,30 +161,30 @@ test('student submits PDF/Drive bundle; two lecturers grade; student receives no
     await sv.page.getByRole('textbox', { name: 'Link Google Drive video demo', exact: true }).fill('https://drive.google.com/file/d/academic-demo/view');
     await sv.page.getByRole('button', { name: 'Xác nhận nộp bài', exact: true }).click(); await expect(sv.page.getByText('Đã nộp bộ bài', { exact: true })).toBeVisible();
     for (const [role, score] of [['lecturer', '8'], ['reviewer', '8.5']] as const) {
-      const gv = await session(browser, role); sessions.push(gv.context); await gv.page.goto(`/#/classes/${c.id}`); await openReport(gv.page);
-      await gv.page.getByLabel('Điểm (0–10)', { exact: true }).fill(score); await gv.page.getByLabel('Nhận xét / lý do (bắt buộc khi điểm 0)', { exact: true }).fill('Đáp ứng yêu cầu của học phần.');
-      await gv.page.getByRole('button', { name: 'Nộp / cập nhật điểm về Khoa', exact: true }).click(); await expect(gv.page.getByText('Đã lưu.', { exact: true })).toBeVisible();
+      const gv = await session(browser, role); sessions.push(gv.context); await gv.page.goto(`/#/classes/${c.id}`);
+      const row=gv.page.getByRole('row').filter({hasText:'24020001'});await row.getByRole('button',{name:'Nhập điểm',exact:true}).click();
+      await row.getByRole('spinbutton',{name:`Điểm ${role==='lecturer'?'GVHD':'GVNX'} 24020001`,exact:true}).fill(score);await row.getByRole('textbox',{name:`Nhận xét ${role==='lecturer'?'GVHD':'GVNX'} 24020001`,exact:true}).fill('Đáp ứng yêu cầu của học phần.');
+      await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(gv.page.getByText('Đã lưu 1 sinh viên.',{exact:true})).toBeVisible();
       if (role === 'reviewer') { await expect(gv.page.getByText('8.2', { exact: true }).last()).toBeVisible(); await gv.page.screenshot({ animations: 'disabled', path: `${screenshots}/lecturer-grading.png`, fullPage: true }); }
       expect(gv.errors).toEqual([]);
     }
     await sv.page.getByRole('button', { name: 'Tải lại', exact: true }).click(); await expect(sv.page.getByText('Tổng kết:', { exact: false })).toHaveCount(0);
-    const response = await sv.context.request.get(`http://127.0.0.1:4318/api/classes/${c.id}`, { headers: { Authorization: `Bearer ${sv.token}` } }); const body = await response.json();
+    const response = await sv.context.request.get(`${previewOrigin}/api/classes/${c.id}`, { headers: { Authorization: `Bearer ${sv.token}` } }); const body = await response.json();
     expect(body.enrollments[0]).not.toHaveProperty('evaluations'); expect(body.enrollments[0]).not.toHaveProperty('finalScore');
     await sv.page.screenshot({ animations: 'disabled', path: `${screenshots}/student-submission.png`, fullPage: true }); expect(sv.errors).toEqual([]);
   } finally { for (const context of sessions) await context.close(); }
 });
 
-test('admin locks and reopens a submission without mixing old and new evaluations', async ({ browser }) => {
-  const { page, context, classes, errors } = await session(browser, 'admin'); const c = classes.find(c => c.courseCode === 'INT3132');
-  try {
-    await page.goto(`/#/classes/${c.id}`); await openReport(page);
-    await page.getByText('Khóa điểm / mở lại bài', { exact: true }).click(); await page.getByLabel('Lý do khóa / mở khóa', { exact: true }).fill('Đối soát bảng điểm');
-    await page.getByRole('button', { name: 'Khóa điểm', exact: true }).click(); await expect(page.getByRole('button', { name: 'Mở khóa điểm', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Mở khóa điểm', exact: true }).click();
-    await page.getByLabel('Lý do mở lại bài', { exact: true }).fill('Sinh viên cập nhật bản báo cáo'); await page.getByLabel('Hạn nộp lại (giờ Việt Nam)', { exact: true }).fill('2099-01-01T17:00');
-    await page.getByRole('button', { name: 'Mở lại bài', exact: true }).click(); await expect(page.getByText('Chưa đủ điểm', { exact: true })).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Phiên bản báo cáo' })).toContainText('Phiên bản 3'); expect(errors).toEqual([]);
-  } finally { await context.close(); }
+test('admin locks and reopens from the student row without mixing evaluations',async({browser})=>{
+ const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
+ try{
+  await page.goto(`/#/classes/${c.id}`);const row=page.getByRole('row').filter({hasText:'24020001'});
+  for(const [action,status]of [['lock','Đã khóa'],['unlock','Đã nộp điểm']]){
+   if(!await row.locator('details').filter({has:page.getByText('Khóa / mở lại',{exact:true})}).evaluate((el:HTMLDetailsElement)=>el.open))await row.getByText('Khóa / mở lại',{exact:true}).click();await row.getByLabel('Khóa điểm',{exact:true}).selectOption(action);await row.getByRole('textbox',{name:'Lý do khóa điểm 24020001',exact:true}).fill('Đối soát');await page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText(status,{exact:true})).toBeVisible();
+  }
+  if(!await row.locator('details').filter({has:page.getByText('Khóa / mở lại',{exact:true})}).evaluate((el:HTMLDetailsElement)=>el.open))await row.getByText('Khóa / mở lại',{exact:true}).click();await row.getByLabel('Hạn nộp lại',{exact:true}).fill('2099-01-01T17:00');await row.getByRole('textbox',{name:'Lý do mở lại 24020001',exact:true}).fill('Cập nhật báo cáo');await page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Chưa có điểm',{exact:true})).toBeVisible();
+  await row.getByRole('button',{name:'Xem PDF',exact:true}).click();await expect(page.getByRole('combobox',{name:'Phiên bản báo cáo'})).toContainText('Phiên bản 3');await page.keyboard.press('Escape');expect(errors).toEqual([]);
+ }finally{await context.close();}
 });
 
 test('mobile class navigation and submission form fit the viewport', async ({ browser }) => {
@@ -247,17 +218,17 @@ test('campaign workspace manages eight classes and exports exactly the selected 
   const auth = { Authorization: `Bearer ${token}` };
   try {
     for (const courseCode of ['INT3132', 'INT3131']) for (const section of ['2', '3', '4']) {
-      const r = await context.request.post('http://127.0.0.1:4318/api/admin/classes', { headers: auth, data: { semesterId: a.semesterId, courseCode, section } }); expect(r.status()).toBe(200);
+      const r = await context.request.post(`${previewOrigin}/api/admin/classes`, { headers: auth, data: { semesterId: a.semesterId, courseCode, section } }); expect(r.status()).toBe(200);
     }
     await page.goto(`/#/campaigns/${a.campaignId}?tab=students`); await expect(page.getByTestId('campaign-chrome')).not.toContainText('8 lớp');
-    await expect(page.getByRole('button', { name: 'Sinh viên An', exact: true })).toHaveCount(2);
-    await applyFilters(page, {'Lớp học phần': a.id}); await expect(page.getByRole('button', { name: 'Sinh viên An', exact: true })).toHaveCount(1);
-    const pending = page.waitForEvent('download'); await page.getByRole('button', { name: 'Xuất XLSX theo bộ lọc', exact: true }).click();
+    await expect(page.getByText('Sinh viên An',{exact:true})).toHaveCount(2);
+    await applyFilters(page, {'Lớp học phần': a.id}); await expect(page.getByText('Sinh viên An',{exact:true})).toHaveCount(1);
+    const pending = page.waitForEvent('download'); await page.getByRole('combobox',{name:'Xuất XLSX',exact:true}).selectOption('student-list');
     const file = await pending; const wb = XLSX.read(await readFile((await file.path())!), { type: 'buffer' }); const exported = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]) as any[];
     expect(exported).toHaveLength(3); expect(exported.every(r => r['Lớp học phần'] === a.code)).toBe(true);
-    const meta = await (await context.request.get(`http://127.0.0.1:4318/api/campaigns/${a.campaignId}`, { headers: auth })).json();
-    const changed = await context.request.put(`http://127.0.0.1:4318/api/admin/campaigns/${a.campaignId}/settings`, { headers: auth, data: { expectedRevision: meta.campaign.revision, settings: { plan: 'Kế hoạch chung tám lớp' } } }); expect(changed.status()).toBe(200);
-    const b = classes.find(c => c.courseCode === 'INT3131'); const other = await (await context.request.get(`http://127.0.0.1:4318/api/classes/${b.id}`, { headers: auth })).json(); expect(other.class.settings.plan).toBe('Kế hoạch chung tám lớp');
+    const meta = await (await context.request.get(`${previewOrigin}/api/campaigns/${a.campaignId}`, { headers: auth })).json();
+    const changed = await context.request.put(`${previewOrigin}/api/admin/campaigns/${a.campaignId}/settings`, { headers: auth, data: { expectedRevision: meta.campaign.revision, settings: { plan: 'Kế hoạch chung tám lớp' } } }); expect(changed.status()).toBe(200);
+    const b = classes.find(c => c.courseCode === 'INT3131'); const other = await (await context.request.get(`${previewOrigin}/api/classes/${b.id}`, { headers: auth })).json(); expect(other.class.settings.plan).toBe('Kế hoạch chung tám lớp');
     expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
@@ -288,52 +259,17 @@ test('switching campaigns revokes PDF cache and checks permission again on retur
   } finally { await context.close(); }
 });
 
-test('project topic becomes pending, adviser approves or edits, and changed submitted work requires resubmission on desktop/mobile', async ({ browser }) => {
-  const sv = await session(browser, 'student'); const gv = await session(browser, 'lecturer');
-  const c = sv.classes.find(c => c.courseCode === 'INT3131');
-  try {
-    await sv.page.goto(`/#/classes/${c.id}`);
-    await sv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true }).fill('Đề tài chờ duyệt từ sinh viên');
-    await sv.page.getByRole('button', { name: 'Gửi GVHD duyệt', exact: true }).click();
-    await expect(sv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Pending');
-    await expect(sv.page.locator('input[name=pdf]')).toBeDisabled();
-    await sv.page.screenshot({ animations: 'disabled', path: `${screenshots}/topic-student-pending-desktop.png`, fullPage: true });
-    await gv.page.goto(`/#/classes/${c.id}`);
-    await applyFilters(gv.page, {'Trạng thái đề tài':'pending'});
-    await gv.page.getByRole('button', { name: 'Sinh viên An', exact: true }).click();
-    await gv.page.getByRole('button', { name: 'Duyệt đề tài', exact: true }).click();
-    await expect(gv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Đã duyệt');
-    await gv.page.getByRole('button', { name: 'Sửa và duyệt', exact: true }).click();
-    await gv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true }).fill('Đề tài đã được GVHD điều chỉnh');
-    await gv.page.getByRole('button', { name: 'Lưu và duyệt', exact: true }).click();
-    await expect(gv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Đã duyệt');
-    await gv.page.setViewportSize({ width: 390, height: 844 });
-    await gv.page.screenshot({ animations: 'disabled', path: `${screenshots}/topic-adviser-approved-mobile.png`, fullPage: true });
-    expect(await gv.page.getByRole('dialog').evaluate(el => el.getBoundingClientRect().width <= window.innerWidth)).toBe(true);
-    await sv.page.reload(); await expect(sv.page.locator('input[name=pdf]')).toBeEnabled();
-    await expect(sv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true })).toHaveValue('Đề tài đã được GVHD điều chỉnh');
-    await sv.page.locator('input[name=pdf]').setInputFiles({ name: 'topic-approved.pdf', mimeType: 'application/pdf', buffer: pdf() });
-    await sv.page.getByRole('textbox', { name: 'Link Google Drive slide', exact: true }).fill('https://docs.google.com/presentation/d/topic-slide/edit');
-    await sv.page.getByRole('textbox', { name: 'Link Google Drive video demo', exact: true }).fill('https://drive.google.com/file/d/topic-demo/view');
-    await sv.page.getByRole('button', { name: 'Xác nhận nộp bài', exact: true }).click();
-    await expect(sv.page.getByText('Đã nộp bộ bài', { exact: true })).toBeVisible();
-    await sv.page.getByRole('textbox', { name: 'Tên đề tài Dự án', exact: true }).fill('Đề tài đổi sau nộp');
-    await sv.page.getByRole('button', { name: 'Gửi GVHD duyệt', exact: true }).click();
-    await expect(sv.page.getByRole('region', { name: 'Đề tài Dự án' })).toContainText('Cần nộp lại theo đề tài mới');
-    await expect(sv.page.locator('input[name=pdf]')).toBeDisabled();
-    await gv.page.getByRole('button', { name: 'Đóng hồ sơ', exact: true }).click();
-    await gv.page.getByRole('button', { name: 'Tải lại', exact: true }).click();
-    await gv.page.getByRole('button', { name: 'Sinh viên An', exact: true }).click();
-    await gv.page.getByRole('button', { name: 'Duyệt đề tài', exact: true }).click();
-    await sv.page.reload();
-    await expect(sv.page.locator('input[name=pdf]')).toBeEnabled();
-    await sv.page.getByRole('button', { name: 'Xác nhận nộp bài', exact: true }).click();
-    await expect(sv.page.getByRole('region', { name: 'Đề tài Dự án' })).not.toContainText('Cần nộp lại');
-    await sv.page.setViewportSize({ width: 390, height: 844 });
-    await sv.page.screenshot({ animations: 'disabled', path: `${screenshots}/topic-student-resubmitted-mobile.png`, fullPage: true });
-    expect(await sv.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    expect(sv.errors).toEqual([]); expect(gv.errors).toEqual([]);
-  } finally { await sv.context.close(); await gv.context.close(); }
+test('student topics stay pending until primary adviser saves approval inline; resubmission remains required',async({browser})=>{
+ const sv=await session(browser,'student'),gv=await session(browser,'lecturer'),c=sv.classes.find(c=>c.courseCode==='INT3131');
+ try{
+  await sv.page.goto(`/#/classes/${c.id}`);await sv.page.getByRole('textbox',{name:'Tên đề tài Dự án',exact:true}).fill('Đề tài chờ duyệt');await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();await expect(sv.page.locator('input[name=pdf]')).toBeDisabled();
+  await gv.page.goto(`/#/classes/${c.id}`);const row=gv.page.getByRole('row').filter({hasText:'24020001'});await row.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();await expect(row.getByText(/Pending · Chờ GVHD duyệt/)).toBeVisible();await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đã duyệt',{exact:true})).toBeVisible();
+  await row.getByRole('button',{name:'Sửa và duyệt',exact:true}).click();await row.getByRole('textbox',{name:'Đề tài 24020001',exact:true}).fill('Đề tài GVHD sửa');await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đề tài GVHD sửa',{exact:true})).toBeVisible();
+  await gv.page.setViewportSize({width:390,height:844});expect(await gv.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await sv.page.reload();await expect(sv.page.locator('input[name=pdf]')).toBeEnabled();await sv.page.locator('input[name=pdf]').setInputFiles({name:'topic.pdf',mimeType:'application/pdf',buffer:pdf()});await sv.page.getByRole('textbox',{name:'Link Google Drive slide',exact:true}).fill('https://docs.google.com/presentation/d/topic-slide/edit');await sv.page.getByRole('textbox',{name:'Link Google Drive video demo',exact:true}).fill('https://drive.google.com/file/d/topic-demo/view');await sv.page.getByRole('button',{name:'Xác nhận nộp bài',exact:true}).click();
+  await sv.page.getByRole('textbox',{name:'Tên đề tài Dự án',exact:true}).fill('Đề tài sau nộp');await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Cần nộp lại theo đề tài mới');
+  await gv.page.reload();await row.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đã duyệt',{exact:true})).toBeVisible();await sv.page.reload();await sv.page.getByRole('button',{name:'Xác nhận nộp bài',exact:true}).click();await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).not.toContainText('Cần nộp lại');expect(sv.errors).toEqual([]);expect(gv.errors).toEqual([]);
+ }finally{await sv.context.close();await gv.context.close();}
 });
 
 test('functions load on demand, revisit with ETag, debounce searches and export without refreshing the group', async ({ browser }) => {
@@ -348,18 +284,18 @@ test('functions load on demand, revisit with ETag, debounce searches and export 
     await expect(page.getByRole('heading',{name:'Cài đặt Kế hoạch',exact:true})).toBeVisible();
     await feature(page,'settings');await expect(page.getByRole('heading',{name:'Thiết lập',exact:true})).toBeVisible();
     expect(calls.some(r=>/\/enrollments|\/submissions|chat-context|\/questions|import/.test(r.url))).toBe(false);
-    await feature(page,'students');await expect(page.getByRole('button',{name:'Sinh viên An',exact:true})).toHaveCount(2);
-    expect(listResponses).toEqual([200]);const first=calls.find(r=>r.url.includes('/enrollments?'))!;expect(new URL(first.url).searchParams.get('projection')).toBe('students');
+    await feature(page,'students');await expect(page.getByText('Sinh viên An',{exact:true})).toHaveCount(2);
+    expect(listResponses).toEqual([200]);const first=calls.find(r=>r.url.includes('/enrollments?'))!;expect(new URL(first.url).searchParams.get('projection')).toBe('student-list');
     await feature(page,'plan');await expect(page.getByRole('heading',{name:'Kế hoạch và hướng dẫn',exact:true})).toBeVisible();await feature(page,'students');await expect.poll(()=>listResponses.length).toBe(2);expect(listResponses[1]).toBe(304);
     const beforeSearch=calls.filter(r=>r.url.includes('/enrollments?')).length;
     await page.getByLabel('Tìm sinh viên',{exact:true}).fill('2402');await page.getByLabel('Tìm sinh viên',{exact:true}).fill('24020001');
     await expect.poll(()=>calls.filter(r=>r.url.includes('/enrollments?')).length).toBe(beforeSearch+1);
     expect(new URL(calls.filter(r=>r.url.includes('/enrollments?')).at(-1)!.url).searchParams.get('q')).toBe('24020001');
-    const beforeExport=calls.length;const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Xuất XLSX theo bộ lọc',exact:true}).click();await downloaded;
+    const beforeExport=calls.length;const downloaded=page.waitForEvent('download');await page.getByRole('combobox',{name:'Xuất XLSX',exact:true}).selectOption('student-list');await downloaded;
     expect(calls.slice(beforeExport).filter(r=>r.url.includes('/api/campaigns/')).every(r=>r.url.includes('/exports/'))).toBe(true);
     const beforeReload=calls.length;await page.getByRole('button',{name:'Tải lại',exact:true}).click();await expect.poll(()=>calls.slice(beforeReload).some(r=>r.url.includes('/enrollments?'))).toBe(true);
     expect(calls.slice(beforeReload).filter(r=>r.url.includes('/enrollments?')).every(r=>!r.tag)).toBe(true);
-    const beforeF5=calls.length;await page.reload();await expect(page.getByRole('columnheader',{name:'Liên hệ'})).toBeVisible();
+    const beforeF5=calls.length;await page.reload();await expect(page.getByRole('columnheader',{name:'GVHD/Đồng HD'})).toBeVisible();
     await expect.poll(()=>calls.slice(beforeF5).some(r=>r.url.includes('/enrollments?'))).toBe(true);
     expect(calls.slice(beforeF5).filter(r=>r.url.includes('/enrollments?')).every(r=>!r.tag)).toBe(true);expect(errors).toEqual([]);
   } finally {await context.close();}
@@ -394,15 +330,15 @@ test('original admin cards and dedicated content editors remain functional insid
   await context.route('**/api/admin/dashboard-stats',r=>r.fulfill({json:{registeredCount:899,confirmedCount:669,reportCount:644,gradedCount:675}}));
   const auth={Authorization:`Bearer ${token}`};
   try{
-    const before=await(await context.request.get(`http://127.0.0.1:4318/api/campaigns/${project.campaignId}`,{headers:auth})).json();
+    const before=await(await context.request.get(`${previewOrigin}/api/campaigns/${project.campaignId}`,{headers:auth})).json();
     await page.goto(`/#/campaigns/${legacy.campaignId}`);const cards=page.getByRole('region',{name:'Chức năng quản lý'});
     for(const name of ['Quản lý Đăng ký','Quản lý Sinh viên','Quản lý Giảng viên','Quản lý Doanh nghiệp','Phân công GVHD','Báo cáo thực tập','Bảng điểm thực tập','CSDL Thẩm định','Thông báo & Email','Cài đặt hệ thống','Kế hoạch triển khai','Quy định thực tập','Hướng dẫn GV','Cài đặt FAQ','Quản trị viên'])await expect(cards.getByRole('button',{name,exact:true})).toBeVisible();
     await expect(page.getByText('Số SV xác nhận',{exact:true})).toBeVisible();await page.screenshot({animations:'disabled',path:`${screenshots}/original-legacy-admin-desktop.png`,fullPage:true});
     await page.setViewportSize({width:390,height:844});await page.screenshot({animations:'disabled',path:`${screenshots}/original-legacy-admin-mobile.png`,fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.setViewportSize({width:1440,height:1000});
     await cards.getByRole('button',{name:'Kế hoạch triển khai',exact:true}).click();await expect(page.getByRole('heading',{name:'Cài đặt Kế hoạch'})).toBeVisible();await expect(page.getByText('Xem trước',{exact:true})).toBeVisible();
     const value='Kế hoạch kiểm tra riêng cho Thực tập, giữ giao diện soạn Word và Markdown';await page.locator('textarea').fill(value);await page.getByRole('button',{name:'Lưu kế hoạch',exact:true}).click();
-    await expect.poll(async()=>{const r=await context.request.get(`http://127.0.0.1:4318/api/campaigns/${legacy.campaignId}`,{headers:auth});return(await r.json()).campaign.settings.plan;}).toBe(value);
-    const after=await(await context.request.get(`http://127.0.0.1:4318/api/campaigns/${project.campaignId}`,{headers:auth})).json();expect(after.campaign.settings.plan).toBe(before.campaign.settings.plan);
+    await expect.poll(async()=>{const r=await context.request.get(`${previewOrigin}/api/campaigns/${legacy.campaignId}`,{headers:auth});return(await r.json()).campaign.settings.plan;}).toBe(value);
+    const after=await(await context.request.get(`${previewOrigin}/api/campaigns/${project.campaignId}`,{headers:auth})).json();expect(after.campaign.settings.plan).toBe(before.campaign.settings.plan);
     await feature(page,'faq-editor');await expect(page.getByRole('tab',{name:'FAQ Giảng viên',exact:true})).toBeVisible();await page.getByRole('tab',{name:'FAQ Giảng viên',exact:true}).click();await expect(page.locator('textarea')).toBeVisible();
     await feature(page,'guide-editor');await expect(page.getByRole('button',{name:'Lưu hướng dẫn',exact:true})).toBeVisible();await expect(page.locator('input[type=file]')).toHaveCount(1);
     expect(calls.some(url=>/\/enrollments|\/submissions|chat-context/.test(url))).toBe(false);expect(errors).toEqual([]);
@@ -443,7 +379,7 @@ test('compact chrome preserves all role navigation without loading records when 
       await page.getByRole('button',{name:'Thêm chức năng',exact:true}).click();await expect(page.getByRole('dialog',{name:'Chức năng',exact:true})).toBeVisible();await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'Thêm chức năng'})).toBeFocused();
       const before=calls.length;await page.getByRole('button',{name:'Chọn học kỳ và nhóm môn'}).click();await expect(page.getByRole('dialog',{name:'Học kỳ và nhóm môn'}).getByLabel('Học kỳ',{exact:true})).toBeVisible();
       expect(calls.slice(before).filter(url=>url.includes('/api/campaigns/'))).toEqual([]);expect(calls.some(url=>/\/enrollments|\/submissions|chat-context/.test(url))).toBe(false);await page.keyboard.press('Escape');
-      await feature(page,'students');await expect(page.getByRole('heading',{name:role==='admin'?'Sinh viên':role==='lecturer'?'Sinh viên phụ trách':'Hồ sơ và bài nộp',exact:true})).toBeVisible();
+      await feature(page,'students');await expect(page.getByRole('heading',{name:role==='student'?'Hồ sơ và bài nộp':'Danh sách sinh viên',exact:true})).toBeVisible();
       if(role!=='student')await expect(page.getByRole('columnheader',{name:'Sinh viên',exact:true})).toBeVisible();
       await page.screenshot({path:`${screenshots}/compact-${role}-desktop.png`,fullPage:true});
       await page.setViewportSize({width:390,height:844});const nav=page.getByRole('navigation',{name:'Chức năng nhóm môn'});
@@ -459,12 +395,12 @@ test('filter drafts make no requests; apply is atomic, cancel discards, and clea
   page.on('request',r=>{if(r.url().includes('/enrollments?'))calls.push(r.url());});
   const dialog=page.getByRole('dialog',{name:'Bộ lọc danh sách'}),button=page.getByRole('button',{name:/^Bộ lọc/});
   try{
-    await page.goto(`/#/campaigns/${c.campaignId}?tab=students&q=24020001&page=2`);await expect(page.getByText('Không có hồ sơ trong bộ lọc.',{exact:true})).toBeVisible();const before=calls.length;
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=students&q=24020001&page=2`);await expect(page.getByText('Không có sinh viên trong bộ lọc.',{exact:true})).toBeVisible();const before=calls.length;
     await button.click();await dialog.getByLabel('Học phần',{exact:true}).selectOption(c.courseCode);await dialog.getByLabel('Lớp học phần',{exact:true}).selectOption(c.id);await expect(dialog.getByLabel('Lớp học phần',{exact:true})).toHaveValue(c.id);expect(calls).toHaveLength(before);
     await dialog.getByRole('button',{name:'Hủy',exact:true}).click();await expect(button).toHaveAccessibleName('Bộ lọc');expect(page.url()).toContain('page=2');
     await button.click();await expect(dialog.getByLabel('Lớp học phần',{exact:true})).toHaveValue('');await dialog.getByLabel('Lớp học phần',{exact:true}).selectOption(c.id);await page.keyboard.press('Escape');await expect(button).toBeFocused();expect(calls).toHaveLength(before);
     await applyFilters(page,{'Học phần':c.courseCode,'Lớp học phần':c.id,'Trạng thái đề tài':'approved'});
-    await expect(page.getByRole('button',{name:'Sinh viên An',exact:true})).toHaveCount(1);await expect(button).toHaveAccessibleName('Bộ lọc (3)');await expect.poll(()=>calls.length).toBe(before+1);expect(page.url()).not.toContain('page=');
+    await expect(page.getByText('Sinh viên An',{exact:true})).toHaveCount(1);await expect(button).toHaveAccessibleName('Bộ lọc (3)');await expect.poll(()=>calls.length).toBe(before+1);expect(page.url()).not.toContain('page=');
     const applied=new URL(calls.at(-1)!);expect(applied.searchParams.get('courseCode')).toBe(c.courseCode);expect(applied.searchParams.get('classId')).toBe(c.id);expect(applied.searchParams.get('q')).toBe('24020001');
     const beforeClear=calls.length;await page.getByLabel('Tìm sinh viên',{exact:true}).fill('2402000');await expect(page).toHaveURL(new RegExp('classId='+c.id));await expect(page.getByLabel('Tìm sinh viên',{exact:true})).toHaveValue('2402000');
     await button.click();await dialog.getByRole('button',{name:'Xóa bộ lọc',exact:true}).click();await expect(button).toHaveAccessibleName('Bộ lọc');await expect(page.getByLabel('Tìm sinh viên',{exact:true})).toHaveValue('2402000');await expect(page).not.toHaveURL(/classId=/);await expect.poll(()=>calls.length).toBe(beforeClear+1);expect(new URL(calls.at(-1)!).searchParams.get('q')).toBe('2402000');
@@ -477,8 +413,8 @@ test('switching group clears filters while keeping an eligible teaching view',as
   const {page,context,classes,errors}=await session(browser,'admin');const project=classes.find(c=>c.courseCode==='INT3132'),legacy=classes.find(c=>c.legacy);const calls:string[]=[];
   await context.route(/\/api\/lecturer\/students(?:\?.*)?$/,r=>r.fulfill({json:[]}));page.on('request',r=>{if(r.url().includes('/enrollments?'))calls.push(r.url());});
   try{
-    await page.goto(`/#/campaigns/${project.campaignId}?tab=students&view=lecturer&q=Bình&courseCode=INT3132&topicStatus=approved`);await expect(page.getByRole('heading',{name:'Sinh viên phụ trách',exact:true})).toBeVisible();
-    await expect(page.getByRole('button',{name:'Bộ lọc (2)',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Sinh viên Bình',exact:true})).toHaveCount(1);const before=calls.length;
+    await page.goto(`/#/campaigns/${project.campaignId}?tab=students&view=lecturer&q=Bình&courseCode=INT3132&topicStatus=approved`);await expect(page.getByRole('heading',{name:'Danh sách sinh viên',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Bộ lọc (2)',exact:true})).toBeVisible();await expect(page.getByText('Sinh viên Bình',{exact:true})).toHaveCount(1);const before=calls.length;
     await page.getByRole('button',{name:'Chọn học kỳ và nhóm môn'}).click();const dialog=page.getByRole('dialog',{name:'Học kỳ và nhóm môn'});await dialog.getByLabel('Học kỳ',{exact:true}).selectOption(legacy.semesterId);expect(calls).toHaveLength(before);await dialog.getByRole('button',{name:'Thực tập',exact:true}).click();
     await expect(page).toHaveURL(new RegExp(`/campaigns/${legacy.campaignId}\\?tab=students&view=lecturer$`));await expect(page.getByRole('button',{name:'Bộ lọc',exact:true})).toBeVisible();await expect(page.getByLabel('Tìm sinh viên',{exact:true})).toHaveValue('');await expect(page.getByRole('dialog')).toHaveCount(0);expect(errors).toEqual([]);
   }finally{await context.close();}
@@ -497,4 +433,27 @@ test('legacy reports share one title and toolbar, preserve adviser filters and U
     expect(requests[1].searchParams.get('advisor')).toBe('TS. Alpha');expect(requests[1].searchParams.get('status')).toBe('missing');expect(requests[1].searchParams.get('courseCode')).toBe('INT4002');expect(requests[1].searchParams.get('page')).toBe('1');
     await page.screenshot({path:`${screenshots}/compact-legacy-reports.png`,fullPage:true});expect(errors).toEqual([]);
   }finally{await context.close();}
+});
+
+test('project table retains invalid drafts, saves valid rows, blocks navigation and never opens a generic profile',async({browser})=>{
+ const {page,context,classes,token,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');const calls:string[]=[];page.on('request',r=>{if(r.method()==='PATCH'&&r.url().includes('/bulk'))calls.push(r.url());});
+ try{
+  await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);const rowB=page.getByRole('row').filter({hasText:'24020002'}),rowC=page.getByRole('row').filter({hasText:'24020003'});
+  for(const [row,id,title,reason]of [[rowB,'24020002','Đề tài B lưu hàng loạt','Khoa điều chỉnh'],[rowC,'24020003','Đề tài C chưa có lý do','']] as const){await row.getByRole('button',{name:'Sửa đề tài',exact:true}).click();await row.getByRole('textbox',{name:'Đề tài '+id,exact:true}).fill(title);if(reason)await row.getByRole('textbox',{name:'Lý do đề tài '+id,exact:true}).fill(reason);}
+  expect(calls).toHaveLength(0);await expect(page.getByRole('button',{name:'Lưu thay đổi (2)',exact:true})).toBeVisible();await page.getByRole('button',{name:'Lưu thay đổi (2)',exact:true}).click();await expect(page.getByText('Đã lưu 1 sinh viên; 1 dòng cần xử lý.',{exact:true})).toBeVisible();expect(calls).toHaveLength(1);await expect(page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true})).toBeVisible();await expect(rowC.getByRole('alert')).toBeVisible();
+  await page.getByRole('button',{name:'Thêm chức năng',exact:true}).click();await page.getByRole('dialog',{name:'Chức năng',exact:true}).locator('[data-campaign-tab="plan"]').click();const guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu'});await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Ở lại',exact:true}).click();expect(page.url()).toContain('tab=students');await expect(rowC.getByRole('textbox',{name:'Đề tài 24020003',exact:true})).toHaveValue('Đề tài C chưa có lý do');
+  await page.getByRole('button',{name:'Thêm chức năng',exact:true}).click();await page.getByRole('dialog',{name:'Chức năng',exact:true}).locator('[data-campaign-tab="plan"]').click();await guard.getByRole('button',{name:'Bỏ thay đổi',exact:true}).click();await expect(page).toHaveURL(/tab=plan/);await feature(page,'students');
+  await expect(page.getByRole('button',{name:/^(Mở|Xem) hồ sơ$/})).toHaveCount(0);await expect(page.locator('main h1')).toHaveText('Danh sách sinh viên');await page.screenshot({path:`${screenshots}/project-unified-admin-desktop.png`,fullPage:true});await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`${screenshots}/project-unified-admin-mobile.png`,fullPage:true});expect(errors).toEqual([]);
+ }finally{await context.close();}
+});
+
+test('Khoa previews and deletes exactly one project enrollment while its sibling course remains',async({browser})=>{
+ const {page,context,classes,token,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');const headers={Authorization:`Bearer ${token}`};
+ try{
+  const before=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json();const target=before.items.find(e=>e.studentId==='24020003'&&e.classId===c.id),sibling=before.items.find(e=>e.studentId==='24020003'&&e.id!==target.id);expect(sibling).toBeTruthy();
+  await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);await page.getByRole('checkbox',{name:`Chọn 24020003 ${c.code}`,exact:true}).check();await page.getByRole('button',{name:'Xóa khỏi danh sách (1)',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Xóa khỏi danh sách Dự án'});await expect(dialog).toContainText('24020003');
+  await dialog.getByRole('button',{name:'Hủy',exact:true}).click();expect((await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json()).total).toBe(before.total);
+  await page.getByRole('button',{name:'Xóa khỏi danh sách (1)',exact:true}).click();await dialog.getByRole('textbox',{name:'Lý do xóa',exact:true}).fill('Xóa đúng học phần cần bỏ');await dialog.getByRole('button',{name:'Xác nhận xóa vĩnh viễn',exact:true}).click();await expect(page.getByText('Đã xóa hoàn tất dữ liệu và tệp của lần học.',{exact:true})).toBeVisible();
+  const after=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json();expect(after.total).toBe(before.total-1);expect(after.items.some(e=>e.id===target.id)).toBe(false);expect(after.items.find(e=>e.id===sibling.id)).toEqual(sibling);expect(errors).toEqual([]);
+ }finally{await context.close();}
 });

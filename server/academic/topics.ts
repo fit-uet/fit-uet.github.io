@@ -47,7 +47,7 @@ export function editTopic(s: Snapshot, c: AcademicClass, e: CourseEnrollment, ac
 }
 export function topicPermissions(s: Snapshot, c: AcademicClass, e: CourseEnrollment, actor: AuthenticatedUser): TopicPermissions | undefined {
   if (course(c).group !== 'project') return undefined;
-  const writable = !c.legacy && c.status === 'active' && e.status === 'active';
+  const writable = !c.legacy && c.status === 'active' && e.status !== 'withdrawn';
   const unlocked = !e.lockedAt && !e.submissionLockedAt && !hasGrade(e);
   const primary = isPrimaryAdvisor(s, e, actor);
   const owner = actor.role === 'student' && actor.email === e.email;

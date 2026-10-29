@@ -15,7 +15,7 @@ export function requireCampaign(s: Snapshot, id: string, actor: AuthenticatedUse
 }
 export function campaignSummaries(s: Snapshot, actor: AuthenticatedUser): CampaignSummary[] {
   return (s.campaigns || []).filter(p => actor.role === 'admin' || campaignClasses(s, p.id).some(c => mayRead(s, c, actor) || canJoin(c, actor))).map(p => {
-    const classes = campaignClasses(s, p.id); const visible = s.enrollments.filter(e => classes.some(c => c.id === e.classId && mayRead(s, c, actor, e)) && e.status === 'active');
+    const classes = campaignClasses(s, p.id); const visible = s.enrollments.filter(e => classes.some(c => c.id === e.classId && mayRead(s, c, actor, e)) && e.status !== 'withdrawn');
     const semesterName = s.semesters.find(x => x.id === p.semesterId)?.name || p.semesterId;
     return { ...p, semesterName, name: `${GROUP_NAMES[p.group]} · ${semesterName}`, classCount: classes.filter(c => actor.role === 'admin' || mayRead(s, c, actor) || canJoin(c, actor)).length, enrollmentCount: visible.length, studentCount: new Set(visible.map(e => e.studentId)).size };
   });
@@ -24,9 +24,9 @@ export async function campaignDetail(actor: AuthenticatedUser, id: string) {
   const s = await snapshot(); const p = requireCampaign(s, id, actor);
   const classes = classSummaries(s, actor).filter(c => c.campaignId === id);
   const visible = s.enrollments.filter(e => classes.some(c => c.id === e.classId && mayRead(s, c, actor, e)));
-  const views = visible.filter(e => e.status === 'active').map(e => enrollmentView(s, classes.find(c => c.id === e.classId)!, e, actor));
+  const views = visible.filter(e => e.status !== 'withdrawn').map(e => enrollmentView(s, classes.find(c => c.id === e.classId)!, e, actor));
   return { campaign: campaignSummaries(s, actor).find(p => p.id === id)!, classes, lecturers: actor.role === 'admin' || p.group === 'internship' ? s.lecturers : s.lecturers.filter(l => visible.some(e => e.assignments.some(a => a.lecturerId === l.id))), quotas: actor.role === 'admin' ? s.quotas.filter(q => q.semesterId === p.semesterId) : [],
-    stats: { studentCount: new Set(views.filter(e => e.status === 'active').map(e => e.studentId)).size, enrollmentCount: views.filter(e => e.status === 'active').length, submitted: views.filter(e => currentVersion(e as any).state === 'submitted' && !e.topicPermissions?.requiresResubmission).length, graded: views.filter(e => e.gradeStatus === 'complete' || e.gradeStatus === 'locked').length,
+    stats: { studentCount: new Set(views.filter(e => e.status !== 'withdrawn').map(e => e.studentId)).size, enrollmentCount: views.filter(e => e.status !== 'withdrawn').length, submitted: views.filter(e => currentVersion(e as any).state === 'submitted' && !e.topicPermissions?.requiresResubmission).length, graded: views.filter(e => e.gradeStatus === 'complete' || e.gradeStatus === 'locked').length,
       advisorMissing: actor.role === 'student' ? undefined : views.filter(e => e.canSeeGrades && !e.evaluations?.[e.versions.at(-1)!.id]?.advisor).length, reviewerMissing: actor.role === 'student' ? undefined : views.filter(e => e.canSeeGrades && !e.evaluations?.[e.versions.at(-1)!.id]?.reviewer).length } };
 }
 export async function campaignEnrollments(actor: AuthenticatedUser, id: string, query: Record<string, any> = {}, all = false) {
