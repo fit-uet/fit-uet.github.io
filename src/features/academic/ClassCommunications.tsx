@@ -86,7 +86,14 @@ export function ClassChat({ token, user, data }: { token: string; user: any; dat
     const abort = new AbortController();
     setMessages([]);
     load(abort.signal);
-    const visible = () => {
+    let lastPollTime = Date.now();
+    const visible = (e?: Event) => {
+      if (e?.type === 'visibilitychange') {
+        if (document.visibilityState !== 'visible') return;
+        const now = Date.now();
+        if (now - lastPollTime < 15_000) return;
+        lastPollTime = now;
+      }
       if (document.visibilityState === 'visible') load(abort.signal);
     };
     const timer = window.setInterval(visible, 30_000);
@@ -507,7 +514,14 @@ export function ClassQuestions({ token, user, c }: { token: string; user: any; c
 
   useEffect(() => {
     const a = new AbortController();
-    const update = () => {
+    let lastLoadTime = Date.now();
+    const update = (e?: Event) => {
+      if (e?.type === 'visibilitychange') {
+        if (document.visibilityState !== 'visible') return;
+        const now = Date.now();
+        if (now - lastLoadTime < 30_000) return;
+        lastLoadTime = now;
+      }
       if (document.visibilityState === 'visible') load(a.signal).catch(e => { if (e.name !== 'AbortError') setError(e.message); });
     };
     update();

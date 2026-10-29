@@ -92,7 +92,24 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
     return () => a.abort();
   }, [token, id, selectedId, tab, data?.campaign.legacy, cacheScope, detailKey, !!data]);
   useEffect(() => { if (tab !== 'chat' || !data || data.campaign.legacy && data.campaign.status==='active') return; const a = new AbortController(); academicApi(token, `/api/campaigns/${id}/chat-context`, 'GET', undefined, a.signal).then(setChat).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => a.abort(); }, [token, id, tab, data?.campaign.legacy, !!data]);
-  useEffect(() => { const revalidate = () => { if (document.visibilityState === 'visible') refresh().catch(error => { if (error.name !== 'AbortError') setError(error.message); }); }; window.addEventListener('api-data-changed', revalidate); document.addEventListener('visibilitychange', revalidate); return () => { window.removeEventListener('api-data-changed', revalidate); document.removeEventListener('visibilitychange', revalidate); }; }, [refresh]);
+  const lastVisibilityTime = useRef(Date.now());
+  useEffect(() => {
+    const revalidate = (e?: Event) => {
+      if (e?.type === 'visibilitychange') {
+        if (document.visibilityState !== 'visible') return;
+        const now = Date.now();
+        if (now - lastVisibilityTime.current < 60_000) return;
+        lastVisibilityTime.current = now;
+      }
+      refresh().catch(error => { if (error.name !== 'AbortError') setError(error.message); });
+    };
+    window.addEventListener('api-data-changed', revalidate);
+    document.addEventListener('visibilitychange', revalidate);
+    return () => {
+      window.removeEventListener('api-data-changed', revalidate);
+      document.removeEventListener('visibilitychange', revalidate);
+    };
+  }, [refresh]);
   const run = async (fn: () => Promise<unknown>) => { setBusy(true); setError(''); try { await fn(); await refresh(); } catch (e) { setError(e.message); } finally { setBusy(false); } };
   const runOnly = async (fn: () => Promise<unknown>) => { setBusy(true); setError(''); try { await fn(); } catch (error) { setError(error.message); } finally { setBusy(false); } };
   if (!data) return <p role="status">{error || 'Đang tải nhóm môn…'}</p>;
