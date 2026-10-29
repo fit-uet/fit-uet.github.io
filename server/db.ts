@@ -152,7 +152,13 @@ export function setDb(client: DatabaseClient) {
   db = client;
 }
 
+export function isDbQuotaError(error: any): boolean {
+  const message = String(error?.message || error?.cause?.message || '').toLowerCase();
+  return /blocked|read operations are forbidden|quota|upgrade your plan|exceeded.*quota/i.test(message);
+}
+
 export function isTransientLibsqlError(error: any) {
+  if (isDbQuotaError(error)) return false;
   const message = String(error?.message || error?.cause?.message || '').toLowerCase();
   const code = String(error?.code || '').toUpperCase();
   const status = Number(error?.cause?.status || error?.status || 0);
