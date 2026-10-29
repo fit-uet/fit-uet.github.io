@@ -367,3 +367,9 @@ test('profile edits preserve verified student identity and cannot move a mapped 
   });
   assert.equal((await snapshot()).enrollments.length, 1);
 });
+test('project roster imports require STT and skip blank STT even when advisor data is present',async()=>{
+ const sem=await createSemester(admin,2026,'1'),s=await snapshot();const plan=planImport(s,sem.id,workbook([[1,24020001,'Có STT','','CS1','INT3132 1','','','',''],['',24020002,'Thiếu STT','','CS1','INT3132 1','','Alpha','alpha@vnu.edu.vn'],['   ',24020001,'Không được ghi đè','','CS1','INT3132 1','','Delta','delta@vnu.edu.vn'],['2',24020003,'STT dạng chữ','','CS1','INT3132 1']]));
+ assert.equal(plan.summary.students,2);assert.equal(plan.summary.ignoredWithoutStt,2);assert.equal(plan.summary.errors,0);assert.deepEqual(plan.rows.map(r=>r.studentId),['24020001','24020003']);assert.equal(plan.rows[0].primaryId,null);assert.equal(plan.rows[0].name,'Có STT');
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Mã SV','Họ và tên','Lớp khóa học','Mã LMH'],['24020001','A','CS1','INT3132 1']]),'DACN');assert.throws(()=>planImport(s,sem.id,XLSX.write(wb,{type:'buffer',bookType:'xlsx'})),{code:'HEADERS_NOT_FOUND'});
+ assert.throws(()=>planImport(s,sem.id,workbook([['',24020001,'A','','CS1','INT3132 1']])),{code:'EMPTY_WORKBOOK'});
+});

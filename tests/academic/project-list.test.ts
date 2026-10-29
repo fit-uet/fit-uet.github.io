@@ -51,7 +51,7 @@ test('hard deletion purges only its course content, audits, previews, private ch
   for(const table of['academic_commands','academic_previews']){const data=JSON.stringify((await db.execute('SELECT * FROM '+table)).rows);assert.ok(!data.includes('SECRET_TOPIC'));assert.ok(!data.includes('SECRET_GRADE'));}
   assert.deepEqual(await applyProjectDeletion(admin,a.c.campaignId,preview.id,{reason:'Retry'}),result);
   await assert.rejects(readEnrollment(a.actor,e.id));assert.equal((await readCampaignEnrollments(a.actor,a.c.campaignId)).total,1);
-  const {default:XLSX}=await import('xlsx'),{planImport}=await import('../../server/academic/imports');const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([['Mã SV','Họ và tên','Ngày sinh','Lớp khóa học','Mã LMH','GVHD','Email của GVHD','Chủ đề'],[e.studentId,e.name,'','QH',a.c.code,'','','']]),'DACN');
+  const {default:XLSX}=await import('xlsx'),{planImport}=await import('../../server/academic/imports');const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([['STT','Mã SV','Họ và tên','Ngày sinh','Lớp khóa học','Mã LMH','GVHD','Email của GVHD','Chủ đề'],[1,e.studentId,e.name,'','QH',a.c.code,'','','']]),'DACN');
   const state=await snapshot(),plan=planImport(state,a.c.semesterId,XLSX.write(workbook,{type:'buffer',bookType:'xlsx'}));assert.equal(plan.summary.errors,0);assert.equal(plan.changes.enrollments.length,1);const imported=plan.changes.enrollments[0];assert.notEqual(imported.id,e.id);assert.equal(imported.topic,'');assert.deepEqual(imported.evaluations,{});assert.ok(imported.versions.every(v=>!v.objectKey));await commit(state,1,'admin.enrollments.import',plan.changes);assert.ok(await fresh(b.e.id));
 
 });

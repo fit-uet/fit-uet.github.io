@@ -202,13 +202,13 @@ test('class chat attachments, retraction, questions and website notices work in 
   const sv = await session(browser, 'student'); const admin = await session(browser, 'admin'); const c = sv.classes.find(c => c.courseCode === 'INT3132');
   try {
     await sv.page.goto(`/#/classes/${c.id}`); await sv.page.getByRole('button', { name: 'Trao đổi', exact: true }).click();
-    await sv.page.getByLabel('Tin nhắn', { exact: true }).fill('Nhờ thầy xem tài liệu đính kèm.'); await sv.page.locator('input[name=file]').setInputFiles({ name: 'tai-lieu.pdf', mimeType: 'application/pdf', buffer: pdf() });
-    await sv.page.getByRole('button', { name: 'Gửi', exact: true }).click(); const attachment = sv.page.getByRole('button', { name: /tai-lieu.pdf/ }); await expect(attachment).toBeVisible();
+    await sv.page.getByPlaceholder('Nhập tin nhắn...', { exact: true }).fill('Nhờ thầy xem tài liệu đính kèm.'); await sv.page.locator('input[type=file]').setInputFiles({ name: 'tai-lieu.pdf', mimeType: 'application/pdf', buffer: pdf() });
+    await sv.page.getByRole('button', { name: 'Gửi', exact: true }).click(); await expect(sv.page.getByText('tai-lieu.pdf', { exact: true })).toBeVisible(); const attachment = sv.page.getByRole('button', { name: 'Tải file', exact: true }); await expect(attachment).toBeVisible();
     const downloadEvent = sv.page.waitForEvent('download'); await attachment.click(); expect((await downloadEvent).suggestedFilename()).toBe('tai-lieu.pdf');
-    await sv.page.getByRole('button', { name: 'Thu hồi', exact: true }).click(); await expect(sv.page.getByText('Tin nhắn đã được thu hồi.', { exact: true })).toBeVisible();
-    await feature(sv.page,'questions'); await sv.page.getByLabel('Câu hỏi mới', { exact: true }).fill('Slides cần quyền truy cập thế nào?'); await sv.page.getByRole('button', { name: 'Gửi câu hỏi', exact: true }).click(); await expect(sv.page.getByText('Đang chờ Khoa trả lời.', { exact: true })).toBeVisible();
-    await admin.page.goto(`/#/classes/${c.id}`); await feature(admin.page, 'questions'); await admin.page.getByLabel('Câu trả lời', { exact: true }).fill('Cấp quyền xem cho GVHD và GVNX.'); await admin.page.getByRole('button', { name: 'Lưu câu trả lời', exact: true }).click(); await expect(admin.page.getByRole('paragraph').filter({ hasText: 'Cấp quyền xem cho GVHD và GVNX.' })).toBeVisible();
-    await feature(admin.page, 'announcements'); await admin.page.getByLabel('Tiêu đề', { exact: true }).fill('Hướng dẫn quyền Drive'); await admin.page.getByLabel('Nội dung', { exact: true }).fill('Kiểm tra quyền truy cập trước khi nộp.'); await admin.page.getByRole('button', { name: 'Xem trước người nhận', exact: true }).click(); await expect(admin.page.getByText('Kiểm tra trước khi gửi · 3 người nhận', { exact: true })).toBeVisible(); await admin.page.getByRole('button', { name: 'Gửi thông báo', exact: true }).click(); await expect(admin.page.getByText('Đã tạo thông báo cho 3 người nhận.', { exact: true })).toBeVisible();
+    sv.page.once('dialog', dialog => dialog.accept()); await sv.page.getByRole('button', { name: 'Thu hồi', exact: true }).click(); await expect(sv.page.getByText('Tin nhắn đã được thu hồi.', { exact: true })).toBeVisible();
+    await feature(sv.page,'questions'); await sv.page.getByPlaceholder('Nhập nội dung thắc mắc hoặc câu hỏi cần giải đáp...', { exact: true }).fill('Slides cần quyền truy cập thế nào?'); await sv.page.getByRole('button', { name: 'Gửi câu hỏi', exact: true }).click(); await expect(sv.page.getByText('Câu hỏi đã được gửi đến Khoa và đang chờ phản hồi.', { exact: true })).toBeVisible();
+    await admin.page.goto(`/#/classes/${c.id}`); await feature(admin.page, 'questions'); await admin.page.getByPlaceholder('Nhập câu trả lời của Khoa...', { exact: true }).fill('Cấp quyền xem cho GVHD và GVNX.'); await admin.page.getByRole('button', { name: 'Lưu câu trả lời', exact: true }).click(); await expect(admin.page.getByRole('button', { name: 'Cập nhật trả lời', exact: true })).toBeVisible();
+    await feature(admin.page, 'announcements'); await admin.page.getByLabel('Tiêu đề thông báo', { exact: true }).fill('Hướng dẫn quyền Drive'); await admin.page.getByLabel('Nội dung thông báo', { exact: true }).fill('Kiểm tra quyền truy cập trước khi nộp.'); await admin.page.getByRole('button', { name: 'Xem trước người nhận', exact: true }).click(); await expect(admin.page.getByText('Kiểm tra trước khi gửi · 3 người nhận', { exact: true })).toBeVisible(); await admin.page.getByRole('button', { name: 'Xác nhận gửi thông báo', exact: true }).click(); await expect(admin.page.getByText('Đã tạo thông báo thành công cho 3 người nhận.', { exact: true })).toBeVisible();
     expect(sv.errors).toEqual([]); expect(admin.errors).toEqual([]);
   } finally { await sv.context.close(); await admin.context.close(); }
 });
@@ -238,9 +238,9 @@ test('student selects two course records and adviser chat is shared across their
   try {
     await sv.page.goto(`/#/campaigns/${p}`); await expect(sv.page.getByRole('button', { name: /INT3132 · INT3132 1/ })).toBeVisible(); await expect(sv.page.getByRole('button', { name: /INT3131 · INT3131 1/ })).toBeVisible();
     await sv.page.getByRole('button', { name: /INT3131 · INT3131 1/ }).click(); await expect(sv.page.getByRole('heading', { name: 'Sinh viên An', exact: true })).toBeVisible();
-    await sv.page.goto('/#/chat'); await expect(sv.page).toHaveURL(new RegExp(`/campaigns/${p}\\?tab=chat`)); await sv.page.getByLabel('Cuộc trò chuyện', { exact: true }).selectOption('group:1');
-    await sv.page.getByLabel('Tin nhắn', { exact: true }).fill('Trao đổi chung cả hai lớp của thầy Alpha.'); await sv.page.getByRole('button', { name: 'Gửi', exact: true }).click(); await expect(sv.page.getByText('Trao đổi chung cả hai lớp của thầy Alpha.', { exact: true })).toBeVisible();
-    const b = gv.classes.find(c => c.courseCode === 'INT3131'); await gv.page.goto(`/#/classes/${b.id}`); await feature(gv.page, 'chat'); await gv.page.getByLabel('Cuộc trò chuyện', { exact: true }).selectOption('group:1');
+    await sv.page.goto('/#/chat'); await expect(sv.page).toHaveURL(new RegExp(`/campaigns/${p}\\?tab=chat`)); await sv.page.getByRole('button', { name: /^Nhóm của TS. Alpha/ }).click();
+    await sv.page.getByPlaceholder('Nhập tin nhắn...', { exact: true }).fill('Trao đổi chung cả hai lớp của thầy Alpha.'); await sv.page.getByRole('button', { name: 'Gửi', exact: true }).click(); await expect(sv.page.getByText('Trao đổi chung cả hai lớp của thầy Alpha.', { exact: true })).toBeVisible();
+    const b = gv.classes.find(c => c.courseCode === 'INT3131'); await gv.page.goto(`/#/classes/${b.id}`); await feature(gv.page, 'chat'); await gv.page.getByRole('button', { name: /^Nhóm sinh viên hướng dẫn/ }).click();
     await expect(gv.page.getByText('Trao đổi chung cả hai lớp của thầy Alpha.', { exact: true })).toBeVisible(); expect(sv.errors).toEqual([]); expect(gv.errors).toEqual([]);
   } finally { await sv.context.close(); await gv.context.close(); }
 });
@@ -461,9 +461,39 @@ test('Khoa previews and deletes exactly one project enrollment while its sibling
 test('project drafts block browser back and can save before changing the applied filter',async({browser})=>{
  const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
  try{
-  await page.goto('/#/classes');await page.getByRole('link',{name:'Mở quản lý Dự án',exact:true}).click();await feature(page,'students');await applyFilters(page,{'Lớp học phần':c.id});
+  await page.goto('/#/classes');await page.getByRole('link',{name:/Mở quản lý Dự án/}).click();await feature(page,'students');await applyFilters(page,{'Lớp học phần':c.id});
   const row=page.getByRole('row').filter({hasText:'24020002'});await expect(row).toHaveCount(1);await row.getByRole('button',{name:'Sửa đề tài',exact:true}).click();await row.getByRole('textbox',{name:'Đề tài 24020002',exact:true}).fill('Đề tài lưu khi chuyển bộ lọc');await row.getByRole('textbox',{name:'Lý do đề tài 24020002',exact:true}).fill('Đối soát Khoa');
   await page.goBack();const guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu'});await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Ở lại',exact:true}).click();await expect(page).toHaveURL(/tab=students/);await expect(row.getByRole('textbox',{name:'Đề tài 24020002',exact:true})).toHaveValue('Đề tài lưu khi chuyển bộ lọc');
   await page.getByRole('button',{name:/^Bộ lọc/}).click();const filters=page.getByRole('dialog',{name:'Bộ lọc danh sách',exact:true});await filters.getByLabel('Trạng thái đề tài',{exact:true}).selectOption('pending');await filters.getByRole('button',{name:'Áp dụng',exact:true}).click();await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Lưu và tiếp tục',exact:true}).click();await expect(page).toHaveURL(/topicStatus=pending/);await expect(page.getByRole('button',{name:'Lưu thay đổi (0)',exact:true})).toBeVisible();await expect(page.getByText('Đề tài lưu khi chuyển bộ lọc',{exact:true})).toBeVisible();expect(errors).toEqual([]);
  }finally{await context.close();}
+});
+
+test('project overview explains enrollment counts and import preview skips rows without STT',async({browser})=>{
+ const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
+ try{
+  await page.goto(`/#/campaigns/${c.campaignId}`);await expect(page.getByText('hồ sơ học phần',{exact:true})).toBeVisible();await expect(page.getByText('101%',{exact:true})).toHaveCount(0);await expect(page.getByText('200%',{exact:true})).toHaveCount(0);
+  await feature(page,'students');await page.getByRole('button',{name:'Import danh sách',exact:true}).click();
+  const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([['STT','Mã SV','Họ và tên','Lớp khóa học','Mã LMH'],[1,'24029998','Có số thứ tự','CS1','INT3132 1'],['','24029999','Không có số thứ tự','CS1','INT3132 1']]),'DACN');
+  await page.locator('input[type=file]').setInputFiles({name:'roster.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:XLSX.write(book,{type:'buffer',bookType:'xlsx'})});await page.getByRole('button',{name:'Xem trước',exact:true}).click();await expect(page.getByText('1 sinh viên/lớp',{exact:true})).toBeVisible();await expect(page.getByText('1 dòng bỏ qua vì thiếu STT',{exact:true})).toBeVisible();await page.getByRole('checkbox',{name:'Chỉ hiện dòng cần xử lý',exact:true}).uncheck();await expect(page.getByText('Có số thứ tự',{exact:true})).toBeVisible();await expect(page.getByText('Không có số thứ tự',{exact:true})).toHaveCount(0);expect(errors).toEqual([]);
+ }finally{await context.close();}
+});
+
+test('old project links use the unified list for Khoa and lecturers without membership or profile controls',async({browser})=>{
+ for(const role of ['admin','lecturer'] as const){
+  const {page,context,classes,token,errors}=await session(browser,role),c=classes.find(c=>c.courseCode==='INT3132');
+  const list=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments?projection=student-list`,{headers:{Authorization:`Bearer ${token}`}})).json();
+  const enrollment=list.items.find(e=>e.classId===c.id);expect(enrollment).toBeTruthy();
+  const detailRequests:string[]=[];page.on('request',r=>{if(r.method()==='GET'&&new URL(r.url()).pathname.startsWith('/api/enrollments/'))detailRequests.push(r.url());});
+  try{
+   for(const tab of ['students','assignments','reports','grades']){
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=${tab}&enrollmentId=${enrollment.id}`);
+    await expect(page).toHaveURL(/tab=students/);await expect(page.locator('main h1')).toHaveText('Danh sách sinh viên');
+    await expect(page.locator('#project-row-'+enrollment.id)).toBeVisible();
+    for(const name of ['Tư cách','Thao tác'])await expect(page.getByRole('columnheader',{name,exact:true})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:/^(Mở|Xem) hồ sơ$/})).toHaveCount(0);
+    await expect(page.getByRole('dialog',{name:'Hồ sơ sinh viên',exact:true})).toHaveCount(0);
+   }
+   expect(detailRequests).toEqual([]);expect(errors).toEqual([]);
+  }finally{await context.close();}
+ }
 });

@@ -16,7 +16,7 @@ export interface ImportRow {
   advisorName: string; advisorEmail: string; primaryId: number | null;
   excluded: boolean; useFile: boolean; issues: string[];
 }
-export interface ImportPlan { semesterId: string; rows: ImportRow[]; changes: ChangeSet; summary: { rows: number; students: number; classes: number; created: number; updated: number; unchanged: number; excluded: number; errors: number } }
+export interface ImportPlan { semesterId: string; rows: ImportRow[]; changes: ChangeSet; summary: { rows: number; students: number; classes: number; created: number; updated: number; unchanged: number; excluded: number; errors: number; ignoredWithoutStt: number } }
 const header = (v: unknown) => normalized(v).normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
 const lecturerName = (v: unknown) => normalized(v).replace(/^(?:(?:pgs|gs|ts|ths|cn)\.?\s*)+/iu, '').replace(/\s+/g, ' ').trim();
 
@@ -52,7 +52,7 @@ export function planImport(s: Snapshot, semesterId: string, bytes: Buffer, resol
   try { workbook = XLSX.read(bytes, { type: 'buffer', cellDates: false, cellFormula: true }); }
   catch { return fail(422, 'INVALID_WORKBOOK', 'Không đọc được file Excel.'); }
   const groups = new Map<string, ImportRow>();
-  let count = 0;
+  let count = 0, ignoredWithoutStt = 0;
   for (const sheetName of ['DACN', 'DAKH']) {
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) continue;
@@ -61,10 +61,11 @@ export function planImport(s: Snapshot, semesterId: string, bytes: Buffer, resol
     if (headerRow < 0) fail(422, 'HEADERS_NOT_FOUND', `Sheet ${sheetName} thiếu cột Mã SV/Mã LMH.`);
     const headers = rows[headerRow].map(header);
     const index = (name: string) => headers.indexOf(name);
-    const indexes = { sid: index('ma sv'), name: index('ho va ten'), dob: index('ngay sinh'), className: index('lop khoa hoc'), code: index('ma lmh'), advisor: index('gvhd'), email: index('email cua gvhd'), topic: index('chu de'), note: index('ghi chu') };
-    if ([indexes.name, indexes.className, indexes.code].some(i => i < 0)) fail(422, 'HEADERS_NOT_FOUND', `Sheet ${sheetName} thiếu cột hồ sơ.`);
+    const indexes = { stt: index('stt'), sid: index('ma sv'), name: index('ho va ten'), dob: index('ngay sinh'), className: index('lop khoa hoc'), code: index('ma lmh'), advisor: index('gvhd'), email: index('email cua gvhd'), topic: index('chu de'), note: index('ghi chu') };
+    if ([indexes.stt, indexes.name, indexes.className, indexes.code].some(i => i < 0)) fail(422, 'HEADERS_NOT_FOUND', `Sheet ${sheetName} thiếu cột STT hoặc thông tin hồ sơ.`);
     for (let i = headerRow + 1; i < rows.length; i++) {
       const cells = rows[i]; if (!cells.some(Boolean) || header(cells[indexes.sid]) === 'ma sv') continue;
+      if (!text(cells[indexes.stt])) { ignoredWithoutStt++; continue; }
       if (++count > 5000) fail(422, 'IMPORT_LIMIT', 'Mỗi lần nhập tối đa 5.000 dòng.');
       const source = `${sheetName}:${i + 1}`;
       const r = resolutions[source] || {};
@@ -104,7 +105,7 @@ export function planImport(s: Snapshot, semesterId: string, bytes: Buffer, resol
       existing.issues.push(...row.issues);
     }
   }
-  if (!count) fail(422, 'EMPTY_WORKBOOK', 'Không tìm thấy dữ liệu ở hai sheet DACN/DAKH.');
+  if (!count) fail(422, 'EMPTY_WORKBOOK', 'Không tìm thấy dòng có STT ở hai sheet DACN/DAKH.');
   const rows = [...groups.values()];
   const classes: AcademicClass[] = [];
   const enrollments: CourseEnrollment[] = [];
@@ -141,6 +142,6 @@ export function planImport(s: Snapshot, semesterId: string, bytes: Buffer, resol
   }
   return {
     semesterId, rows, changes: { classes, enrollments, users: enrollments.map(e => ({ studentId: e.studentId, email: e.email, name: e.name, dob: e.dob, className: e.className })) },
-    summary: { rows: count, students: rows.filter(r => !r.excluded).length, classes: new Set(rows.filter(r => !r.excluded).map(r => r.classCode)).size, created, updated, unchanged, excluded: rows.filter(r => r.excluded).length, errors: rows.filter(r => !r.excluded && r.issues.length > 0).length },
+    summary: { ignoredWithoutStt, rows: count, students: rows.filter(r => !r.excluded).length, classes: new Set(rows.filter(r => !r.excluded).map(r => r.classCode)).size, created, updated, unchanged, excluded: rows.filter(r => r.excluded).length, errors: rows.filter(r => !r.excluded && r.issues.length > 0).length },
   };
 }

@@ -154,7 +154,7 @@ test('metadata migration recognizes old topics without inventing an approver and
 });
 test('imports are pending, repeated identical imports retain approval, and filtered exports use topicStatus', async () => {
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Mã SV','Họ và tên','Lớp khóa học','Mã LMH','Chủ đề'],[e.studentId,e.name,'','INT3132 1','Tên import']]), 'DACN');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['STT','Mã SV','Họ và tên','Lớp khóa học','Mã LMH','Chủ đề'],[1,e.studentId,e.name,'','INT3132 1','Tên import']]), 'DACN');
   const bytes = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   let s = await snapshot(); let plan = planImport(s, c.semesterId, bytes); assert.equal(plan.summary.errors, 0);
   assert.equal(plan.changes.enrollments![0].topicReview?.status, 'pending'); await commit(s, 1, 'admin.enrollments.import', plan.changes);

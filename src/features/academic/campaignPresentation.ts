@@ -7,6 +7,19 @@ export type EnrollmentPanelMode = 'profile' | 'assignments' | 'reports' | 'grade
 export const gradeNames: Record<string, string> = { missing: 'Chưa có điểm', partial: 'Chưa đủ phần điểm', complete: 'Đã nộp điểm', locked: 'Đã khóa' };
 export const recordPages = ['students', 'assignments', 'reports', 'grades', 'registrations', 'final-internships'];
 
+export function toLetterGrade(score: number | null | undefined): string {
+  if (score == null || isNaN(score)) return '';
+  if (score >= 9.0) return 'A+';
+  if (score >= 8.5) return 'A';
+  if (score >= 8.0) return 'B+';
+  if (score >= 7.0) return 'B';
+  if (score >= 6.5) return 'C+';
+  if (score >= 5.5) return 'C';
+  if (score >= 5.0) return 'D+';
+  if (score >= 4.0) return 'D';
+  return 'F';
+}
+
 export function campaignModules(admin: boolean, student: boolean, internship: boolean) {
   if (student) return [
     { id: 'students', title: 'Hồ sơ và bài nộp', description: 'Thông tin học phần, đề tài và báo cáo', icon: 'student' },

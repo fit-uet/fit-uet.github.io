@@ -261,3 +261,11 @@ Các tiêu chí TC ở trên là bộ nghiệm thu nghiệp vụ, không đồng
 ## 6. Danh sách sinh viên Dự án và xóa lần học
 
 [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) bổ sung REQ-LST-01–05, REQ-DEL-01–04 và REQ-LST-MIG, thay thế nghiệp vụ tiếp nhận/rút trong nhóm Dự án: có lần học là có tên trong danh sách; xóa là không còn học phần đó. Khoa/GV dùng một bảng cho sinh viên, phân công, báo cáo và điểm. Thực tập giữ trạng thái cũ; trang SV giữ hồ sơ riêng từng lần học.
+
+## Đính chính danh sách Dự án theo STT
+
+Theo xác nhận của Khoa, chỉ tiếp nhận **dòng có giá trị STT** trong hai sheet `DACN`, `DAKH`. Dòng thiếu hoặc chỉ có khoảng trắng ở STT không tạo/cập nhật lần học, kể cả có MSSV hoặc GVHD; thiếu cột STT phải báo lỗi. Các dòng đủ điều kiện vẫn gộp theo MSSV + Mã LMH. Không dùng việc có GVHD làm điều kiện thay thế STT: sinh viên có STT nhưng chưa phân công vẫn được tiếp nhận.
+
+Với nguồn HKI 2026–2027 đã đối soát: **215 DACN + 193 DAKH = 408 lần học, 405 sinh viên duy nhất**. Ba sinh viên học cả hai môn có hai hồ sơ. Số 535/532 trong các báo cáo nhập cũ bao gồm các dòng không STT và là số lịch sử trước đính chính. Không tự xóa sinh viên chỉ vì vắng file nhập sau này; đây là đợt đối soát có nguồn, backup và xác nhận riêng.
+
+Bản xem trước import hiển thị số dòng bỏ qua do thiếu STT. Tổng quan không dùng tỷ lệ lần học/sinh viên; tiến độ báo cáo và điểm Dự án tính theo lần học. Thực tập giữ các chỉ số cũ.
