@@ -1,5 +1,6 @@
 # Hệ thống quản lý Thực tập và Dự án — FIT UET
 
+Website: **https://fit-uet.github.io/** · Repository: [fit-uet/fit-uet.github.io](https://github.com/fit-uet/fit-uet.github.io).
 Ứng dụng hỗ trợ Khoa CNTT quản lý đăng ký và triển khai học phần, sinh viên nộp báo cáo, giảng viên đánh giá và Khoa tổng hợp kết quả.
 
 **Đã cài đặt quản lý học kỳ/nhóm môn và Dự án trên Express/React.** Có import xem trước, phân công GVNX, bài nộp phiên bản và điểm 60/40. Đã chuyển dữ liệu vào Turso vận hành sau sao lưu và diễn tập; luồng Thực tập cũ giữ dữ liệu gốc. Quy trình phát hành và kiểm tra phiên bản tại [PRODUCTION_RELEASE.md](docs/PRODUCTION_RELEASE.md).
