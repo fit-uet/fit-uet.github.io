@@ -2,22 +2,25 @@ import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { JWT_SECRET } from '../config';
 import { assertStudentCohortAllowed } from '../services/cohorts';
+import {databaseAvailability,isDatabaseUnavailable} from '../services/databaseAvailability';
 
 export const requireAuth = async (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(' ')[1] || req.query.token;
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
+  let decoded:any;
+  try { decoded=jwt.verify(token, JWT_SECRET); }
+  catch { return res.status(401).json({error:'Invalid token'}); }
   try {
-    const decoded: any = jwt.verify(token, JWT_SECRET);
     if (!decoded.email) {
       return res.status(401).json({ error: 'Unauthorized: Phiên đăng nhập cũ đã hết hạn, vui lòng đăng nhập lại.' });
     }
     req.user = (await db.execute({ sql: 'SELECT * FROM users WHERE LOWER(email) = ?', args: [String(decoded.email).toLowerCase().trim()] })).rows[0];
     if (!req.user) return res.status(401).json({ error: 'User not found' });
-    next();
   } catch (e) {
-    res.status(401).json({ error: 'Invalid token' });
+    return res.status(503).json(databaseAvailability(e));
   }
+  next();
 };
 
 export const requireAdmin = async (req: any, res: any, next: any) => {
@@ -32,7 +35,7 @@ export const requireStudent = async (req: any, res: any, next: any) => {
     return res.status(403).json({ error: 'Student only' });
   }
   try { await assertStudentCohortAllowed(req.user.email); }
-  catch (error) { return res.status(403).json({ error: 'Tài khoản chỉ có quyền ở các lớp được tiếp nhận. Vui lòng mở mục Học kỳ và lớp.' }); }
+  catch (error) { return isDatabaseUnavailable(error)?res.status(503).json(databaseAvailability(error)):res.status(403).json({ error: 'Tài khoản chỉ có quyền ở các lớp được tiếp nhận. Vui lòng mở mục Học kỳ và lớp.' }); }
   next();
 };
 

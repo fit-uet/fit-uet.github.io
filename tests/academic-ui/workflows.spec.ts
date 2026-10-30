@@ -473,7 +473,7 @@ test('project drafts block browser back and can save before changing the applied
 test('project overview explains enrollment counts and import preview skips rows without STT',async({browser})=>{
  const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
  try{
-  await page.goto(`/#/campaigns/${c.campaignId}`);await expect(page.getByText('hồ sơ học phần',{exact:true})).toBeVisible();await expect(page.getByText('101%',{exact:true})).toHaveCount(0);await expect(page.getByText('200%',{exact:true})).toHaveCount(0);
+  await page.goto(`/#/campaigns/${c.campaignId}`);await expect(page.getByText('Số lần học',{exact:true})).toBeVisible();await expect(page.getByText('101%',{exact:true})).toHaveCount(0);await expect(page.getByText('200%',{exact:true})).toHaveCount(0);
   await feature(page,'students');await page.getByRole('button',{name:'Import danh sách',exact:true}).click();
   const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([['STT','Mã SV','Họ và tên','Lớp khóa học','Mã LMH'],[1,'24029998','Có số thứ tự','CS1','INT3132 1'],['','24029999','Không có số thứ tự','CS1','INT3132 1']]),'DACN');
   await page.locator('input[type=file]').setInputFiles({name:'roster.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:XLSX.write(book,{type:'buffer',bookType:'xlsx'})});await page.getByRole('button',{name:'Xem trước',exact:true}).click();await expect(page.getByText('1 sinh viên/lớp',{exact:true})).toBeVisible();await expect(page.getByText('1 dòng bỏ qua vì thiếu STT',{exact:true})).toBeVisible();await page.getByRole('checkbox',{name:'Chỉ hiện dòng cần xử lý',exact:true}).uncheck();await expect(page.getByText('Có số thứ tự',{exact:true})).toBeVisible();await expect(page.getByText('Không có số thứ tự',{exact:true})).toHaveCount(0);expect(errors).toEqual([]);
@@ -498,4 +498,32 @@ test('old project links use the unified list for Khoa and lecturers without memb
    expect(detailRequests).toEqual([]);expect(errors).toEqual([]);
   }finally{await context.close();}
  }
+});
+
+test('database outage shows a service alert and a connection retry instead of a session expiry dialog',async({browser})=>{
+ const context=await browser.newContext();let checks=0,available=false;
+ await context.route('**/*',route=>{const url=new URL(route.request().url());return['127.0.0.1','localhost'].includes(url.hostname)?route.continue():route.abort();});
+ await context.route('**/api/ready',route=>{checks++;return route.fulfill({status:available?200:503,json:!available?{database:'quota_blocked',code:'DB_QUOTA_EXCEEDED',retryAt:'2026-10-31T00:00:00.000Z'}:{status:'ready'}});});
+ const page=await context.newPage();
+ try{await page.goto('/#/classes');await expect(page.getByRole('alert')).toContainText('hết hạn mức');await expect(page.getByRole('alert')).toContainText('31/10/2026');await expect(page.getByRole('heading',{name:'Thông Báo Phiên Làm Việc',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Đăng nhập lại',exact:true})).toHaveCount(0);
+  const before=checks;available=true;await page.getByRole('button',{name:'Kiểm tra lại kết nối',exact:true}).click();await expect(page.getByRole('alert')).toHaveCount(0);expect(checks).toBe(before+1);
+ }finally{await context.close();}
+});
+
+test('a database 503 keeps an authenticated account and token in the browser',async({browser})=>{
+ const {page,context,token}=await session(browser,'admin');
+ await context.route(/\/api\/me\/campaigns(?:\?.*)?$/,route=>route.fulfill({status:503,json:{error:'Cơ sở dữ liệu đã hết hạn mức truy vấn.',code:'DB_QUOTA_EXCEEDED'}}));
+ try{await page.goto('/#/classes');await expect(page.getByText('Cơ sở dữ liệu đã hết hạn mức truy vấn.',{exact:true})).toBeVisible();expect(await page.evaluate(()=>localStorage.getItem('token'))).toBe(token);await expect(page.getByRole('heading',{name:'Đăng nhập',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Đăng nhập lại',exact:true})).toHaveCount(0);}finally{await context.close();}
+});
+
+test('a legacy backend 401 during database downtime keeps the session and coalesces outage checks',async({browser})=>{
+ const {page,context,token}=await session(browser,'admin');let checks=0;
+ await context.route('**/api/ready',route=>{checks++;return route.fulfill({status:503,json:{database:'unavailable'}});});
+ try{await page.goto('/#/classes');await expect(page.getByRole('heading',{name:'Trang chủ',exact:true})).toBeVisible();await page.evaluate(()=>{window.dispatchEvent(new Event('auth-expired'));window.dispatchEvent(new Event('auth-expired'));});await expect(page.getByRole('alert')).toContainText('tạm thời không truy cập');expect(checks).toBe(1);expect(await page.evaluate(()=>localStorage.getItem('token'))).toBe(token);await expect(page.getByRole('heading',{name:'Đăng nhập',exact:true})).toHaveCount(0);}finally{await context.close();}
+});
+
+test('a real invalid session is cleared when the database is ready',async({browser})=>{
+ const {page,context}=await session(browser,'admin');
+ await context.route('**/api/ready',route=>route.fulfill({json:{status:'ready'}}));
+ try{await page.goto('/#/classes');await expect(page.getByRole('heading',{name:'Trang chủ',exact:true})).toBeVisible();await page.evaluate(()=>window.dispatchEvent(new Event('auth-expired')));await expect(page.getByRole('heading',{name:'Không thể đăng nhập',exact:true})).toBeVisible();expect(await page.evaluate(()=>localStorage.getItem('token'))).toBeNull();}finally{await context.close();}
 });

@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { db, isDbQuotaError } from '../db';
+import { db } from '../db';
+import {databaseAvailability,databaseProvider} from '../services/databaseAvailability';
 
 export const healthRouter = Router();
 const metadata = () => ({ environment: process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development'), release: (process.env.APP_RELEASE || process.env.RENDER_GIT_COMMIT || 'local').slice(0, 40) });
@@ -12,15 +13,13 @@ healthRouter.get('/api/ready', async (_req, res) => {
       console.warn('[ready] Version 4 not found in academic_schema_migrations');
       throw new Error('Schema not ready');
     }
-    res.json({ status: 'ready', ...metadata(), database: 'ok', databaseProvider: (process.env.DB_PROVIDER || (process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_D1_API_TOKEN ? 'd1' : 'turso')).toLowerCase(), academicSchema: 4 });
+    res.json({ status: 'ready', ...metadata(), database: 'ok', databaseProvider: databaseProvider(), academicSchema: 4 });
   } catch (err: any) {
     const errMsg = String(err?.message || err);
     console.error('[ready error]:', errMsg);
-    const isQuota = isDbQuotaError(err);
     res.status(503).json({
       status: 'unavailable',
-      database: isQuota ? 'quota_blocked' : 'unavailable',
-      ...(isQuota ? { error: 'Cơ sở dữ liệu tạm thời vượt quá hạn mức truy vấn đọc (Turso read quota exceeded).' } : {}),
+      ...databaseAvailability(err),
       ...metadata()
     });
   }

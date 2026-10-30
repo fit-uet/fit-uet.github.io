@@ -98,7 +98,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#034ea1] tracking-tight">{loadingStats ? '—' : stats.registeredCount}</span>
-            <span className="text-xs text-[#64748b]">{presentation?.project ? 'lần học' : 'sinh viên'}</span>
+            <span className="text-xs text-[#64748b]">sinh viên</span>
           </div>
           <span className="text-[11px] text-[#034ea1] mt-1.5 font-medium">Danh sách sinh viên trong nhóm</span>
         </div>
@@ -144,7 +144,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-700 tracking-tight">{loadingStats ? '—' : stats.gradedCount}</span>
-            <span className="text-xs text-[#64748b]">sinh viên</span>
+            <span className="text-xs text-[#64748b]">{presentation?.project ? 'hồ sơ' : 'sinh viên'}</span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1.5 font-medium">
             {progressTotal

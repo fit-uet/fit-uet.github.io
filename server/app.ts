@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import { join } from 'path';
 import { createCorsOptions, getAllowedOrigins, isCorsAllowed } from './middlewares/cors';
-import { isTransientLibsqlError } from './db';
+import {databaseAvailability,isDatabaseUnavailable} from './services/databaseAvailability';
 import { authRouter } from './routes/auth.routes';
 import { commonRouter } from './routes/common.routes';
 import { studentRouter } from './routes/student.routes';
@@ -60,8 +60,8 @@ export async function createApp(options: { vite?: import('vite').InlineConfig } 
     if (err?.message === 'Not allowed by CORS') {
       return res.status(403).json({ error: 'Origin không được phép gọi API. Vui lòng kiểm tra CORS_ORIGIN trên Render.' });
     }
-    if (isTransientLibsqlError(err)) {
-      return res.status(503).json({ error: 'Cơ sở dữ liệu Turso tạm thời không phản hồi. Vui lòng thử lại sau.' });
+    if (isDatabaseUnavailable(err)) {
+      return res.status(503).json(databaseAvailability(err));
     }
     if (req.path?.startsWith('/api/')) {
       return res.status(500).json({ error: err?.message || 'Internal server error' });

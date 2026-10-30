@@ -9,7 +9,7 @@ import {commit,snapshot} from '../../server/academic/store';
 import {createSemester,createClass} from '../../server/academic/service';
 import {newEnrollment,currentVersion,getClass} from '../../server/academic/domain';
 import {campaignDetail,campaignEnrollments,updateCampaign} from '../../server/academic/campaigns';
-import {readCampaignDetail,readCampaignCatalog,readCampaignEnrollments,readEnrollment,readCommunicationContext} from '../../server/academic/reads';
+import {readCampaignDetail,readCampaignCatalog,readCampaignEnrollments,readEnrollment,readCommunicationContext,recordCte,accessRecordCte} from '../../server/academic/reads';
 import {academicRouter} from '../../server/academic/routes';
 import {legacyRows,legacyPagingMiddleware} from '../../server/services/legacyPaging';
 import {jsonCacheMiddleware} from '../../server/services/httpCache';
@@ -36,6 +36,25 @@ beforeEach(async()=>{
  await commit(s,1,'admin.test.seed',{enrollments,users:enrollments.slice(0,80).map(e=>({studentId:e.studentId,email:e.email,name:e.name,dob:'',className:''}))});
 });
 afterEach(()=>client.close());
+test('read models scope rows before hydration and lightweight access never joins legacy reports or grades',async()=>{
+ for(const [actor,expected]of [[admin,84],[alpha,42],[sv,2]] as const){const row=(await db.execute({sql:`${recordCte} SELECT count(*) n FROM raw`,args:[actor.role,actor.email,actor.role==='student'?0:1,campaignId,'']})).rows[0];assert.equal(Number(row.n),expected);}
+ assert.ok(!accessRecordCte.includes('JOIN final_reports'));assert.ok(!accessRecordCte.includes('JOIN grades'));
+ const rows=(await db.execute({sql:`${accessRecordCte} SELECT j FROM records`,args:[sv.role,sv.email,0,campaignId,'']})).rows;assert.equal(rows.length,2);
+ for(const row of rows){const data=JSON.parse(String(row.j));assert.equal(data.email,sv.email);for(const field of['versions','evaluations','internshipGrade'])assert.equal(data[field],undefined);}
+});
+test('project page revalidation reuses current revisions, honors refresh and never returns stale data on database failure',async()=>{
+ const original=db,calls:string[]=[];let blocked=false;
+ setDb({...original,execute:async(input:any)=>{const sql=typeof input==='string'?input:input.sql;calls.push(sql);if(blocked)throw Error('daily row read limit');return original.execute(input);}});
+ const fullReads=()=>calls.filter(sql=>sql.includes("'pageCount'")).length;
+ try{
+  const first=await readCampaignEnrollments(sv,campaignId,{projection:'student-list'},false,undefined,false);const before=fullReads();assert.equal(before,1);
+  assert.deepEqual(await readCampaignEnrollments(sv,campaignId,{projection:'student-list'}),first);assert.equal(fullReads(),before);
+  await readCampaignEnrollments(sv,campaignId,{projection:'student-list'},false,undefined,false);assert.equal(fullReads(),before+1);
+  const state=await snapshot(),changed=structuredClone(state.enrollments.find(e=>e.id===first.items[0].id)!);changed.name='Tên đã cập nhật';await commit(state,1,'admin.fixture.cache',{enrollments:[changed]});
+  const updated=await readCampaignEnrollments(sv,campaignId,{projection:'student-list'});assert.equal(updated.items.find(e=>e.id===changed.id).name,changed.name);assert.equal(fullReads(),before+2);
+  blocked=true;await assert.rejects(readCampaignEnrollments(sv,campaignId,{projection:'student-list'}),/daily row read limit/);
+ }finally{setDb(original);}
+});
 test('scoped SQL lists preserve existing permission, filter, count and grading semantics',async()=>{
  for(const actor of [admin,alpha,sv])for(const filter of [{},{classId:firstClass},{status:'missing'},{status:'partial'},{status:'complete'},{status:'locked'},{status:'notSubmitted'},{status:'advisorMissing'},{status:'reviewerMissing'},{lecturerId:'2'},{topicStatus:'approved'},{q:'đỗ ánh'}]){
   const expected=await campaignEnrollments(actor,campaignId,filter);const actual=await readCampaignEnrollments(actor,campaignId,filter);
@@ -60,7 +79,7 @@ test('light campaign sections omit content and summary counts match the old mode
 test('ordinary project reads use bounded database calls and never run broad snapshot hydration',async()=>{
  const original=db;let calls=0;const sqls:string[]=[];
  setDb({...original,execute:async input=>{calls++;sqls.push(typeof input==='string'?input:input.sql);return original.execute(input);}});
- try{await readCampaignCatalog(admin);assert.equal(calls,2);calls=0;await readCampaignDetail(admin,campaignId,'overview');assert.equal(calls,2);calls=0;await readCampaignEnrollments(admin,campaignId,{projection:'reports'});assert.equal(calls,1);calls=0;const row=await readCampaignEnrollments(sv,campaignId);calls=0;await readEnrollment(sv,row.items[0].id);assert.equal(calls,1);assert.ok(!sqls.some(sql=>sql.includes("SELECT 'revision' kind,CAST(revision AS TEXT) data FROM academic_meta")));}finally{setDb(original);}
+ try{await readCampaignCatalog(admin);assert.equal(calls,2);calls=0;await readCampaignDetail(admin,campaignId,'overview');assert.equal(calls,2);calls=0;await readCampaignEnrollments(admin,campaignId,{projection:'reports'});assert.equal(calls,1);calls=0;const row=await readCampaignEnrollments(sv,campaignId);calls=0;await readEnrollment(sv,row.items[0].id);assert.equal(calls,1);assert.ok(!sqls.some(sql=>sql.includes("SELECT 'enrollments',data FROM academic_enrollments")));}finally{setDb(original);}
 });
 async function serve(app:express.Express,run:(base:string)=>Promise<void>){const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));try{await run(`http://127.0.0.1:${(server.address()as{port:number}).port}`);}finally{await new Promise<void>(r=>server.close(()=>r()));}}
 test('ETag validates actual data and permission changes before returning 304',async()=>{
