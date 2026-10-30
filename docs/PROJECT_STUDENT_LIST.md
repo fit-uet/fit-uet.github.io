@@ -53,3 +53,8 @@ Dry-run không ghi; apply chỉ nhận bản sao local và tự tạo backup cù
 Nếu provider hiện hành bị chặn vì quota, dừng các probe/backup lặp, hoàn tất kiểm thử local và giữ thay đổi trên nhánh riêng. Không push main tự deploy hoặc tuyên bố nghiệm thu production khi chưa lấy được backup/kiểm tra database. Migration không tự xóa bất kỳ lần học thật nào; backup cũ giữ theo chính sách vận hành và không dùng để tự khôi phục lần học đã xóa.
 
 Bản tích hợp giữ các cập nhật giao diện trên main và quy tắc STT trong [REQUIREMENTS.md](REQUIREMENTS.md#đính-chính-danh-sách-dự-án-theo-stt). Việc loại 127 hồ sơ trống ngoài danh sách là tác vụ đối soát riêng đã được Khoa xác nhận, không nằm trong migration hoặc import thường. Nếu phát hành cùng đợt: backup và preview membership trước deploy; sau khi metadata schema 4 hoàn tất phải tạo lại preview STT theo revision mới rồi mới áp dụng. Danh sách cuối là 408 lần học/405 sinh viên; Thực tập và R2 được giữ nguyên.
+
+
+## Trạng thái phát hành
+
+Đã phát hành production ngày **30/10/2026** ở bản ứng dụng `68d9548`, Render/D1 schema **4** và Pages cùng phiên bản. Đã kiểm tra giao diện Khoa/GV desktop/mobile không còn Tư cách/Thao tác/Mở hồ sơ, quyền đọc, ETag, export tám lớp và bảo toàn dữ liệu. Hiệu chỉnh STT riêng đã hoàn tất: **408 lần học / 405 SV**; xem [D1_FAILOVER.md](D1_FAILOVER.md#đã-áp-dụng-ngày-30102026). Nút xóa hàng loạt được nghiệm thu trên bản sao local có dữ liệu và lỗi tệp/retry; không xóa hồ sơ có bài/điểm thật để thử production.

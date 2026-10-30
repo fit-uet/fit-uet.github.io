@@ -1,6 +1,6 @@
 # D1 tạm thời khi Turso hết quota
 
-Nguồn phục hồi được chủ hệ thống chấp nhận: bản sao production lúc **17:32 ngày 29/10/2026, UTC+7**. Thay đổi sau mốc này có thể chưa có trong bản sao; giữ nguyên Turso để đối soát khi khôi phục. Dùng bản production sau khi xóa GVNX, không dùng bản dữ liệu thử hoặc bản đã chuyển metadata của nhánh Danh sách sinh viên chưa phát hành.
+Nguồn phục hồi được chủ hệ thống chấp nhận: bản sao production lúc **17:32 ngày 29/10/2026, UTC+7**. Thay đổi sau mốc này có thể chưa có trong bản sao; giữ nguyên Turso để đối soát khi khôi phục. Đợt phục hồi ban đầu dùng bản production sau khi xóa GVNX, schema 3; không dùng dữ liệu thử. Ngày 30/10 đã phát hành Danh sách sinh viên/schema 4 và hiệu chỉnh STT như ghi ở cuối tài liệu.
 
 ## Đích và chuyển traffic
 
@@ -8,9 +8,9 @@ Nguồn phục hồi được chủ hệ thống chấp nhận: bản sao produc
 - Database mới: `internship-turso-failover-20261029`, APAC, ID `bd58a106-1b64-473a-8211-896e84f6072e`.
 - Database D1 cũ `866e23b7-3b49-43e4-ab90-59dceb4c4f76` không bị ghi đè; Cloudflare Worker cũ không được dùng làm API học vụ.
 - Render dùng `DB_PROVIDER=d1`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_DATABASE_ID` mới và `CLOUDFLARE_API_TOKEN`. Giữ credentials Turso cho quy trình quay lại; không fallback tự động giữa hai nguồn.
-- Chỉ cập nhật riêng các biến kết nối trên Render, giữ JWT, OAuth, email và R2. Deploy đúng commit đã kiểm tra; `/api/ready` phải xác nhận `databaseProvider=d1`, schema 3 và SHA tương ứng.
+- Chỉ cập nhật riêng các biến kết nối trên Render, giữ JWT, OAuth, email và R2. Deploy đúng commit đã kiểm tra; `/api/ready` phải xác nhận `databaseProvider=d1`, schema tương ứng (lúc phục hồi là 3, hiện tại là **4**) và SHA bản ứng dụng đã phát hành.
 
-R2 không di chuyển hoặc đổi khóa tệp. Bản sao có 644 báo cáo, 675 bản ghi điểm, 701 phân công Thực tập và 1.226 lần học, gồm 535 Dự án; 98 giảng viên và 1.157 tài khoản. Dự án có 532 sinh viên duy nhất trong tám lớp, GVNX hiện tại bằng 0. Giữ 208 hồ sơ Thực tập chưa ánh xạ.
+R2 không di chuyển hoặc đổi khóa tệp. Bản sao trước hiệu chỉnh STT có 644 báo cáo, 675 bản ghi điểm, 701 phân công Thực tập và 1.226 lần học, gồm 535 Dự án; 98 giảng viên và 1.157 tài khoản. Dự án có 532 sinh viên duy nhất trong tám lớp, GVNX hiện tại bằng 0. Giữ 208 hồ sơ Thực tập chưa ánh xạ.
 
 ## Nhập và kiểm chứng
 
@@ -49,3 +49,12 @@ npx wrangler d1 export internship-turso-failover-20261029 --remote --config wran
 Bản phục hồi 17:32 chứa số lịch sử 535 hồ sơ Dự án. Khoa đã xác nhận chỉ lấy dòng có STT: **408 hồ sơ / 405 sinh viên**, gồm 215 DACN và 193 DAKH. Trước hiệu chỉnh cần xuất D1 đầy đủ, thử phục hồi backup và chạy xem trước. Công cụ `scripts/correct-project-roster.ts` chỉ loại hồ sơ ngoài roster khi hoàn toàn chưa có đề tài/phân công/bài/điểm/chat riêng; gặp dữ liệu phát sinh phải dừng. Giữ tài khoản, mọi lần học được chọn và toàn bộ nguồn Thực tập. Lệnh ghi dùng command/CAS, kiểm lại revision, scope, dữ liệu bảo vệ và audit trong cùng statement. Không truy cập/xóa tệp R2; import thông thường không tự xóa người vắng danh sách.
 
 Khi quay lại Turso phải mang theo hiệu chỉnh này; không nhập lại 127 hồ sơ ngoài STT từ bản cũ. Báo cáo preview, backup và đối soát ở thư mục vận hành riêng, không commit dữ liệu sinh viên.
+
+
+## Đã áp dụng ngày 30/10/2026
+
+Bản ứng dụng `68d9548` đã chạy trên Render và GitHub Pages, readiness xác nhận D1/schema 4. Backup mới trước phát hành có 1.226 lần học; phục hồi thử đạt integrity và không có lỗi khóa ngoại. Sau migration bỏ status riêng Dự án và command hiệu chỉnh STT có CAS, đã loại **127 hồ sơ trống**, còn **408 Dự án / 405 SV**, tổng **1.099 lần học**. DACN có 215 hồ sơ, phân bổ 44/51/60/60; DAKH có 193, phân bổ 50/58/47/38.
+
+Đối soát xác nhận chỉ metadata status/revision Dự án thay đổi theo thiết kế; các hồ sơ còn lại, 691 hồ sơ TT, 1.157 tài khoản, 98 GV, 701 phân công legacy, 675 điểm, 644 báo cáo và lịch sử cũ được giữ. Không ghi/xóa R2; đọc PDF legacy đạt. Có đúng hai command mới cho migration membership và hiệu chỉnh roster. Các báo cáo/backup chứa dữ liệu thật được giữ riêng, không commit vào repository công khai.
+
+Kiểm tra production đạt: bảng gộp Khoa/GV trên desktop/mobile không còn Tư cách/Thao tác/Mở hồ sơ; export đúng cả tám lớp và đủ các trang; hai hồ sơ DACN/DAKH độc lập, SV không nhận điểm; GV không được đọc hồ sơ ngoài phân công, SV bị loại không còn quyền Dự án. JSON trả 200 lần đầu, 304 khi nội dung chưa đổi. Không gửi email nghiệm thu trong đợt này.

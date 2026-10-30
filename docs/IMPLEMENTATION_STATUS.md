@@ -1,14 +1,14 @@
 # Bản cài đặt học kỳ, nhóm môn và Dự án
 
-Ngày cập nhật: **29/10/2026**. Bản mở rộng dùng backend **Express** và frontend React. Đã chuyển dữ liệu vào Turso vận hành sau sao lưu và diễn tập; quy trình phát hành Render/Pages và xác nhận đúng phiên bản tại [PRODUCTION_RELEASE.md](PRODUCTION_RELEASE.md). Yêu cầu nghiệp vụ: [REQUIREMENTS.md](REQUIREMENTS.md); thiết kế và schema thực tế: [ARCHITECTURE.md](ARCHITECTURE.md#12-cai-dat-thuc-te-trong-repository).
+Ngày cập nhật: **30/10/2026**. Bản mở rộng dùng backend **Express** và frontend React, production hiện dùng **D1 tạm thời** theo [D1_FAILOVER.md](D1_FAILOVER.md). Bản ứng dụng `68d9548` đã phát hành trên Render/Pages, readiness schema **4**; quy trình phát hành Render/Pages và xác nhận đúng phiên bản tại [PRODUCTION_RELEASE.md](PRODUCTION_RELEASE.md). Yêu cầu nghiệp vụ: [REQUIREMENTS.md](REQUIREMENTS.md); thiết kế và schema thực tế: [ARCHITECTURE.md](ARCHITECTURE.md#12-cai-dat-thuc-te-trong-repository).
 
-**Dữ liệu production:** 535 lần học / 532 SV / 8 lớp Dự án, 408 GVNX và 127 hồ sơ thiếu GVHD. Danh mục có 98 GV, giữ ID/bản ghi cũ, thêm ba GV đã xác nhận và cập nhật ThS. Vũ Đức Hiếu. Đã ánh xạ 691 hồ sơ TT; 208 hồ sơ thiếu học phần giữ ở nguồn cũ với lối vào riêng cho SV, không suy đoán enrollment. Bảo toàn 675 điểm, 644 báo cáo và 664 tệp R2; chuyển dữ liệu không tạo email mới. Sao lưu private trong `.staging/production-release-20261029/`.
+**Dữ liệu production:** **408 lần học / 405 SV / 8 lớp Dự án**, gồm 215 DACN và 193 DAKH. Chỉ nhận dòng có STT; đã loại 127 hồ sơ trống ngoài danh sách sau backup, preview và kiểm tra dữ liệu bảo vệ. GVNX hiện bằng 0, Khoa chủ động mở nút Phân công và xác nhận phương án. Danh mục có 98 GV và 1.157 tài khoản. Giữ nguyên 691 hồ sơ TT đã ánh xạ, 208 hồ sơ thiếu học phần ở nguồn cũ, 675 điểm và 644 báo cáo. Tổng hiện có 1.099 lần học. Không sửa/xóa tệp R2 hoặc gửi email nghiệm thu trong lần phát hành này. Backup D1 ngày 30/10 đã phục hồi thử và đối soát; báo cáo nằm trong thư mục vận hành riêng.
 
-**Đã chuẩn bị staging cục bộ có lưu dữ liệu:** bản sao, báo cáo đối soát, tài khoản Khoa local; đã nhập 535 lần học / 532 SV / 8 lớp với danh mục 97 GV, không còn lỗi đối soát. Nhóm Dự án đã kích hoạt trên staging với lịch đã chốt, đã gán 408 GVNX; 127 hồ sơ còn thiếu GVHD. Khai đề tài 07/09–20/12, nộp 14–20/12, chấm 14–27/12/2026 (giờ Việt Nam). Hướng dẫn và giới hạn tại [LOCAL_STAGING.md](LOCAL_STAGING.md). Database local đầu vào hiện trống hồ sơ TT; chưa dùng kết quả này để nghiệm thu dữ liệu production.
+**Lịch sử staging ban đầu (trước điều kiện STT):** bản sao, báo cáo đối soát, tài khoản Khoa local; đã nhập 535 lần học / 532 SV / 8 lớp với danh mục 97 GV, không còn lỗi đối soát. Nhóm Dự án đã kích hoạt trên staging với lịch đã chốt, đã gán 408 GVNX; 127 hồ sơ còn thiếu GVHD. Khai đề tài 07/09–20/12, nộp 14–20/12, chấm 14–27/12/2026 (giờ Việt Nam). Hướng dẫn và giới hạn tại [LOCAL_STAGING.md](LOCAL_STAGING.md). Database local đầu vào hiện trống hồ sơ TT; chưa dùng kết quả này để nghiệm thu dữ liệu production.
 
-**Mô hình quản lý đã đổi sang học kỳ → nhóm môn.** Cấu hình/trạng thái dùng chung, các danh sách lọc/xuất theo lớp; Thực tập cũ mở trong cùng giao diện. Đã có schema v2, migration có backup và kiểm thử riêng: [GROUP_MANAGEMENT.md](GROUP_MANAGEMENT.md).
+**Mô hình quản lý đã đổi sang học kỳ → nhóm môn.** Cấu hình/trạng thái dùng chung, các danh sách lọc/xuất theo lớp; Thực tập cũ mở trong cùng giao diện. Schema hiện là **4**, kế thừa mô hình nhóm/kỳ ở schema v2 và bổ sung metadata đề tài/danh sách. Migration có backup và kiểm thử riêng: [GROUP_MANAGEMENT.md](GROUP_MANAGEMENT.md).
 
-**Giao diện dùng lại bố cục trước mở rộng (`726271c`):** Khoa có tổng quan/thẻ chức năng, các màn danh sách riêng; GV xem PDF và chấm trong cửa sổ, SV có thẻ hồ sơ và nộp bài. Vẫn giữ lựa chọn nhóm/kỳ, dữ liệu và API học vụ; xem [UI_RESTORATION.md](UI_RESTORATION.md).
+**Giao diện:** giữ khung bố cục đã khôi phục, lựa chọn nhóm/kỳ và trang cá nhân SV. Với Dự án, Khoa/GV dùng một bảng **Danh sách sinh viên**, không còn cột Tư cách, cột Thao tác hoặc Mở/Xem hồ sơ; đề tài/phân công/điểm sửa tại dòng, PDF mở trình xem riêng. Thực tập giữ các màn chuyên biệt. Xem [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) và [UI_RESTORATION.md](UI_RESTORATION.md). Desktop/mobile, tám export lớp, quyền đọc và ETag đã được kiểm tra trên production.
 
 ## Chạy thử độc lập với dữ liệu đang vận hành
 
@@ -26,13 +26,13 @@ Luồng kiểm tra: Khoa chọn học kỳ/nhóm, lọc lớp khi cần → phâ
 ## Tiếp nhận HKI 2026–2027
 
 1. Đăng nhập Khoa, mở **Học kỳ và nhóm môn**, tạo năm bắt đầu `2026`, học kỳ I.
-2. Chọn học kỳ vừa tạo, import `HKI-26-27 GVHD DACN_DAKH_20261007.xlsx`. Chỉ đọc hai sheet chính DACN/DAKH, bỏ qua sheet ẩn.
+2. Chọn học kỳ vừa tạo, import `HKI-26-27 GVHD DACN_DAKH_20261007.xlsx`. Chỉ đọc hai sheet chính DACN/DAKH và chỉ nhận dòng có STT, bỏ qua sheet ẩn. Thiếu cột STT phải báo lỗi; dòng trắng STT không tạo/cập nhật lần học.
 3. Kiểm tra bản xem trước. Sửa/loại dòng lỗi, ánh xạ GVHD sai tên/email, xác nhận trường khác dữ liệu hiện có, rồi **xem trước lại** trước khi nhập. Sửa một nhóm trùng phải xử lý các dòng nguồn tương ứng.
 4. Xác nhận nhập khi không còn lỗi. Tám lớp `INT3132 1–4`, `INT3131 1–4` được tạo nếu chưa có và kế thừa cấu hình/trạng thái nhóm trong kỳ. Import lại không xóa người vắng danh sách hoặc ghi đè bài/điểm; thay GVHD/đề tài sau chấm cần mở lại riêng.
 5. Thiết lập hạn khai đề tài/nộp/chấm, hướng dẫn và kích hoạt cả nhóm Dự án một lần. Lớp nháp chưa cấp quyền vào cho SV. Thời điểm trên UI dùng giờ Việt Nam; để trống đầu/cuối tương ứng là không giới hạn.
 6. Sau khi các lớp và phân công GVHD đã sẵn sàng, đặt chỉ tiêu GVNX theo kỳ nếu cần, xem trước cả kỳ, kiểm tra các dòng chuyển bộ môn/chưa phân công, điều chỉnh và áp dụng. Chạy lại chỉ bổ sung hồ sơ chưa có GVNX.
 
-Khảo sát file mẫu ghi nhận **697 dòng dữ liệu, 535 lần học có MSSV hợp lệ và một nhóm MSSV sai `134`** sau gộp. Khi đối chiếu danh mục GV có trong repository, 47 nhóm cần xác nhận tên/email GVHD. Những dòng này không được tự gán theo tên gần giống; số lỗi phụ thuộc danh mục GV thực tế. Đây là kết quả khảo sát nguồn ban đầu. Sau các quyết định của Khoa, bản đã đối soát được nhập trên staging cục bộ với 535 lần học / 532 SV, không có lỗi. Dữ liệu đã được tiếp nhận vào Turso vận hành sau một lượt diễn tập riêng trên backup production. V1/V2 chỉ là nguồn nghiệp vụ, không dùng chuyển điểm hoặc file cũ.
+File mẫu có 697 dòng dữ liệu; theo xác nhận của Khoa chỉ 408 dòng có STT thuộc danh sách tiếp nhận, 289 dòng thiếu STT bị bỏ qua. Các số 535 lần học/532 SV trong báo cáo cũ là lịch sử trước đính chính. MSSV `134` đã được Khoa xác nhận là `23021527` trong workbook đã đối soát; giữ nguyên Excel gốc và dùng bản đã xác nhận khi nhập. Tên/email GV dùng danh mục mới và các quyết định đối soát đã ghi nhận. V1/V2 chỉ là nguồn nghiệp vụ, không dùng chuyển điểm hoặc file cũ.
 
 ## Ánh xạ Thực tập cũ
 
