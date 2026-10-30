@@ -1,5 +1,6 @@
 import { legacyPagingMiddleware } from './services/legacyPaging';
 import { jsonCacheMiddleware } from './services/httpCache';
+import {databaseMetricsMiddleware} from './services/databaseMetrics';
 import express from 'express';
 import cors from 'cors';
 import { join } from 'path';
@@ -36,6 +37,7 @@ export async function createApp(options: { vite?: import('vite').InlineConfig } 
   });
 
   app.use(express.json());
+  app.use(databaseMetricsMiddleware);
   app.use(jsonCacheMiddleware);
   app.use(legacyPagingMiddleware);
 

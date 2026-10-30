@@ -1,5 +1,6 @@
 import { DatabaseClient } from './types';
 import { DB_BATCH_SIZE } from './config';
+import {recordDatabaseQuery} from './services/databaseMetrics';
 
 export class CloudflareD1Client implements DatabaseClient {
   private accountId: string;
@@ -53,6 +54,8 @@ export class CloudflareD1Client implements DatabaseClient {
       throw new Error(`D1 Query Error: ${errMessage}`);
     }
 
+    for(const result of data.result||[])recordDatabaseQuery(sql,result.meta);
+
     const firstResult = data.result?.[0];
     const rows = firstResult?.results || [];
     const meta = firstResult?.meta || {};
@@ -86,6 +89,7 @@ export class CloudflareD1Client implements DatabaseClient {
       const errMessage = data.errors?.[0]?.message || JSON.stringify(data.errors);
       throw new Error(`D1 ExecuteMultiple Error: ${errMessage}`);
     }
+    for(const result of data.result||[])recordDatabaseQuery(sql,result.meta);
   }
 
   async batch(statements: Array<{ sql: string; args?: any[] }>, _mode?: string): Promise<any[]> {
@@ -122,6 +126,7 @@ export class CloudflareD1Client implements DatabaseClient {
     }
 
     const results = data.result || [];
+    results.forEach((r:any,i:number)=>recordDatabaseQuery(statements[i]?.sql||combinedSql,r.meta));
     return results.map((r: any) => ({
       rows: r.results || [],
       lastInsertRowid: r.meta?.last_row_id,

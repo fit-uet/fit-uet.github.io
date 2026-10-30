@@ -7,7 +7,7 @@ beforeEach(()=>{original=globalThis.fetch;clearRequestCache();});
 afterEach(()=>{clearRequestCache();globalThis.fetch=original;});
 const json=(value:any,etag='"v1"')=>new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json',ETag:etag}});
 test('cached GET revalidates with ETag and returns isolated data on 304',async()=>{
- let calls=0;globalThis.fetch=async(_url,init)=>{calls++;assert.equal(new Headers(init?.headers).get('If-None-Match'),calls===1?null:'"v1"');return calls===1?json({items:[1]}):new Response(null,{status:304});};
+ let calls=0;globalThis.fetch=async(_url,init)=>{calls++;assert.equal(init?.cache,'no-store');assert.equal(new Headers(init?.headers).get('Cache-Control'),'max-age=0');assert.equal(new Headers(init?.headers).get('If-None-Match'),calls===1?null:'"v1"');return calls===1?json({items:[1]}):new Response(null,{status:304});};
  const a=await requestJson('/api/items',{headers});a.items.push(2);
  assert.deepEqual(await requestJson('/api/items',{headers}),{items:[1]});assert.equal(calls,2);
 });
@@ -30,8 +30,9 @@ test('network failures do not fall back to an unvalidated private cache',async()
  globalThis.fetch=async()=>json({private:true});await requestJson('/api/private',{headers});globalThis.fetch=async()=>{throw new Error('offline');};await assert.rejects(requestJson('/api/private',{headers}),/offline/);
 });
 test('force refresh, identity and scope isolate entries',async()=>{
- const conditions:(string|null)[]=[];globalThis.fetch=async(_u,i)=>{conditions.push(new Headers(i?.headers).get('If-None-Match'));return json({ok:true});};
+ const conditions:(string|null)[]=[],controls:(string|null)[]=[];globalThis.fetch=async(_u,i)=>{conditions.push(new Headers(i?.headers).get('If-None-Match'));controls.push(new Headers(i?.headers).get('Cache-Control'));return json({ok:true});};
  await requestJson('/api/data',{headers});await requestJson('/api/data',{headers,forceRefresh:true});await requestJson('/api/data',{headers:{Authorization:'Bearer another'}});await requestJson('/api/data',{headers,scope:'lecturer'});assert.deepEqual(conditions,[null,null,null,null]);
+ assert.deepEqual(controls,['max-age=0','no-cache','max-age=0','max-age=0']);
 });
 test('a concurrent write retries active readers rather than stranding mounted screens',async()=>{
  let complete:(r:Response)=>void,calls=0;globalThis.fetch=async()=>{calls++;return calls===1?new Promise<Response>(resolve=>{complete=resolve;}):json({version:2},'"v2"');};

@@ -7,9 +7,9 @@ import {db,setDb} from '../../server/db';
 import {JWT_SECRET} from '../../server/config';
 import {commit,snapshot} from '../../server/academic/store';
 import {createSemester,createClass} from '../../server/academic/service';
-import {newEnrollment,currentVersion,getClass} from '../../server/academic/domain';
+import {newEnrollment,newClass,newSemester,currentVersion,getClass} from '../../server/academic/domain';
 import {campaignDetail,campaignEnrollments,updateCampaign} from '../../server/academic/campaigns';
-import {readCampaignDetail,readCampaignCatalog,readCampaignEnrollments,readEnrollment,readCommunicationContext,recordCte,accessRecordCte} from '../../server/academic/reads';
+import {readCampaignDetail,readCampaignCatalog,readCampaignEnrollments,readEnrollment,readCommunicationContext,readContext,recordCte,accessRecordCte} from '../../server/academic/reads';
 import {academicRouter} from '../../server/academic/routes';
 import {legacyRows,legacyPagingMiddleware} from '../../server/services/legacyPaging';
 import {jsonCacheMiddleware} from '../../server/services/httpCache';
@@ -76,21 +76,74 @@ test('light campaign sections omit content and summary counts match the old mode
  for(const key of ['studentCount','enrollmentCount','submitted','graded','advisorMissing','reviewerMissing'])assert.equal(overview.stats[key],old.stats[key],key);
  const catalog=await readCampaignCatalog(sv);assert.equal(catalog.campaigns.find(p=>p.id===campaignId)!.enrollmentCount,2);
 });
+test('base, content and catalog never execute a submission/grade read and indexed student/detail lookups stay bounded',async()=>{
+ const original=db,sqls:string[]=[];
+ setDb({...original,execute:async(input:any)=>{const sql=typeof input==='string'?input:input.sql;sqls.push(sql);return original.execute(input);}});
+ try{
+  for(const section of ['base','content','management']){
+   sqls.length=0;await readCampaignDetail(sv,campaignId,section,false);
+   const query=sqls.find(sql=>sql.includes("SELECT 'revision' kind"))!;
+   // An unused MATERIALIZED CTE is safe; referencing records even under a
+   // false scalar WHERE forces its expensive hydration on D1.
+   assert.ok(!query.includes("SELECT 'enrollments',j FROM records"));
+   assert.match(query,/lower\(json_extract\(e.data,'\$\.email'\)\)=actor.email/);
+   const plan=(await original.execute({sql:'EXPLAIN QUERY PLAN '+query,args:[sv.role,sv.email,0,campaignId,'']})).rows;
+   assert.ok(plan.some(r=>String(r.detail).includes('academic_enrollment_email')));
+   assert.ok(!plan.some(r=>/SEARCH (fr|g) |SCAN (fr|g)\b/.test(String(r.detail))));
+  }
+  sqls.length=0;const own=await readCampaignEnrollments(sv,campaignId);
+  sqls.length=0;await readEnrollment(sv,own.items[0].id);
+  assert.ok(sqls.some(sql=>sql.includes('e.id=actor.enrollmentId')));
+ }finally{setDb(original);}
+});
+
+test('metadata cache rechecks lecturer identity, isolates databases and honors explicit refresh',async()=>{
+ await readCampaignDetail(alpha,campaignId,'base');
+ await db.execute("UPDATE lecturers SET email='revoked@vnu.edu.vn' WHERE id=1");
+ await assert.rejects(readCampaignDetail(alpha,campaignId,'base'),(e:any)=>e.code==='CAMPAIGN_ACCESS_DENIED');
+ const original=db;let reads=0;
+ setDb({...original,execute:async input=>{const sql=typeof input==='string'?input:input.sql;if(sql.includes("SELECT 'revision' kind"))reads++;return original.execute(input);}});
+ try{await readCampaignDetail(admin,campaignId,'base');assert.equal(reads,1);await readCampaignDetail(admin,campaignId,'base');assert.equal(reads,1);await readCampaignDetail(admin,campaignId,'base',false);assert.equal(reads,2);}finally{setDb(original);}
+});
+
+test('legacy access is revalidated without an academic revision change and project scopes never hydrate unrelated legacy rows',async()=>{
+ const sem=newSemester(2025,'summer'),c={...newClass(sem.id,'INT4002','legacy'),legacy:true,status:'active' as const};
+ const e={...newEnrollment(c,{studentId:'23999999',name:'Legacy student'}),legacy:true};
+ let s=await snapshot();await commit(s,admin.id,'admin.test.legacy',{semesters:[sem],classes:[c],users:[{studentId:e.studentId,email:e.email,name:e.name,dob:'',className:''}],enrollments:[e]});
+ s=await snapshot();await commit(s,admin.id,'admin.test.legacy.campaign',{campaigns:[{...s.campaigns!.find(p=>p.id===c.campaignId)!,legacy:true}]});
+ const u=(await db.execute({sql:'SELECT id FROM users WHERE student_id=?',args:[e.studentId]})).rows[0];
+ await db.execute({sql:"INSERT INTO advisor_assignments(user_id,lecturer_id,role) VALUES(?,1,'primary')",args:[u.id]});
+ await readCampaignDetail(alpha,c.campaignId,'base');await readCampaignCatalog(alpha,'base');
+ const revision=(await db.execute('SELECT revision FROM academic_meta')).rows[0].revision;
+ await db.execute({sql:'DELETE FROM advisor_assignments WHERE user_id=?',args:[u.id]});
+ assert.equal((await db.execute('SELECT revision FROM academic_meta')).rows[0].revision,revision);
+ await assert.rejects(readCampaignDetail(alpha,c.campaignId,'base'),(err:any)=>err.code==='CAMPAIGN_ACCESS_DENIED');
+ assert.ok(!(await readCampaignCatalog(alpha,'base')).campaigns.some(p=>p.id===c.campaignId));
+ const rows=(await db.execute({sql:`${recordCte} SELECT count(*) n FROM legacy_rows`,args:[admin.role,admin.email,1,campaignId,'']})).rows;
+ assert.equal(Number(rows[0].n),0);
+ const ctx=await readContext(alpha,campaignId,'management');assert.ok(ctx.classes.every(c=>c.campaignId===campaignId));
+});
 test('ordinary project reads use bounded database calls and never run broad snapshot hydration',async()=>{
  const original=db;let calls=0;const sqls:string[]=[];
  setDb({...original,execute:async input=>{calls++;sqls.push(typeof input==='string'?input:input.sql);return original.execute(input);}});
- try{await readCampaignCatalog(admin);assert.equal(calls,2);calls=0;await readCampaignDetail(admin,campaignId,'overview');assert.equal(calls,2);calls=0;await readCampaignEnrollments(admin,campaignId,{projection:'reports'});assert.equal(calls,1);calls=0;const row=await readCampaignEnrollments(sv,campaignId);calls=0;await readEnrollment(sv,row.items[0].id);assert.equal(calls,1);assert.ok(!sqls.some(sql=>sql.includes("SELECT 'enrollments',data FROM academic_enrollments")));}finally{setDb(original);}
+ try{await readCampaignCatalog(admin);assert.equal(calls,1);calls=0;await readCampaignDetail(admin,campaignId,'overview');assert.equal(calls,1);calls=0;await readCampaignEnrollments(admin,campaignId,{projection:'reports'});assert.equal(calls,1);calls=0;const row=await readCampaignEnrollments(sv,campaignId);calls=0;await readEnrollment(sv,row.items[0].id);assert.equal(calls,1);assert.ok(!sqls.some(sql=>sql.includes("SELECT 'enrollments',data FROM academic_enrollments")));}finally{setDb(original);}
 });
 async function serve(app:express.Express,run:(base:string)=>Promise<void>){const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));try{await run(`http://127.0.0.1:${(server.address()as{port:number}).port}`);}finally{await new Promise<void>(r=>server.close(()=>r()));}}
 test('ETag validates actual data and permission changes before returning 304',async()=>{
- const app=express();app.use(academicRouter);const headers={Authorization:`Bearer ${jwt.sign({email:alpha.email},JWT_SECRET)}`};
- await serve(app,async base=>{
+ const original=db,queries:string[]=[];
+ setDb({...original,execute:async(input:any)=>{queries.push(typeof input==='string'?input:input.sql);return original.execute(input);}});
+ const app=express();app.use(academicRouter);const headers={Authorization:`Bearer ${jwt.sign({email:alpha.email},JWT_SECRET)}`,'Cache-Control':'max-age=0'};
+ try{await serve(app,async base=>{
   const path=`${base}/api/campaigns/${campaignId}/enrollments?projection=students`;
   const first=await fetch(path,{headers});assert.equal(first.status,200);const tag=first.headers.get('ETag')!;assert.ok(tag);await first.text();
+  queries.length=0;
   const unchanged=await fetch(path,{headers:{...headers,'If-None-Match':tag}});assert.equal(unchanged.status,304);assert.equal(await unchanged.text(),'');
+  assert.ok(!queries.some(sql=>sql.includes("'pageCount'")),'Warm 304 must not re-run the full page query.');
+  const forced=await fetch(path,{headers:{...headers,'If-None-Match':tag,'Cache-Control':'no-cache'}});assert.equal(forced.status,304);
+  assert.ok(queries.some(sql=>sql.includes("'pageCount'")),'Force refresh must re-read the page even when it ultimately returns 304.');
   await db.execute("UPDATE lecturers SET email='removed@vnu.edu.vn' WHERE id=1");
   const denied=await fetch(path,{headers:{...headers,'If-None-Match':tag}});assert.equal(denied.status,403);
- });
+ });}finally{setDb(original);}
 });
 test('legacy opt-in pages filter canonical courses and Unicode names and expose full totals',async()=>{
  await db.execute("UPDATE users SET course_code='Thực tập Doanh nghiệp INT4002' WHERE student_id IS NOT NULL");

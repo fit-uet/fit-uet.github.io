@@ -1,6 +1,6 @@
 # Tải dữ liệu theo chức năng và cache trong phiên
 
-Áp dụng cho giao diện Học kỳ → Nhóm môn của cả Thực tập và Dự án. Không đổi schema, công thức điểm, duyệt đề tài, hạn thao tác hay tệp R2.
+Áp dụng cho giao diện Học kỳ → Nhóm môn của cả Thực tập và Dự án. Không đổi dữ liệu nghiệp vụ, công thức điểm, duyệt đề tài, hạn thao tác hay tệp R2. Bổ sung chỉ mục kỹ thuật khi cần để giới hạn lượng đọc.
 
 ## Tải theo nhu cầu
 
@@ -45,6 +45,39 @@ Các GET legacy đăng ký, nơi thực tập, phân công, đề xuất, báo c
 
 ETag SHA-256 dựa trên vai trò/tài khoản và JSON hiện hành sau kiểm quyền, gồm dữ liệu nguồn legacy mới nhất; không chỉ dựa revision học vụ. Header `Cache-Control: private, no-cache`, `Vary: Authorization`; CORS công khai `ETag`, `Server-Timing`, `Content-Disposition` cho frontend đọc.
 
+## Khắc phục khuếch đại lượt đọc D1 — 30/10/2026
+
+Query Insights cho thấy nhóm truy vấn `WITH actor_input…` chiếm 92,81% thời gian SQL, đọc 152,76 triệu dòng qua 187 lần chạy trong khoảng thời gian của dashboard. Đây không phải số dòng trả về hoặc số sinh viên. Chưa xác định được toàn bộ chênh lệch giữa kế hoạch thực thi D1 production và runtime local; không dùng số đo local thay cho hóa đơn/quota thực tế.
+
+- Materialize lớp và lần học thuộc phạm vi quyền trước khi nối nguồn legacy. Dự án dùng nhánh riêng; nhánh nối tài khoản/báo cáo/điểm legacy không có dòng đầu vào khi mở Dự án.
+- `base`, `content`, danh mục nhóm và phần metadata không tham chiếu nhánh hồ sơ/bài/điểm không dùng. Một `WHERE` sai đặt sau CTE materialized không bảo đảm SQLite bỏ qua việc dựng CTE.
+- Tra cứu sinh viên dùng chỉ mục `academic_enrollment_email` trên `lower(json_extract(data,'$.email'))`; mở hồ sơ dùng PK `id`. Chỉ mục mới không sửa JSON hoặc tăng revision nghiệp vụ.
+- Danh sách giảng viên liên quan và tập SV legacy được phân công được tính một lần, thay vì quét lại theo từng giảng viên/lần học.
+- GET metadata lạnh chỉ dùng một read model, không đọc revision trong một chuyến DB riêng. Cache backend Dự án có TTL tối đa 30 giây, hết hạn sớm tại mốc mở/đóng; khi dùng lại luôn kiểm revision và danh tính giảng viên hiện hành. Cache tách theo database/tài khoản/vai trò/phạm vi; `Cache-Control: no-cache/no-store` bỏ qua cache.
+- Legacy có đường ghi ngoài revision học vụ: không dùng cache backend metadata/catalog có legacy. Thu hồi phân công phải có hiệu lực ngay; frontend vẫn revalidate ETag bình thường.
+- Khi cache trang Dự án còn hợp lệ, conditional GET chỉ đọc dấu revision/danh tính rồi kiểm ETag; hết TTL phải đọc truy vấn có phạm vi. Không trả cache cũ khi database lỗi.
+- JSON fetch vẫn dùng `cache: no-store` để không giữ cache HTTP của browser, đồng thời đặt rõ `Cache-Control: max-age=0` cho lượt bình thường. Nếu bỏ header này, browser tự thêm `no-cache` và vô tình bắt server bỏ cache mỗi lần revalidate. `forceRefresh` gửi `no-cache`; nút Tải lại/F5 bỏ ETag, backend đọc mới cả trang lẫn metadata. Kiểm tra header thực tế bằng Chromium, không chỉ mock fetch.
+
+### Đo có thể chạy lại, không dùng database remote
+
+```bash
+npm run academic:profile-reads -- \
+  --database=/private/verified-backup.db \
+  --campaign=2026-2027-1:project \
+  --baseline-ref=68d9548 --assert \
+  --output=/private/read-budget-report.json
+```
+
+Công cụ mở nguồn SQLite chỉ đọc, dùng SQLite backup API để bao gồm WAL, tạo D1 workerd riêng rồi xóa bản tạm. Chỉ nhận file có sẵn; không đọc cấu hình production hoặc gọi OAuth/R2/email. Báo cáo chỉ có vai trò và số liệu tổng hợp. Baseline chỉ nhận commit đáng tin cậy trong repo, nạp mã đọc trong RAM; không đổi checkout. `--assert` kiểm giảm ít nhất 50% dòng đọc cho từng ca, danh sách/count/DTO giữ nguyên, mọi GET không ghi và revalidation không vượt 10 dòng. Khi có legacy khác nhóm, thêm 1.000 hồ sơ giả trên bản tạm để kiểm lượng đọc trang Dự án không tăng theo nguồn khác.
+
+Trên bản sao 1.099 lần học (408 Dự án), danh sách trang đầu 25 dòng đạt: Khoa **15.692 → 6.031**, GV **13.319 → 1.087**, SV **13.045 → 212** dòng đọc; revalidation **1–2 dòng**, chưa tính một truy vấn xác thực HTTP. Đây là `meta.rows_read` của **D1 workerd local**, không phải số đo production và không phải thời gian người dùng chờ mạng/Render cold start.
+
+### Theo dõi trên Render
+
+D1 adapter cộng `meta.rows_read`, `rows_written`, `duration` cho mọi statement có metadata do D1 trả về, kể cả batch. Mỗi request API có số liệu ghi một dòng `[database-request]`: method, mẫu route, vai trò, HTTP status, số query, tổng rowsRead/rowsWritten/durationMs và ba fingerprint đọc nhiều nhất. Không ghi SQL, tham số, MSSV, email, token hoặc ID học phần cụ thể. Truy vấn ngoài request đọc từ 10.000 dòng được ghi `[database-query]` để phát hiện tác vụ nền tốn quota. Việc thu thập không phát sinh truy vấn DB; lỗi bị D1 chặn trước khi trả metadata không được suy đoán số dòng.
+
+Sau khi D1 mở lại, deploy backend đúng SHA rồi kiểm một vòng nhỏ ba vai trò: cold GET, conditional GET, force refresh và thu hồi quyền trên bản sao. Đối chiếu log thực tế với Query Insights/Row Metrics cùng cửa sổ thời gian. Không lặp export toàn bộ hoặc sao lưu/quét lại mọi bảng để đo hiệu năng. Nếu một GET Dự án vẫn đọc hàng trăm nghìn dòng, lấy SQL fingerprint và kế hoạch thực thi D1 trước khi mở rộng nghiệm thu. Chưa đánh dấu phát hành thành công khi readiness/đo production chưa đạt.
+
 ## Kiểm chứng và đo
 
 ```bash
@@ -62,4 +95,4 @@ Các ca mới bao phủ cache 304, giới hạn dung lượng/số mục, TTL, r
 
 Khi đo trước/sau, dùng cùng tài khoản, API/bộ lọc, máy khách và server đã hoạt động; ghi TTFB, thời gian hoàn tất, byte JSON, `Server-Timing`, số truy vấn và kích thước gzip của dependency JavaScript tải đầu. Đo thêm lần 304 không có body. Mục tiêu giảm ít nhất 50% thời gian GET đang chạy; cold start Render được ghi riêng. Báo cáo riêng và backup có dữ liệu thật phải ở thư mục bỏ qua Git.
 
-Phát hành theo [PRODUCTION_RELEASE.md](PRODUCTION_RELEASE.md): backup, kiểm thử bản sao, push `main`, chờ Render đúng SHA/schema 3 rồi mới publish Pages. Không có chuyển đổi nghiệp vụ cho thay đổi này; đối chiếu bảng nghiệp vụ và tệp sau phát hành.
+Phát hành theo [PRODUCTION_RELEASE.md](PRODUCTION_RELEASE.md): backup, kiểm thử bản sao, push `main`, chờ Render đúng SHA/schema **4** rồi mới publish Pages. Khi D1 hết quota, giữ bản vá đã kiểm thử và hoãn deploy tới khi đọc lại được; không cố chạy migration hoặc readiness trong vòng lặp. Không có chuyển đổi nghiệp vụ cho thay đổi này; đối chiếu gọn số lượng hồ sơ/điểm/báo cáo, không ghi hoặc xóa R2.
