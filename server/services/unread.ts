@@ -1,6 +1,6 @@
 import { db } from '../db';
 import type { AuthenticatedUser } from '../types';
-import { recordCte } from '../academic/reads';
+import { accessRecordCte } from '../academic/reads';
 
 const unreadCountsCache = new Map<number, { data: { notifications: number; chats: number }; expiresAt: number; scope:string; revision:number }>();
 
@@ -23,7 +23,7 @@ export async function unreadCounts(user: AuthenticatedUser) {
   const permission = `EXISTS(SELECT 1 FROM records e WHERE (e.courseCode IN ('INT3131','INT3132') OR json_extract(e.j,'$.status')='active') AND (lower(json_extract(e.j,'$.email'))=actor.email OR EXISTS(SELECT 1 FROM json_each(json_extract(e.j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=e.actorLecturerId)) AND (
     n.type='course_announcement' AND n.academic_campaign_id IS NOT NULL AND e.campaignId=n.academic_campaign_id AND (COALESCE(n.academic_audience_class_ids,'[]')='[]' OR e.class_id IN (SELECT value FROM json_each(n.academic_audience_class_ids)))
     OR (n.type!='course_announcement' OR n.academic_campaign_id IS NULL) AND e.class_id=n.academic_class_id AND (n.academic_enrollment_id IS NULL OR e.id=n.academic_enrollment_id)))`;
-  const result = await db.execute({ sql: `${recordCte},
+  const result = await db.execute({ sql: `${accessRecordCte},
     personal AS (SELECT n.id,n.created_at,n.read_at FROM notifications n CROSS JOIN actor
       WHERE (n.user_id=? OR n.user_id IS NULL AND (n.recipient_email=? COLLATE NOCASE OR ?!='' AND n.recipient_email=? COLLATE NOCASE))
       AND n.type!='advisor_quota_exceeded' AND (actor.role='admin' OR n.type!='faq_question_created')

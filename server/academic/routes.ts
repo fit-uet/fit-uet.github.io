@@ -23,6 +23,7 @@ import * as campaigns from './campaigns';
 import { campaignExport, campaignBulkLock, campaignAutoAdvisors } from './campaignExports';
 import { findChatRow, authorizeLegacyChatRow } from './legacyChat';
 import type { AssignmentRole } from '../../src/shared/academic';
+import {databaseAvailability,isDatabaseUnavailable} from '../services/databaseAvailability';
 
 export const academicRouter = Router();
 type Handler = (req: any, res: any) => Promise<unknown>;
@@ -42,6 +43,7 @@ export function academicRoute(method: 'get' | 'post' | 'put' | 'patch' | 'delete
       if (res.headersSent) { res.destroy(); return; }
       if (error instanceof AcademicError) res.status(error.status).json({ error: { code: error.code, message: error.message, details: error.details } });
       else if (/UNIQUE constraint|constraint failed/i.test(String(error))) res.status(409).json({ error: { code: 'DATA_CONFLICT', message: 'Dữ liệu trùng hoặc vi phạm ràng buộc. Vui lòng xem lại bản xem trước.' } });
+      else if(isDatabaseUnavailable(error))res.status(503).json(databaseAvailability(error));
       else { console.error('[academic]', error); res.status(500).json({ error: { code: 'ACADEMIC_ERROR', message: 'Không xử lý được yêu cầu. Vui lòng thử lại.' } }); }
     }
   });
@@ -53,7 +55,7 @@ academicRoute('post','/api/campaigns/:campaignId/deletions/:previewId/apply',req
 academicRoute('get','/api/campaigns/:campaignId/deletions/:jobId',req=>projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId));
 academicRoute('post','/api/campaigns/:campaignId/deletions/:jobId/retry',async req=>{await projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId);await drainProjectCleanup();return projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId);});
 academicRoute('patch', '/api/campaigns/:campaignId/enrollments/bulk', req => saveProjectRows(req.user,req.params.campaignId,req.body));
-academicRoute('get', '/api/campaigns/:campaignId/enrollments', req => readCampaignEnrollments(req.user, req.params.campaignId, req.query));
+academicRoute('get', '/api/campaigns/:campaignId/enrollments', req => readCampaignEnrollments(req.user, req.params.campaignId, req.query,false,undefined,!!req.get('If-None-Match')&&!/no-cache|no-store/i.test(req.get('Cache-Control')||'')));
 academicRoute('patch', '/api/admin/campaigns/:campaignId', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
 academicRoute('put', '/api/admin/campaigns/:campaignId/settings', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
 academicRoute('post', '/api/admin/campaign-migrations/preview', req => campaigns.campaignMigrationPreview(req.user, req.body?.resolutions || {}));

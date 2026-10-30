@@ -1,7 +1,8 @@
 import { requestJson } from './shared/utils/requestCache';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { HashRouter, Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import {serviceAvailability} from './shared/utils/serviceAvailability';
 import { LogOut, User as UserIcon, CheckCircle2, LogIn, LayoutDashboard, AlertTriangle, FileText, Bell, CircleHelp, MessageCircle, GraduationCap, Settings } from 'lucide-react';
 import { API_BASE, GOOGLE_CLIENT_ID } from './shared/config';
 import { clearJsonCache, isAuthExpiredResponse, jwtExpiresAtMs } from './shared/utils/cache';
@@ -50,42 +51,26 @@ function App() {
   const [user, setUser] = useState<any>(localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [systemAlert, setSystemAlert] = useState<{ message: string; details?: string } | null>(null);
+  const [checkingSystem,setCheckingSystem]=useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadChats, setUnreadChats] = useState(0);
 
-  useEffect(() => {
-    if (token) return;
-    let isCancelled = false;
-    const checkSystem = async () => {
+  const checkSystem=useCallback(async(signal?:AbortSignal)=>{
+    setCheckingSystem(true);
       try {
-        const res = await fetch(`${API_BASE}/api/ready`, { cache: 'no-store' });
+        const res = await fetch(`${API_BASE}/api/ready`, { cache: 'no-store',signal });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          if (!isCancelled) {
-            if (data.database === 'quota_blocked' || /quota|blocked/i.test(data.databaseError || data.error || '')) {
-              setSystemAlert({
-                message: 'Cơ sở dữ liệu tạm thời vượt quá hạn mức truy vấn (Turso read quota exceeded).',
-                details: 'Quản trị viên cần kiểm tra và nâng hạn mức trên Turso Dashboard hoặc chuyển sang cơ sở dữ liệu dự phòng để tiếp tục.',
-              });
-            } else if (res.status === 503) {
-              setSystemAlert({
-                message: 'Hệ thống đang bảo trì hoặc đang khởi động.',
-                details: 'Vui lòng thử lại sau giây lát hoặc liên hệ quản trị viên.',
-              });
-            }
-          }
+          if (!signal?.aborted) setSystemAlert(serviceAvailability(data));
         } else {
-          if (!isCancelled) setSystemAlert(null);
+          if (!signal?.aborted) setSystemAlert(null);
         }
-      } catch {
-        // Silently ignore ping error before user interaction
-      }
-    };
-    checkSystem();
-    return () => { isCancelled = true; };
-  }, [token]);
+      } catch(error) {if(!signal?.aborted)setSystemAlert(serviceAvailability());}
+      finally{if(!signal?.aborted)setCheckingSystem(false);}
+  },[]);
+  useEffect(()=>{if(token)return;const controller=new AbortController();void checkSystem(controller.signal);return()=>controller.abort();},[token,checkSystem]);
 
   const handleLoginSuccess = async (credentialResponse: any) => {
     setLoginError(null);
@@ -98,6 +83,7 @@ function App() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        if(res.status>=500){setSystemAlert(serviceAvailability(data));return;}
         setLoginError(data.error || (res.status === 503 ? 'Cơ sở dữ liệu tạm thời không khả dụng hoặc vượt hạn mức truy vấn.' : 'Đăng nhập thất bại. Vui lòng thử lại sau.'));
         return;
       }
@@ -107,7 +93,7 @@ function App() {
       setToken(data.token);
       setUser(data.user);
     } catch (e) {
-      setLoginError('Không thể kết nối đến máy chủ API. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.');
+      setSystemAlert(serviceAvailability());
     }
   };
 
@@ -149,9 +135,21 @@ function App() {
 
   useEffect(() => {
     if (!token) return;
-    const listener = () => handleAuthExpired();
+    const controller=new AbortController();let pending=false;
+    const listener = async () => {
+      if(pending)return;pending=true;
+      try{
+        // Older backends returned 401 for a failed account lookup. Confirm the
+        // service is reachable before discarding an otherwise valid session.
+        const response=await fetch(`${API_BASE}/api/ready`,{cache:'no-store',signal:controller.signal});
+        if(controller.signal.aborted)return;
+        if(response.status>=500)setSystemAlert(serviceAvailability(await response.json().catch(()=>({}))));
+        else handleAuthExpired();
+      }catch{if(!controller.signal.aborted)setSystemAlert(serviceAvailability());}
+      finally{pending=false;}
+    };
     window.addEventListener('auth-expired', listener);
-    return () => window.removeEventListener('auth-expired', listener);
+    return () => {controller.abort();window.removeEventListener('auth-expired', listener);};
   }, [token]);
 
   const refreshUnreadCounts = async () => {
@@ -357,6 +355,7 @@ function App() {
 
           {/* Main Content */}
           <main className="app-main flex-1 px-6 py-8">
+            {token&&systemAlert&&<div role="alert" className="mx-auto mb-5 max-w-7xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">{systemAlert.message}</p><p className="mt-1">{systemAlert.details}</p><button type="button" disabled={checkingSystem} onClick={()=>void checkSystem()} className="mt-3 rounded-lg border border-amber-300 px-3 py-1.5 font-semibold disabled:opacity-50">{checkingSystem?'Đang kiểm tra…':'Kiểm tra lại kết nối'}</button></div>}
             {!token ? (
               <div className="max-w-md mx-auto mt-12 bg-white p-8 rounded-2xl shadow-sm border border-slate-200/80 text-center">
                 <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-blue-100/60 shadow-xs">
@@ -369,7 +368,7 @@ function App() {
                 </p>
 
                 {systemAlert && (
-                  <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-left text-xs text-amber-900 flex items-start gap-2.5">
+                  <div role="alert" className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-left text-xs text-amber-900 flex items-start gap-2.5">
                     <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={16} />
                     <div className="flex-1">
                       <p className="font-bold">{systemAlert.message}</p>
@@ -389,12 +388,12 @@ function App() {
                 )}
 
                 <div className="flex justify-center border border-slate-100 p-4 bg-slate-50/70 rounded-xl">
-                  <GoogleLogin
+                  {systemAlert||checkingSystem?<button type="button" disabled={checkingSystem} onClick={()=>void checkSystem()} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{checkingSystem?'Đang kiểm tra…':'Kiểm tra lại kết nối'}</button>:<GoogleLogin
                     onSuccess={handleLoginSuccess}
                     onError={() => setLoginError('Lỗi xác thực từ Google. Vui lòng kiểm tra lại quyền truy cập hoặc thử lại.')}
                     useOneTap
                     shape="pill"
-                  />
+                  />}
                 </div>
               </div>
             ) : (
@@ -402,7 +401,7 @@ function App() {
                 user={user}
                 setUser={setUser}
                 token={token}
-                onAuthExpired={handleAuthExpired}
+                onAuthExpired={() => window.dispatchEvent(new Event('auth-expired'))}
                 onUnreadNotificationsChanged={setUnreadNotifications}
                 onUnreadChatsChanged={setUnreadChats}
               />
@@ -423,7 +422,7 @@ function App() {
               <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200">
                 <div className="flex items-center gap-3 text-amber-600 mb-4">
                   <AlertTriangle size={24} />
-                  <h3 className="text-lg font-bold">Thông Báo Phiên Làm Việc</h3>
+                  <h3 className="text-lg font-bold">Không thể đăng nhập</h3>
                 </div>
                 <p className="text-slate-600 mb-6 text-sm leading-relaxed">
                   {loginError}
@@ -433,7 +432,7 @@ function App() {
                     onClick={() => setLoginError(null)}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
                   >
-                    Đăng nhập lại
+                    Đóng
                   </button>
                 </div>
               </div>

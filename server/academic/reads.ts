@@ -6,55 +6,68 @@ import type { AuthenticatedUser } from '../types';
 import { COURSE_CATALOG, EMPTY_CLASS_SETTINGS, GROUP_NAMES, campaignKey, type CourseEnrollment, type AcademicClass } from '../../src/shared/academic';
 import { fail, type Snapshot } from './store';
 import { canJoin, enrollmentView } from './service';
-import { requireRead, getClass, course } from './domain';
+import { requireRead, getClass, course,lecturerFor } from './domain';
 import { hydrateLegacy } from './legacy';
 
 const campaignIdSql = `COALESCE(json_extract(c.data,'$.campaignId'),c.semester_id||CASE WHEN json_extract(c.data,'$.courseCode') IN ('INT3131','INT3132') THEN ':project' ELSE ':internship' END)`;
 const withoutContent = (data: string) => `json_remove(${data},'$.settings.plan','$.settings.lecturerGuide','$.settings.studentFaq','$.settings.lecturerFaq','$.settings.registrationRules')`;
 // Read models use one consistent SQL snapshot, filter before transferring rows,
 // and join live legacy assignments rather than treating the academic copy as truth.
-export const recordCte = `WITH actor_input AS MATERIALIZED (SELECT ? role,? email,? lecturer,? campaignId,? enrollmentId), actor AS MATERIALIZED (SELECT role,email,lecturer,CASE WHEN enrollmentId!='' THEN (SELECT ${campaignIdSql} FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id WHERE e.id=actor_input.enrollmentId) ELSE campaignId END campaignId,enrollmentId FROM actor_input),
+function buildRecordCte(accessOnly=false){
+ const stored=accessOnly?"json_remove(e.data,'$.versions','$.evaluations','$.internshipGrade')":'e.data';
+ const liveGrades=accessOnly?'':`,'$.lockedAt',g.locked_at,'$.reviewComment',COALESCE(fr.lecturer_comment,''),
+   '$.internshipGrade',json(CASE WHEN g.progress_score IS NOT NULL AND g.report_score IS NOT NULL AND g.company_score IS NOT NULL THEN json_object('progress',g.progress_score,'report',g.report_score,'company',g.company_score,'comment',COALESCE(g.comment,''),'lecturerId',g.lecturer_id,'assignmentId',COALESCE((SELECT 'legacy-'||aa.id FROM advisor_assignments aa WHERE aa.user_id=u.id AND aa.role='primary' LIMIT 1),''),'submittedAt',COALESCE(g.updated_at,''),'updatedAt',COALESCE(g.updated_at,'')) ELSE 'null' END),
+   '$.versions[#-1]',json(CASE WHEN fr.object_key IS NOT NULL THEN json_set(json_extract(e.data,'$.versions[#-1]'),'$.id','legacy-report-'||fr.id,'$.objectKey',fr.object_key,'$.filename',fr.original_filename,'$.size',fr.file_size,'$.state','submitted','$.submittedAt',fr.submitted_at) ELSE json_extract(e.data,'$.versions[#-1]') END)`;
+ const versionProjection=accessOnly?'NULL v,NULL advisor,NULL reviewer,':`json_extract(j,'$.versions[#-1]') v,
+ json_extract(j,'$.evaluations."'||json_extract(j,'$.versions[#-1].id')||'".advisor') advisor,
+ json_extract(j,'$.evaluations."'||json_extract(j,'$.versions[#-1].id')||'".reviewer') reviewer,`;
+ const scoring=accessOnly?'0 hasGrade,0 complete,0 requiresResubmission':`CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.evaluations."'||json_extract(v,'$.id')||'"')) WHERE value IS NOT NULL) THEN 1 ELSE 0 END hasGrade,
+ CASE WHEN courseCode IN ('INT3131','INT3132') THEN CASE WHEN advisor IS NOT NULL AND reviewer IS NOT NULL AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(advisor,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(advisor,'$.lecturerId') AND json_extract(a.value,'$.role')='primary') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(reviewer,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(reviewer,'$.lecturerId') AND json_extract(a.value,'$.role')='reviewer') THEN 1 ELSE 0 END ELSE CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL THEN 1 ELSE 0 END END complete,
+ CASE WHEN courseCode IN ('INT3131','INT3132') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.versions')) WHERE json_extract(value,'$.state')='submitted') AND json_extract(v,'$.topicVersion') IS NOT json_extract(j,'$.topicReview.version') THEN 1 ELSE 0 END requiresResubmission`;
+ return `WITH actor_input AS MATERIALIZED (SELECT ? role,? email,? lecturer,? campaignId,? enrollmentId), actor AS MATERIALIZED (SELECT role,email,lecturer,CASE WHEN enrollmentId!='' THEN (SELECT ${campaignIdSql} FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id WHERE e.id=actor_input.enrollmentId) ELSE campaignId END campaignId,enrollmentId,(SELECT l.id FROM lecturers l WHERE actor_input.lecturer=1 AND lower(trim(l.email))=actor_input.email LIMIT 1) identityLecturerId FROM actor_input),
  raw AS MATERIALIZED (
  SELECT e.id,e.class_id,e.student_id,c.code classCode,json_extract(c.data,'$.courseCode') courseCode,${campaignIdSql} campaignId,
  COALESCE(json_extract(p.data,'$.status'),'draft') campaignStatus,
  CASE WHEN json_extract(e.data,'$.legacy')=1 THEN
-   json_set(e.data,'$.assignments',json(COALESCE((SELECT json_group_array(json_object('id','legacy-'||aa.id,'lecturerId',aa.lecturer_id,'role',aa.role,'assignedAt',COALESCE(aa.assigned_at,''))) FROM advisor_assignments aa WHERE aa.user_id=u.id),'[]')),
-   '$.name',COALESCE(u.name,json_extract(e.data,'$.name')),'$.dob',COALESCE(u.dob,''),'$.className',COALESCE(u.class_name,''),
-   '$.lockedAt',g.locked_at,'$.reviewComment',COALESCE(fr.lecturer_comment,''),
-   '$.internshipGrade',json(CASE WHEN g.progress_score IS NOT NULL AND g.report_score IS NOT NULL AND g.company_score IS NOT NULL THEN json_object('progress',g.progress_score,'report',g.report_score,'company',g.company_score,'comment',COALESCE(g.comment,''),'lecturerId',g.lecturer_id,'assignmentId',COALESCE((SELECT 'legacy-'||aa.id FROM advisor_assignments aa WHERE aa.user_id=u.id AND aa.role='primary' LIMIT 1),''),'submittedAt',COALESCE(g.updated_at,''),'updatedAt',COALESCE(g.updated_at,'')) ELSE 'null' END),
-   '$.versions[#-1]',json(CASE WHEN fr.object_key IS NOT NULL THEN json_set(json_extract(e.data,'$.versions[#-1]'),'$.id','legacy-report-'||fr.id,'$.objectKey',fr.object_key,'$.filename',fr.original_filename,'$.size',fr.file_size,'$.state','submitted','$.submittedAt',fr.submitted_at) ELSE json_extract(e.data,'$.versions[#-1]') END))
- ELSE e.data END j
- FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id
+   json_set(${stored},'$.assignments',json(COALESCE((SELECT json_group_array(json_object('id','legacy-'||aa.id,'lecturerId',aa.lecturer_id,'role',aa.role,'assignedAt',COALESCE(aa.assigned_at,''))) FROM advisor_assignments aa WHERE aa.user_id=u.id),'[]')),
+   '$.name',COALESCE(u.name,json_extract(e.data,'$.name')),'$.dob',COALESCE(u.dob,''),'$.className',COALESCE(u.class_name,'')
+   ${liveGrades})
+ ELSE ${stored} END j
+ FROM actor CROSS JOIN academic_enrollments e JOIN academic_classes c ON c.id=e.class_id
  LEFT JOIN academic_campaigns p ON p.id=${campaignIdSql}
  LEFT JOIN users u ON json_extract(e.data,'$.legacy')=1 AND u.student_id=e.student_id
- LEFT JOIN final_reports fr ON fr.user_id=u.id LEFT JOIN grades g ON g.user_id=u.id CROSS JOIN actor
+ ${accessOnly?'':'LEFT JOIN final_reports fr ON fr.user_id=u.id LEFT JOIN grades g ON g.user_id=u.id'}
  WHERE (actor.campaignId='' OR ${campaignIdSql}=actor.campaignId) AND (actor.enrollmentId='' OR e.id=actor.enrollmentId)
+ AND (actor.role='admin' OR actor.role='student' AND lower(json_extract(e.data,'$.email'))=actor.email
+   OR actor.lecturer=1 AND (json_extract(e.data,'$.legacy')=1 AND EXISTS(SELECT 1 FROM advisor_assignments aa WHERE aa.user_id=u.id AND aa.lecturer_id=actor.identityLecturerId)
+     OR COALESCE(json_extract(e.data,'$.legacy'),0)!=1 AND EXISTS(SELECT 1 FROM json_each(e.data,'$.assignments') a WHERE json_extract(a.value,'$.lecturerId')=actor.identityLecturerId)))
  ), pairs AS MATERIALIZED (
- SELECT *,json_extract(j,'$.versions[#-1]') v,
- json_extract(j,'$.evaluations."'||json_extract(j,'$.versions[#-1].id')||'".advisor') advisor,
- json_extract(j,'$.evaluations."'||json_extract(j,'$.versions[#-1].id')||'".reviewer') reviewer,
- (SELECT id FROM lecturers,actor WHERE actor.lecturer=1 AND lower(trim(lecturers.email))=actor.email LIMIT 1) actorLecturerId
+ SELECT *,${versionProjection}
+ (SELECT identityLecturerId FROM actor) actorLecturerId
  FROM raw
  ), visible AS MATERIALIZED (
  SELECT *, CASE WHEN actor.role='admin' OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=actorLecturerId AND json_extract(a.value,'$.role') IN ('primary','reviewer')) THEN 1 ELSE 0 END canSeeGrades,
- CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.evaluations."'||json_extract(v,'$.id')||'"')) WHERE value IS NOT NULL) THEN 1 ELSE 0 END hasGrade,
- CASE WHEN courseCode IN ('INT3131','INT3132') THEN CASE WHEN advisor IS NOT NULL AND reviewer IS NOT NULL AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(advisor,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(advisor,'$.lecturerId') AND json_extract(a.value,'$.role')='primary') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(reviewer,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(reviewer,'$.lecturerId') AND json_extract(a.value,'$.role')='reviewer') THEN 1 ELSE 0 END ELSE CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL THEN 1 ELSE 0 END END complete,
- CASE WHEN courseCode IN ('INT3131','INT3132') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.versions')) WHERE json_extract(value,'$.state')='submitted') AND json_extract(v,'$.topicVersion') IS NOT json_extract(j,'$.topicReview.version') THEN 1 ELSE 0 END requiresResubmission
+ ${scoring}
  FROM pairs CROSS JOIN actor WHERE actor.role='admin' OR campaignStatus!='draft' AND COALESCE(json_extract(j,'$.status'),'active')='active' AND (actor.role='student' AND lower(json_extract(j,'$.email'))=actor.email OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=actorLecturerId))
  ), records AS MATERIALIZED (
  SELECT *,CASE WHEN json_extract(j,'$.lockedAt') IS NOT NULL THEN 'locked' WHEN complete=1 THEN 'complete' WHEN hasGrade=1 THEN 'partial' ELSE 'missing' END gradeStatus FROM visible
  )`;
+}
+export const recordCte=buildRecordCte();
+export const accessRecordCte=buildRecordCte(true);
 const argsFor = (actor: AuthenticatedUser, id = '', enrollmentId = '') => [actor.role, actor.email.trim().toLowerCase(), actor.role === 'lecturer' || actor.role === 'admin' || actor.is_lecturer ? 1 : 0, id, enrollmentId];
 
-export async function readContext(actor: AuthenticatedUser, id = '', section = 'full', enrollmentId = '', pageQuery?:Record<string,any>) {
+export async function readContext(actor: AuthenticatedUser, id = '', section = 'full', enrollmentId = '', pageQuery?:Record<string,any>,accessOnly=false) {
   const pageFilter = pageQuery ? listFilter(pageQuery) : null;
+  const cte=accessOnly||!enrollmentId&&!pageQuery&&!['overview','full'].includes(section)?accessRecordCte:recordCte;
   const page = Math.max(1,Math.floor(Number(pageQuery?.page)||1)), limit=Math.min(100,Math.max(1,Math.floor(Number(pageQuery?.limit)||25)));
   const light = section === 'base' || section === 'overview' || section === 'management';
   const result = (await db.execute({ sql: compoundSelect(`
-    SELECT 'campaigns' kind,${light ? withoutContent('data') : 'data'} data FROM academic_campaigns WHERE (SELECT campaignId FROM actor)='' OR id=(SELECT campaignId FROM actor)
+    SELECT 'revision' kind,CAST(revision AS TEXT) data FROM academic_meta WHERE id=1
+    UNION ALL SELECT 'campaigns',${light ? withoutContent('data') : 'data'} data FROM academic_campaigns WHERE (SELECT campaignId FROM actor)='' OR id=(SELECT campaignId FROM actor)
     UNION ALL SELECT 'classes',${light ? withoutContent('c.data') : 'c.data'} FROM academic_classes c WHERE (SELECT campaignId FROM actor)='' OR ${campaignIdSql}=(SELECT campaignId FROM actor)
     UNION ALL SELECT 'enrollments',j FROM records WHERE (SELECT enrollmentId FROM actor)!=''
-    UNION ALL SELECT 'targetExists',json_object('n',count(*)) FROM raw WHERE (SELECT enrollmentId FROM actor)!=''
+    UNION ALL SELECT 'targetExists',json_object('n',count(*)) FROM academic_enrollments WHERE (SELECT enrollmentId FROM actor)!='' AND id=(SELECT enrollmentId FROM actor)
     UNION ALL SELECT 'semesters',data FROM academic_semesters
     UNION ALL SELECT 'lecturers',json_object('id',id,'name',name,'email',COALESCE(email,''),'work_unit',COALESCE(work_unit,'')) FROM lecturers WHERE (SELECT role FROM actor)='admin' OR (SELECT campaignId FROM actor)='' OR EXISTS(SELECT 1 FROM academic_campaigns p WHERE p.id=(SELECT campaignId FROM actor) AND p.course_group='internship') OR lower(trim(email))=(SELECT email FROM actor) OR EXISTS(SELECT 1 FROM records e,json_each(json_extract(e.j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=lecturers.id)
     UNION ALL SELECT 'quotas',data FROM academic_quotas WHERE ${section === 'full' || section === 'management' ? "(SELECT role FROM actor)='admin'" : '0'}
@@ -64,13 +77,14 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
     UNION ALL SELECT 'unmapped',json_object('value',CASE WHEN (SELECT role FROM actor)='student' AND NOT EXISTS(SELECT 1 FROM academic_enrollments WHERE json_extract(data,'$.legacy')=1 AND lower(json_extract(data,'$.email'))=(SELECT email FROM actor)) THEN 1 ELSE 0 END)
     UNION ALL SELECT 'settings',json_object('key',key,'value',value) FROM settings WHERE EXISTS(SELECT 1 FROM academic_campaigns p WHERE json_extract(p.data,'$.legacy')=1 AND ((SELECT campaignId FROM actor)='' OR p.id=(SELECT campaignId FROM actor)))
     ${pageFilter?`UNION ALL SELECT 'pageCount',json_object('total',count(*),'studentCount',count(DISTINCT student_id)) FROM records WHERE ${pageFilter.sql}
-    UNION ALL SELECT 'pageItem',j FROM (SELECT * FROM records WHERE ${pageFilter.sql} ORDER BY student_id,classCode ${pageQuery.__all?'':'LIMIT ? OFFSET ?'})`:''}`.split(/\n\s*UNION ALL /),recordCte), args: [...argsFor(actor, id, enrollmentId),...(pageFilter?[...pageFilter.args,...pageFilter.args,...(pageQuery.__all?[]:[limit,(page-1)*limit])]:[])] })).rows;
+    UNION ALL SELECT 'pageItem',j FROM (SELECT * FROM records WHERE ${pageFilter.sql} ORDER BY student_id,classCode ${pageQuery.__all?'':'LIMIT ? OFFSET ?'})`:''}`.split(/\n\s*UNION ALL /),cte), args: [...argsFor(actor, id, enrollmentId),...(pageFilter?[...pageFilter.args,...pageFilter.args,...(pageQuery.__all?[]:[limit,(page-1)*limit])]:[])] })).rows;
   const s: Snapshot = { revision: 0, campaigns: [], semesters: [], classes: [], enrollments: [], quotas: [], lecturers: [] };
   const counts = new Map<string, any>(), classCounts = new Map<string, number>(); let unmapped = false, targetExists = false; let pageCount:{total:number;studentCount:number}|undefined;
   const settings: any[] = []; const enrolledClasses = new Set<string>();
   for (const row of result) {
     const item = JSON.parse(String(row.data));
-    if(row.kind==='pageCount')pageCount=item;
+    if(row.kind==='revision')s.revision=Number(item);
+    else if(row.kind==='pageCount')pageCount=item;
     else if(row.kind==='pageItem')s.enrollments.push(item);
     else if (row.kind === 'counts') counts.set(item.campaignId, item);
     else if (row.kind === 'classCounts') classCounts.set(item.classId, item.n);
@@ -109,8 +123,10 @@ function applyReadSettings(s: Snapshot, rows: any[]) {
   }
 }
 const readCache = new Map<string, { data: any; expiresAt: number }>();
+let projectPages=new WeakMap<object,Map<string,{data:any;expiresAt:number;bytes:number}>>();
 export function invalidateReadCache() {
   readCache.clear();
+  projectPages=new WeakMap();
 }
 
 export async function readCampaignDetail(actor: AuthenticatedUser, id: string, section = 'full') {
@@ -136,7 +152,7 @@ export async function readCampaignCatalog(actor: AuthenticatedUser, section = 'f
   if(readCache.size>100)readCache.delete(readCache.keys().next().value!);
   const cached = readCache.get(cacheKey);
   if (cached && cached.expiresAt > now) return structuredClone(cached.data);
-  const ctx=await readContext(actor,'',section);
+  const ctx=await readContext(actor,'',section,'',undefined,true);
   const result = {campaigns:ctx.campaigns,semesters:ctx.s.semesters,courses:COURSE_CATALOG,legacyInternshipUnmapped:ctx.unmapped};
   readCache.set(cacheKey, { data: structuredClone(result), expiresAt: now + 30_000 });
   return result;
@@ -165,7 +181,16 @@ function listFilter(query: Record<string, any>) {
   }
   return {sql:filters.join(' AND '),args};
 }
-export async function readCampaignEnrollments(actor: AuthenticatedUser,id:string,query:Record<string,any>={},all=false,context?:Awaited<ReturnType<typeof readContext>>) {
+export async function readCampaignEnrollments(actor: AuthenticatedUser,id:string,query:Record<string,any>={},all=false,context?:Awaited<ReturnType<typeof readContext>>,useCached=true) {
+  const cacheable=!all&&!context&&id.endsWith(':project');const now=Date.now();
+  const keyFor=(revision:number,lecturerId:unknown)=>JSON.stringify([revision,actor.id,actor.role,actor.email.trim().toLowerCase(),!!actor.is_lecturer,lecturerId??null,id,Object.entries(query).sort(([a],[b])=>a.localeCompare(b))]);
+  let bucket=projectPages.get(db);if(!bucket){bucket=new Map();projectPages.set(db,bucket);}
+  for(const[key,item]of bucket)if(item.expiresAt<=now)bucket.delete(key);
+  if(cacheable&&useCached&&bucket.size){
+    const stamp=(await db.execute({sql:'SELECT revision,(SELECT id FROM lecturers WHERE ?=1 AND lower(trim(email))=? LIMIT 1) lecturerId FROM academic_meta WHERE id=1',args:[actor.role==='admin'||actor.role==='lecturer'||actor.is_lecturer?1:0,actor.email.trim().toLowerCase()]})).rows[0];
+    const key=keyFor(Number(stamp.revision),stamp.lecturerId),cached=bucket.get(key);
+    if(cached){bucket.delete(key);bucket.set(key,cached);return structuredClone(cached.data);}
+  }
   let ctx=context || await readContext(actor,id,'management','',{...query,__all:all});
   if(query.focusEnrollmentId&&!query.page&&!all&&!ctx.s.enrollments.some(e=>e.id===query.focusEnrollmentId)){
     const f=listFilter(query);const rank=(await db.execute({sql:`${recordCte}, ranked AS (SELECT id,row_number() OVER(ORDER BY student_id,classCode) n FROM records WHERE ${f.sql}) SELECT n FROM ranked WHERE id=?`,args:[...argsFor(actor,id),...f.args,String(query.focusEnrollmentId)]})).rows[0];
@@ -186,7 +211,13 @@ export async function readCampaignEnrollments(actor: AuthenticatedUser,id:string
   }
   if(ctx.s.enrollments.some(e=>e.legacy))await hydrateLegacy(ctx.s);
   const items=ctx.s.enrollments.map(e=>{const c=getClass(ctx.s,e.classId);const view=enrollmentView(ctx.s,c,e,actor);if(projection){view.versions=view.versions.slice(-1);if(!['grades','student-list'].includes(projection)){delete view.evaluations;delete view.internshipGrade;delete view.finalScore;}else if(view.evaluations)view.evaluations={[view.versions[0].id]:view.evaluations[view.versions[0].id]||{}};view.preferences=[];view.finalInternship=null;view.advisorRequest=null;view.note='';}return {...view,classCode:c.code,courseCode:c.courseCode};});
-  return {items,...count,page,limit,totalPages:Math.max(1,Math.ceil(count.total/limit))};
+  const result={items,...count,page,limit,totalPages:Math.max(1,Math.ceil(count.total/limit))};
+  if(cacheable&&ctx.campaigns.find(p=>p.id===id)?.group==='project'&&!ctx.s.enrollments.some(e=>e.legacy)){
+    const key=keyFor(ctx.s.revision,lecturerFor(ctx.s,actor)?.id),bytes=Buffer.byteLength(JSON.stringify(result));
+    const deadlines=[...ctx.s.classes.flatMap(c=>Object.entries(c.settings).filter(([k])=>k.endsWith('At')).map(([k,v])=>Date.parse(String(v))+(k.endsWith('CloseAt')?1:0))),...ctx.s.enrollments.flatMap(e=>[Date.parse(e.reopenUntil||'')+1,Date.parse(e.topicSubmissionUntil||'')+1])].filter(t=>Number.isFinite(t)&&t>now);
+    if(bytes<=10*1024*1024){bucket.delete(key);bucket.set(key,{data:structuredClone(result),bytes,expiresAt:Math.min(now+30_000,...deadlines)});while(bucket.size>25||[...bucket.values()].reduce((n,x)=>n+x.bytes,0)>10*1024*1024)bucket.delete(bucket.keys().next().value!);}
+  }
+  return result;
 }
 export async function readEnrollment(actor: AuthenticatedUser,id:string) {
   const ctx=await readContext(actor,'','management',id);
@@ -203,7 +234,7 @@ export async function readCommunicationContext(actor: AuthenticatedUser, target:
   const id = row ? String(row.id) : target;
   const [ctx, roster] = await Promise.all([
     readContext(actor,id,'base'),
-    db.execute({sql:`${recordCte} SELECT json_object('id',id,'classId',class_id,'studentId',student_id,'name',json_extract(j,'$.name'),'email',json_extract(j,'$.email'),'status',json_extract(j,'$.status'),'legacy',json_extract(j,'$.legacy'),'assignments',json(json_extract(j,'$.assignments'))) data FROM records`,args:argsFor(actor,id)})
+    db.execute({sql:`${accessRecordCte} SELECT json_object('id',id,'classId',class_id,'studentId',student_id,'name',json_extract(j,'$.name'),'email',json_extract(j,'$.email'),'status',json_extract(j,'$.status'),'legacy',json_extract(j,'$.legacy'),'assignments',json(json_extract(j,'$.assignments'))) data FROM records`,args:argsFor(actor,id)})
   ]);
   ctx.s.enrollments = roster.rows.map(r=>JSON.parse(String(r.data)));
   return ctx;

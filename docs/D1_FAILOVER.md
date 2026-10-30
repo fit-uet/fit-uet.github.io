@@ -1,5 +1,7 @@
 # D1 tạm thời khi Turso hết quota
 
+**Cập nhật sự cố 30/10:** D1 đã chạm hạn mức đọc hằng ngày và chặn truy vấn bằng mã `7500`. Kết quả kiểm chứng phát hành bên dưới là tại thời điểm 08:30; không đồng nghĩa database đang truy cập được trong sự cố. Xử lý cảnh báo, giữ phiên và tối ưu truy vấn tại [DATABASE_AVAILABILITY.md](DATABASE_AVAILABILITY.md). Giữ gói miễn phí theo quyết định của chủ hệ thống.
+
 Nguồn phục hồi được chủ hệ thống chấp nhận: bản sao production lúc **17:32 ngày 29/10/2026, UTC+7**. Thay đổi sau mốc này có thể chưa có trong bản sao; giữ nguyên Turso để đối soát khi khôi phục. Đợt phục hồi ban đầu dùng bản production sau khi xóa GVNX, schema 3; không dùng dữ liệu thử. Ngày 30/10 đã phát hành Danh sách sinh viên/schema 4 và hiệu chỉnh STT như ghi ở cuối tài liệu.
 
 ## Đích và chuyển traffic
