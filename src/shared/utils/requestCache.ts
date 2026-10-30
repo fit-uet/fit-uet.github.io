@@ -54,9 +54,14 @@ export async function requestJson<T = any>(url: string, options: { headers?: Hea
   prune();
   const parsed = new URL(url, typeof location === 'undefined' ? 'http://local.invalid' : location.origin); parsed.searchParams.sort();
   const headers = new Headers(options.headers);
+  const forceRefresh=options.forceRefresh||/no-cache|no-store/i.test(headers.get('Cache-Control')||'');
+  // no-store controls the browser's HTTP cache. Without an explicit header,
+  // browsers also add no-cache, which inadvertently bypasses the server's
+  // revision-checked cache on every normal ETag revalidation.
+  headers.set('Cache-Control',forceRefresh?'no-cache':'max-age=0');
   const key = `${headers.get('Authorization') || ''}:${options.scope || ''}:${parsed.href}`;
-  const flightKey = options.forceRefresh ? key + ':forced' : key;
-  if (options.forceRefresh) { entries.delete(key); if (!flights.has(flightKey)) generation++; }
+  const flightKey = forceRefresh ? key + ':forced' : key;
+  if (forceRefresh) { entries.delete(key); if (!flights.has(flightKey)) generation++; }
   let flight = flights.get(flightKey);
   if (!flight) {
     const controller = new AbortController(); let epoch = generation;

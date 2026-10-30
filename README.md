@@ -87,6 +87,7 @@ Các lệnh khác:
 | `npm run test:academic` | Kiểm thử nghiệp vụ, API và CLI migration với dữ liệu riêng |
 | `npm run test:academic:ui` | Kiểm thử giao diện Chromium; cài browser bằng `npx playwright install chromium` lần đầu |
 | `npm run test:academic:d1` | Kiểm chứng trigger/CAS/rollback trên D1 local riêng biệt |
+| `npm run academic:profile-reads -- --database=/private/backup.db --campaign=2026-2027-1:project --baseline-ref=68d9548 --assert` | Đo rows_read trên bản sao D1 local, đối chiếu DTO/quyền và ngân sách đọc; xem [PERFORMANCE.md](docs/PERFORMANCE.md) |
 | `npm run academic:preview` | Bản thử RAM, không dùng DB/OAuth/email thật; xem [hướng dẫn](docs/IMPLEMENTATION_STATUS.md#chạy-thử-độc-lập-với-dữ-liệu-đang-vận-hành) |
 | `npm run academic:stage -- --source=file:/path/copy.db` | Tạo bản sao staging, diễn tập khởi tạo/ánh xạ, đối soát; yêu cầu Node 22.16+ |
 | `npm run academic:stage:serve -- --directory=/path/staging-dir` | Mở bản sao đã đối soát trên localhost:4319, email/cron tắt |

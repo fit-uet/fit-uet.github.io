@@ -274,8 +274,8 @@ test('student topics stay pending until primary adviser saves approval inline; r
 
 test('functions load on demand, revisit with ETag, debounce searches and export without refreshing the group', async ({ browser }) => {
   const {page,context,classes,errors}=await session(browser,'admin'); const c=classes.find(c=>c.courseCode==='INT3132');
-  const calls:{url:string;tag?:string;status?:number}[]=[];
-  page.on('request',r=>{if(r.url().includes('/api/'))calls.push({url:r.url(),tag:r.headers()['if-none-match']});});
+  const calls:{url:string;tag?:string;control?:string;status?:number}[]=[];
+  page.on('request',r=>{if(r.url().includes('/api/'))calls.push({url:r.url(),tag:r.headers()['if-none-match'],control:r.headers()['cache-control']});});
   const listResponses:number[]=[];page.on('response',r=>{if(r.url().includes(`/campaigns/${c.campaignId}/enrollments`))listResponses.push(r.status());});
   try {
     await page.goto(`/#/campaigns/${c.campaignId}`);await expect(page.getByRole('heading',{name:'Tổng quan Quản trị'})).toBeVisible();
@@ -287,6 +287,7 @@ test('functions load on demand, revisit with ETag, debounce searches and export 
     await feature(page,'students');await expect(page.getByText('Sinh viên An',{exact:true})).toHaveCount(2);
     expect(listResponses).toEqual([200]);const first=calls.find(r=>r.url.includes('/enrollments?'))!;expect(new URL(first.url).searchParams.get('projection')).toBe('student-list');
     await feature(page,'plan');await expect(page.getByRole('heading',{name:'Kế hoạch và hướng dẫn',exact:true})).toBeVisible();await feature(page,'students');await expect.poll(()=>listResponses.length).toBe(2);expect(listResponses[1]).toBe(304);
+    expect(calls.filter(r=>r.url.includes('/enrollments?')&&r.tag).at(-1)!.control).toBe('max-age=0');
     const beforeSearch=calls.filter(r=>r.url.includes('/enrollments?')).length;
     await page.getByLabel('Tìm sinh viên',{exact:true}).fill('2402');await page.getByLabel('Tìm sinh viên',{exact:true}).fill('24020001');
     await expect.poll(()=>calls.filter(r=>r.url.includes('/enrollments?')).length).toBe(beforeSearch+1);

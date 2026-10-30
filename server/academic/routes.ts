@@ -48,8 +48,9 @@ export function academicRoute(method: 'get' | 'post' | 'put' | 'patch' | 'delete
     }
   });
 }
-academicRoute('get', '/api/me/campaigns', req => readCampaignCatalog(req.user, req.query.section === 'base' ? 'base' : 'full'));
-academicRoute('get', '/api/campaigns/:campaignId', req => readCampaignDetail(req.user, req.params.campaignId, req.query.section || 'full'));
+const mayUseReadCache=(req:any)=>!!req.get('If-None-Match')&&!/no-cache|no-store/i.test(req.get('Cache-Control')||'');
+academicRoute('get', '/api/me/campaigns', req => readCampaignCatalog(req.user, req.query.section === 'base' ? 'base' : 'full',mayUseReadCache(req)));
+academicRoute('get', '/api/campaigns/:campaignId', req => readCampaignDetail(req.user, req.params.campaignId, req.query.section || 'full',mayUseReadCache(req)));
 academicRoute('post','/api/campaigns/:campaignId/deletions/preview',req=>previewProjectDeletion(req.user,req.params.campaignId,req.body));
 academicRoute('post','/api/campaigns/:campaignId/deletions/:previewId/apply',req=>applyProjectDeletion(req.user,req.params.campaignId,req.params.previewId,req.body));
 academicRoute('get','/api/campaigns/:campaignId/deletions/:jobId',req=>projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId));

@@ -32,6 +32,7 @@ export async function initAcademicSchema(client: DatabaseClient) {
     `CREATE TABLE IF NOT EXISTS academic_schema_migrations (version INTEGER PRIMARY KEY,applied_at TEXT NOT NULL)`,
     `CREATE INDEX IF NOT EXISTS academic_enrollment_student ON academic_enrollments(student_id,class_id)`,
     `CREATE INDEX IF NOT EXISTS idx_academic_enrollments_class ON academic_enrollments(class_id)`,
+    `CREATE INDEX IF NOT EXISTS academic_enrollment_email ON academic_enrollments(lower(json_extract(data,'$.email')))`,
     `CREATE INDEX IF NOT EXISTS idx_users_student_id ON users(student_id)`,
     `CREATE INDEX IF NOT EXISTS idx_users_email_casefold ON users(lower(email))`,
     `CREATE INDEX IF NOT EXISTS idx_lecturers_email_casefold_trim ON lecturers(lower(trim(email)))`,
