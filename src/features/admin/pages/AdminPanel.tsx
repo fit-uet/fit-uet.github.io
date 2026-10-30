@@ -1096,57 +1096,94 @@ export function AdminPanel({ token, initialCourseCode = '', user: propUser }: { 
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
         <button
           type="button"
           onClick={clearRegistrationFilters}
-          className={`text-left bg-white p-4 rounded-2xl border shadow-sm flex flex-col justify-between transition-all hover:-translate-y-0.5 hover:shadow-md ${!searchTerm && !filterCourse && !filterStatus ? 'border-blue-500 ring-2 ring-blue-50' : 'border-slate-200'}`}
+          className={`text-left bg-white border rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between transition-all hover:shadow-md cursor-pointer active:scale-[0.98] ${!searchTerm && !filterCourse && !filterStatus ? 'border-[#034ea1] ring-2 ring-[#034ea1]/20' : 'border-black/[0.06]'}`}
         >
-          <div className="flex items-center justify-between w-full mb-2">
-            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Tổng nguyện vọng</span>
-            <FileText size={16} className="text-slate-400" />
+          <div className="flex items-center justify-between w-full mb-2 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+            <span>Tổng NV</span>
+            <FileText size={16} className="text-[#034ea1]" />
           </div>
-          <span className="text-2xl font-bold text-slate-800">{totalRegistrations}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-[#034ea1] tracking-tight">{totalRegistrations}</span>
+            <span className="text-[11px] text-[#64748b]">hồ sơ</span>
+          </div>
+          <span className="text-[11px] text-[#034ea1] mt-1 font-medium">Tất cả nguyện vọng</span>
         </button>
-        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between w-full mb-2">
-            <span className="text-blue-600 text-xs font-semibold uppercase tracking-wider">SV đăng ký</span>
-            <Users size={16} className="text-blue-500" />
+
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between w-full mb-2 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+            <span>SV đăng ký</span>
+            <Users size={16} className="text-[#034ea1]" />
           </div>
-          <span className="text-2xl font-bold text-blue-700">{totalStudents}</span>
-        </div>
-        <div className="bg-cyan-50 p-4 rounded-2xl border border-cyan-100 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between w-full mb-2">
-            <span className="text-cyan-700 text-xs font-semibold uppercase tracking-wider">Công ty</span>
-            <Building2 size={16} className="text-cyan-600" />
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-[#034ea1] tracking-tight">{totalStudents}</span>
+            <span className="text-[11px] text-[#64748b]">sinh viên</span>
           </div>
-          <span className="text-2xl font-bold text-cyan-800">{totalCompanies}</span>
+          <span className="text-[11px] text-[#034ea1] mt-1 font-medium">Sinh viên duy nhất</span>
         </div>
+
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between w-full mb-2 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+            <span>Công ty</span>
+            <Building2 size={16} className="text-[#0369a1]" />
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-[#0369a1] tracking-tight">{totalCompanies}</span>
+            <span className="text-[11px] text-[#64748b]">đơn vị</span>
+          </div>
+          <span className="text-[11px] text-[#0369a1] mt-1 font-medium">Đơn vị tiếp nhận</span>
+        </div>
+
         <button
           type="button"
-          onClick={() => applyRegistrationStatusFilter('pending')}
-          className={`text-left bg-orange-50 p-4 rounded-2xl border shadow-sm flex flex-col justify-between transition-all hover:-translate-y-0.5 hover:shadow-md ${filterStatus === 'pending' ? 'border-orange-400 ring-2 ring-orange-100' : 'border-slate-200'}`}
+          onClick={() => applyRegistrationStatusFilter(filterStatus === 'pending' ? '' : 'pending')}
+          className={`text-left bg-white border rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between transition-all hover:shadow-md cursor-pointer active:scale-[0.98] ${filterStatus === 'pending' ? 'border-[#c2410c] ring-2 ring-[#c2410c]/20' : 'border-black/[0.06]'}`}
         >
-          <div className="flex items-center justify-between w-full mb-2">
-            <span className="text-orange-600 text-xs font-semibold uppercase tracking-wider">Chờ duyệt</span>
-            <Clock size={16} className="text-orange-500" />
+          <div className="flex items-center justify-between w-full mb-2 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+            <span>Chờ duyệt</span>
+            <Clock size={16} className="text-[#c2410c]" />
           </div>
-          <span className="text-2xl font-bold text-slate-800">{pendingRegistrations}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-[#c2410c] tracking-tight">{pendingRegistrations}</span>
+            <span className="text-[11px] text-[#64748b]">hồ sơ</span>
+          </div>
+          <span className="text-[11px] text-[#c2410c] mt-1 font-medium">Chờ Khoa xử lý</span>
         </button>
-        <div className="bg-green-50 p-4 rounded-2xl border border-green-100 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between w-full mb-2">
-            <span className="text-green-600 text-xs font-semibold uppercase tracking-wider">Đã duyệt</span>
-            <CheckCircle2 size={16} className="text-green-500" />
+
+        <button
+          type="button"
+          onClick={() => applyRegistrationStatusFilter(filterStatus === 'approved' ? '' : 'approved')}
+          className={`text-left bg-white border rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between transition-all hover:shadow-md cursor-pointer active:scale-[0.98] ${filterStatus === 'approved' ? 'border-[#15803d] ring-2 ring-[#15803d]/20' : 'border-black/[0.06]'}`}
+        >
+          <div className="flex items-center justify-between w-full mb-2 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+            <span>Đã duyệt</span>
+            <CheckCircle2 size={16} className="text-[#15803d]" />
           </div>
-          <span className="text-2xl font-bold text-slate-800">{approvedRegistrations}</span>
-        </div>
-        <div className="bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between w-full mb-2">
-            <span className="text-red-600 text-xs font-semibold uppercase tracking-wider">Từ chối</span>
-            <X size={16} className="text-red-500" />
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-[#15803d] tracking-tight">{approvedRegistrations}</span>
+            <span className="text-[11px] text-[#64748b]">hồ sơ</span>
           </div>
-          <span className="text-2xl font-bold text-slate-800">{rejectedRegistrations}</span>
-        </div>
+          <span className="text-[11px] text-[#15803d] mt-1 font-medium">Đã chấp thuận</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => applyRegistrationStatusFilter(filterStatus === 'rejected' ? '' : 'rejected')}
+          className={`text-left bg-white border rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between transition-all hover:shadow-md cursor-pointer active:scale-[0.98] ${filterStatus === 'rejected' ? 'border-[#b91c1c] ring-2 ring-[#b91c1c]/20' : 'border-black/[0.06]'}`}
+        >
+          <div className="flex items-center justify-between w-full mb-2 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+            <span>Từ chối</span>
+            <X size={16} className="text-[#b91c1c]" />
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-extrabold text-[#b91c1c] tracking-tight">{rejectedRegistrations}</span>
+            <span className="text-[11px] text-[#64748b]">hồ sơ</span>
+          </div>
+          <span className="text-[11px] text-[#b91c1c] mt-1 font-medium">Không được duyệt</span>
+        </button>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">

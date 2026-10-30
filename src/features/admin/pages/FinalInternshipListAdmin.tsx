@@ -5,7 +5,7 @@ import { useLegacyPage, useLegacyFilter, useLegacySearch, useLegacyMembership, l
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import { useState, useEffect, useMemo } from 'react';
-import { CheckCircle2, Download, ArrowUpDown, Search, RefreshCw, Trash2 } from 'lucide-react';
+import { CheckCircle2, Download, ArrowUpDown, Search, RefreshCw, Trash2, Users, Building2, School } from 'lucide-react';
 import { API_BASE, saveXlsx, paginationBounds, PaginationControls, PageDescriptionTooltip, formatCourseCode, cleanStudentName } from '../../../shared';
 
 export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { token: string; initialCourseCode?: string }) {
@@ -179,25 +179,64 @@ export function FinalInternshipListAdmin({ token, initialCourseCode = '' }: { to
       </div></CampaignLegacyHeader>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
-        <div className="bg-white p-4.5 rounded-2xl border border-black/[0.08] shadow-xs flex flex-col">
-          <span className="text-slate-500 text-[11px] font-semibold uppercase tracking-wider mb-1">Tổng xác nhận</span>
-          <span className="text-3xl font-bold tracking-tight text-[#0f172a]">{rows.length}</span>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Tổng xác nhận</span>
+            <CheckCircle2 size={16} className="text-[#034ea1]" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#034ea1] tracking-tight">{rows.length}</span>
+            <span className="text-xs text-[#64748b]">hồ sơ</span>
+          </div>
+          <span className="text-[11px] text-[#034ea1] mt-1.5 font-medium">Toàn bộ hồ sơ xác nhận</span>
         </div>
-        <div className="bg-[#e8f1fb] p-4.5 rounded-2xl border border-[#d4e5f7] shadow-xs flex flex-col">
-          <span className="text-[#034ea1] text-[11px] font-semibold uppercase tracking-wider mb-1">Số sinh viên</span>
-          <span className="text-3xl font-bold tracking-tight text-[#034ea1]">{uniqueStudents}</span>
+
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Số sinh viên</span>
+            <Users size={16} className="text-[#034ea1]" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#034ea1] tracking-tight">{uniqueStudents}</span>
+            <span className="text-xs text-[#64748b]">sinh viên</span>
+          </div>
+          <span className="text-[11px] text-[#034ea1] mt-1.5 font-medium">Sinh viên duy nhất</span>
         </div>
-        <div className="bg-[#f0f9ff] p-4.5 rounded-2xl border border-[#bae6fd] shadow-xs flex flex-col">
-          <span className="text-[#0369a1] text-[11px] font-semibold uppercase tracking-wider mb-1">Số nơi thực tập</span>
-          <span className="text-3xl font-bold tracking-tight text-[#0369a1]">{uniquePlaces}</span>
+
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Số nơi thực tập</span>
+            <Building2 size={16} className="text-[#0369a1]" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#0369a1] tracking-tight">{uniquePlaces}</span>
+            <span className="text-xs text-[#64748b]">đơn vị</span>
+          </div>
+          <span className="text-[11px] text-[#0369a1] mt-1.5 font-medium">Công ty và đơn vị tiếp nhận</span>
         </div>
-        <div className="bg-[#dcfce7] p-4.5 rounded-2xl border border-[#d1f2d9] shadow-xs flex flex-col">
-          <span className="text-[#1b7f37] text-[11px] font-semibold uppercase tracking-wider mb-1">Thực tập công ty</span>
-          <span className="text-3xl font-bold tracking-tight text-[#1b7f37]">{companyCount}</span>
+
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Thực tập công ty</span>
+            <Building2 size={16} className="text-[#1b7f37]" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#1b7f37] tracking-tight">{companyCount}</span>
+            <span className="text-xs text-[#64748b]">hồ sơ</span>
+          </div>
+          <span className="text-[11px] text-[#1b7f37] mt-1.5 font-medium">Doanh nghiệp bên ngoài</span>
         </div>
-        <div className="bg-[#f5f3ff] p-4.5 rounded-2xl border border-[#ddd6fe] shadow-xs flex flex-col">
-          <span className="text-[#6d28d9] text-[11px] font-semibold uppercase tracking-wider mb-1">TT ở trường</span>
-          <span className="text-3xl font-bold tracking-tight text-[#6d28d9]">{schoolCount}</span>
+
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>TT ở trường</span>
+            <School size={16} className="text-[#6d28d9]" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#6d28d9] tracking-tight">{schoolCount}</span>
+            <span className="text-xs text-[#64748b]">hồ sơ</span>
+          </div>
+          <span className="text-[11px] text-[#6d28d9] mt-1.5 font-medium">Thực tập tại các Lab Trường</span>
         </div>
       </div>
 

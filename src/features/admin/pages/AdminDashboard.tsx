@@ -90,63 +90,67 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
 
       <CampaignStandalone>{presentation?.context}</CampaignStandalone>
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{presentation?.project ? 'Số sinh viên' : 'Số SV đăng ký'}</span>
-            <div className="p-2 bg-sky-50 rounded-lg text-sky-600">
-              <Users size={18} />
-            </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>{presentation?.project ? 'Tổng sinh viên' : 'Số SV đăng ký'}</span>
+            <Users size={16} className="text-[#034ea1]" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-slate-900">{loadingStats ? '—' : stats.registeredCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">tổng số</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#034ea1] tracking-tight">{loadingStats ? '—' : stats.registeredCount}</span>
+            <span className="text-xs text-[#64748b]">{presentation?.project ? 'lần học' : 'sinh viên'}</span>
           </div>
+          <span className="text-[11px] text-[#034ea1] mt-1.5 font-medium">Danh sách sinh viên trong nhóm</span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-blue-600 text-xs font-semibold uppercase tracking-wider">{presentation?.project ? 'Số lần học' : 'Số SV xác nhận'}</span>
-            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-              <CheckCircle2 size={18} />
-            </div>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>{presentation?.project ? 'Số lần học' : 'Số SV xác nhận'}</span>
+            <CheckCircle2 size={16} className="text-emerald-600" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-[#034ea1]">{loadingStats ? '—' : stats.confirmedCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">
-              {isProject ? 'hồ sơ học phần' : stats.registeredCount ? `${Math.round((stats.confirmedCount / stats.registeredCount) * 100)}%` : '0%'}
-            </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight">{loadingStats ? '—' : stats.confirmedCount}</span>
+            <span className="text-xs text-[#64748b]">hồ sơ</span>
           </div>
+          <span className="text-[11px] text-emerald-600 mt-1.5 font-medium">
+            {presentation?.project
+              ? 'Đã được ghi nhận học phần'
+              : stats.registeredCount
+              ? `${Math.round((stats.confirmedCount / stats.registeredCount) * 100)}% đã xác nhận nơi TT`
+              : 'Đã xác nhận chính thức'}
+          </span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-amber-600 text-xs font-semibold uppercase tracking-wider">{isProject ? 'Hồ sơ đã nộp báo cáo' : 'Số SV nộp báo cáo'}</span>
-            <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
-              <FileText size={18} />
-            </div>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>{presentation?.project ? 'Báo cáo đã nộp' : 'Số SV nộp báo cáo'}</span>
+            <FileText size={16} className="text-amber-600" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-[#b25e00]">{loadingStats ? '—' : stats.reportCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">
-              {progressTotal ? `${Math.round((stats.reportCount / progressTotal) * 100)}%` : '0%'}
-            </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 tracking-tight">{loadingStats ? '—' : stats.reportCount}</span>
+            <span className="text-xs text-[#64748b]">báo cáo</span>
           </div>
+          <span className="text-[11px] text-amber-600 mt-1.5 font-medium">
+            {progressTotal
+              ? `${Math.round((stats.reportCount / progressTotal) * 100)}% hoàn thành nộp bài`
+              : 'Chờ giảng viên phản hồi'}
+          </span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-emerald-600 text-xs font-semibold uppercase tracking-wider">{isProject ? 'Hồ sơ có điểm' : 'Số SV có điểm'}</span>
-            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-              <GraduationCap size={18} />
-            </div>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>{presentation?.project ? 'Đã có điểm' : 'Số SV có điểm'}</span>
+            <GraduationCap size={16} className="text-slate-700" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-[#1b7f37]">{loadingStats ? '—' : stats.gradedCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">
-              {progressTotal ? `${Math.round((stats.gradedCount / progressTotal) * 100)}%` : '0%'}
-            </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-slate-700 tracking-tight">{loadingStats ? '—' : stats.gradedCount}</span>
+            <span className="text-xs text-[#64748b]">sinh viên</span>
           </div>
+          <span className="text-[11px] text-slate-500 mt-1.5 font-medium">
+            {progressTotal
+              ? `${Math.round((stats.gradedCount / progressTotal) * 100)}% đã hoàn tất đánh giá`
+              : 'Đã hoàn tất đánh giá'}
+          </span>
         </div>
       </div>
 
@@ -159,12 +163,12 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
               key={item.path}
               type="button"
               onClick={() => { const custom=presentation?.extraModules?.find(m=>m.path===item.path);custom?custom.onClick():navigate(item.path); }}
-              className="p-4 rounded-xl border border-slate-200 bg-white hover:border-[#034ea1] hover:shadow-sm transition-all duration-150 flex items-center gap-3.5 group text-left cursor-pointer active:scale-[0.98]"
+              className="p-3.5 sm:p-4 rounded-2xl border border-black/[0.06] bg-white hover:border-[#034ea1]/40 hover:shadow-sm transition-all duration-150 flex items-center gap-3.5 group text-left cursor-pointer active:scale-[0.98]"
             >
-              <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 group-hover:border-blue-100 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 group-hover:border-blue-100 transition-colors">
                 {item.icon}
               </div>
-              <span className="font-semibold text-sm text-slate-800 group-hover:text-[#034ea1] transition-colors leading-snug">
+              <span className="font-semibold text-xs sm:text-[13px] text-slate-800 group-hover:text-[#034ea1] transition-colors leading-snug">
                 {item.title}
               </span>
             </button>

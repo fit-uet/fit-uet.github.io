@@ -257,64 +257,60 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
         {headerActions}
       </div></CampaignLegacyHeader>
 
-      {/* Thống kê sinh viên phụ trách */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Số SV phụ trách</span>
-            <div className="p-2 bg-sky-50 rounded-xl text-sky-600">
-              <Users size={18} />
-            </div>
+      {/* Thống kê sinh viên phụ trách - Apple Executive KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Tổng sinh viên</span>
+            <Users size={16} className="text-[#034ea1]" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-slate-800">{registeredCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">tổng số</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#034ea1] tracking-tight">{registeredCount}</span>
+            <span className="text-xs text-[#64748b]">sinh viên</span>
           </div>
+          <span className="text-[11px] text-[#034ea1] mt-1.5 font-medium">Sinh viên được phân công</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-blue-600 text-xs font-semibold uppercase tracking-wider">Số SV xác nhận</span>
-            <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
-              <CheckCircle2 size={18} />
-            </div>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Đã xác nhận</span>
+            <CheckCircle2 size={16} className="text-emerald-600" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-blue-700">{confirmedCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">
-              {registeredCount ? `${Math.round((confirmedCount / registeredCount) * 100)}%` : '0%'}
-            </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight">{confirmedCount}</span>
+            <span className="text-xs text-[#64748b]">hồ sơ</span>
           </div>
+          <span className="text-[11px] text-emerald-600 mt-1.5 font-medium">
+            {registeredCount ? `${Math.round((confirmedCount / registeredCount) * 100)}% đã xác nhận nơi TT` : 'Đã xác nhận nơi TT'}
+          </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-amber-600 text-xs font-semibold uppercase tracking-wider">Số SV nộp báo cáo</span>
-            <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
-              <FileText size={18} />
-            </div>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Đã nộp báo cáo</span>
+            <FileText size={16} className="text-amber-600" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-amber-700">{reportCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">
-              {registeredCount ? `${Math.round((reportCount / registeredCount) * 100)}%` : '0%'}
-            </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 tracking-tight">{reportCount}</span>
+            <span className="text-xs text-[#64748b]">báo cáo</span>
           </div>
+          <span className="text-[11px] text-amber-600 mt-1.5 font-medium">
+            {registeredCount ? `${Math.round((reportCount / registeredCount) * 100)}% hoàn thành nộp bài` : 'Chờ giảng viên phản hồi'}
+          </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-emerald-600 text-xs font-semibold uppercase tracking-wider">Số SV có điểm</span>
-            <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
-              <GraduationCap size={18} />
-            </div>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+            <span>Đã có điểm</span>
+            <GraduationCap size={16} className="text-slate-700" />
           </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-3xl font-bold text-emerald-700">{gradedCount}</span>
-            <span className="text-[11px] font-medium text-slate-400">
-              {registeredCount ? `${Math.round((gradedCount / registeredCount) * 100)}%` : '0%'}
-            </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-slate-700 tracking-tight">{gradedCount}</span>
+            <span className="text-xs text-[#64748b]">sinh viên</span>
           </div>
+          <span className="text-[11px] text-slate-500 mt-1.5 font-medium">
+            {registeredCount ? `${Math.round((gradedCount / registeredCount) * 100)}% đã hoàn tất chấm điểm` : 'Đã hoàn tất đánh giá'}
+          </span>
         </div>
       </div>
 

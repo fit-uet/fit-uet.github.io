@@ -6,7 +6,7 @@ import { useLegacyPage, useLegacyMembership, legacyStudentInScope } from '../../
 import { matchesCourseCode } from '../../../shared/utils/format';
 import { useCampaignNavigate as useNavigate } from '../../academic/useCampaignNavigate';
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, FileText, Download, ChevronLeft, Award, Clock, AlertCircle, Lock } from 'lucide-react';
+import { RefreshCw, FileText, Download, ChevronLeft, Award, Clock, AlertCircle, Lock, Users, CheckCircle2 } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { API_BASE, PageDescriptionTooltip, CACHE_TTL, cachedJsonFetch } from '../../../shared';
 import { ReportReviewPanel, type ReviewTarget } from './ReportReviewPanel';
@@ -336,26 +336,56 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
           </button>
         </div></CampaignLegacyHeader>
 
-        {/* Apple KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        {/* Apple Executive KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Tổng sinh viên</span>
-            <div className="mt-2 text-3xl font-black text-[#0f172a] tracking-tight">{stats.total}</div>
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+              <span>Tổng sinh viên</span>
+              <Users size={16} className="text-[#034ea1]" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#034ea1] tracking-tight">{stats.total}</span>
+              <span className="text-xs text-[#64748b]">sinh viên</span>
+            </div>
+            <span className="text-[11px] text-[#034ea1] mt-1.5 font-medium">Danh sách sinh viên phân công</span>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Chưa có điểm</span>
-            <div className="mt-2 text-3xl font-black text-[#64748b] tracking-tight">{stats.missing}</div>
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+              <span>Chưa có điểm</span>
+              <Clock size={16} className="text-[#c2410c]" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#c2410c] tracking-tight">{stats.missing}</span>
+              <span className="text-xs text-[#64748b]">sinh viên</span>
+            </div>
+            <span className="text-[11px] text-[#c2410c] mt-1.5 font-medium">Cần hoàn thành chấm điểm</span>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Đã nộp điểm</span>
-            <div className="mt-2 text-3xl font-black text-[#15803d] tracking-tight">{stats.submitted}</div>
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+              <span>Đã nộp điểm</span>
+              <CheckCircle2 size={16} className="text-[#15803d]" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#15803d] tracking-tight">{stats.submitted}</span>
+              <span className="text-xs text-[#64748b]">sinh viên</span>
+            </div>
+            <span className="text-[11px] text-[#15803d] mt-1.5 font-medium">
+              {stats.total > 0 ? `${Math.round((stats.submitted / stats.total) * 100)}% hoàn thành chấm` : 'Đã lưu điểm'}
+            </span>
           </div>
 
           <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Khoa đã khóa</span>
-            <div className="mt-2 text-3xl font-black text-[#b91c1c] tracking-tight">{stats.locked}</div>
+            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
+              <span>Khoa đã khóa</span>
+              <Lock size={16} className="text-slate-700" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-slate-700 tracking-tight">{stats.locked}</span>
+              <span className="text-xs text-[#64748b]">sinh viên</span>
+            </div>
+            <span className="text-[11px] text-slate-500 mt-1.5 font-medium">Điểm chính thức đã chốt</span>
           </div>
         </div>
 
