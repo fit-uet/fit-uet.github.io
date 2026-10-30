@@ -40,7 +40,7 @@ export const recordCte = `WITH actor_input AS MATERIALIZED (SELECT ? role,? emai
  CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.evaluations."'||json_extract(v,'$.id')||'"')) WHERE value IS NOT NULL) THEN 1 ELSE 0 END hasGrade,
  CASE WHEN courseCode IN ('INT3131','INT3132') THEN CASE WHEN advisor IS NOT NULL AND reviewer IS NOT NULL AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(advisor,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(advisor,'$.lecturerId') AND json_extract(a.value,'$.role')='primary') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.id')=json_extract(reviewer,'$.assignmentId') AND json_extract(a.value,'$.lecturerId')=json_extract(reviewer,'$.lecturerId') AND json_extract(a.value,'$.role')='reviewer') THEN 1 ELSE 0 END ELSE CASE WHEN json_extract(j,'$.internshipGrade') IS NOT NULL THEN 1 ELSE 0 END END complete,
  CASE WHEN courseCode IN ('INT3131','INT3132') AND EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.versions')) WHERE json_extract(value,'$.state')='submitted') AND json_extract(v,'$.topicVersion') IS NOT json_extract(j,'$.topicReview.version') THEN 1 ELSE 0 END requiresResubmission
- FROM pairs CROSS JOIN actor WHERE actor.role='admin' OR campaignStatus!='draft' AND json_extract(j,'$.status')='active' AND (actor.role='student' AND lower(json_extract(j,'$.email'))=actor.email OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=actorLecturerId))
+ FROM pairs CROSS JOIN actor WHERE actor.role='admin' OR campaignStatus!='draft' AND COALESCE(json_extract(j,'$.status'),'active')='active' AND (actor.role='student' AND lower(json_extract(j,'$.email'))=actor.email OR EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=actorLecturerId))
  ), records AS MATERIALIZED (
  SELECT *,CASE WHEN json_extract(j,'$.lockedAt') IS NOT NULL THEN 'locked' WHEN complete=1 THEN 'complete' WHEN hasGrade=1 THEN 'partial' ELSE 'missing' END gradeStatus FROM visible
  )`;
@@ -58,9 +58,9 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
     UNION ALL SELECT 'semesters',data FROM academic_semesters
     UNION ALL SELECT 'lecturers',json_object('id',id,'name',name,'email',COALESCE(email,''),'work_unit',COALESCE(work_unit,'')) FROM lecturers WHERE (SELECT role FROM actor)='admin' OR (SELECT campaignId FROM actor)='' OR EXISTS(SELECT 1 FROM academic_campaigns p WHERE p.id=(SELECT campaignId FROM actor) AND p.course_group='internship') OR lower(trim(email))=(SELECT email FROM actor) OR EXISTS(SELECT 1 FROM records e,json_each(json_extract(e.j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=lecturers.id)
     UNION ALL SELECT 'quotas',data FROM academic_quotas WHERE ${section === 'full' || section === 'management' ? "(SELECT role FROM actor)='admin'" : '0'}
-    UNION ALL SELECT 'counts',json_object('campaignId',campaignId,'studentCount',count(DISTINCT student_id),'enrollmentCount',count(*),'submitted',sum(CASE WHEN json_extract(v,'$.state')='submitted' AND requiresResubmission=0 THEN 1 ELSE 0 END),'graded',sum(CASE WHEN gradeStatus IN ('complete','locked') THEN 1 ELSE 0 END),'advisorMissing',sum(CASE WHEN canSeeGrades=1 AND advisor IS NULL THEN 1 ELSE 0 END),'reviewerMissing',sum(CASE WHEN canSeeGrades=1 AND reviewer IS NULL THEN 1 ELSE 0 END)) FROM records WHERE json_extract(j,'$.status')='active' GROUP BY campaignId
+    UNION ALL SELECT 'counts',json_object('campaignId',campaignId,'studentCount',count(DISTINCT student_id),'enrollmentCount',count(*),'submitted',sum(CASE WHEN json_extract(v,'$.state')='submitted' AND requiresResubmission=0 THEN 1 ELSE 0 END),'graded',sum(CASE WHEN gradeStatus IN ('complete','locked') THEN 1 ELSE 0 END),'advisorMissing',sum(CASE WHEN canSeeGrades=1 AND advisor IS NULL THEN 1 ELSE 0 END),'reviewerMissing',sum(CASE WHEN canSeeGrades=1 AND reviewer IS NULL THEN 1 ELSE 0 END)) FROM records WHERE COALESCE(json_extract(j,'$.status'),'active')='active' GROUP BY campaignId
     UNION ALL SELECT 'enrolledClasses',json_object('id',class_id) FROM academic_enrollments CROSS JOIN actor WHERE lower(json_extract(data,'$.email'))=actor.email
-    UNION ALL SELECT 'classCounts',json_object('classId',class_id,'n',count(*)) FROM records WHERE json_extract(j,'$.status')='active' GROUP BY class_id
+    UNION ALL SELECT 'classCounts',json_object('classId',class_id,'n',count(*)) FROM records WHERE COALESCE(json_extract(j,'$.status'),'active')='active' GROUP BY class_id
     UNION ALL SELECT 'unmapped',json_object('value',CASE WHEN (SELECT role FROM actor)='student' AND NOT EXISTS(SELECT 1 FROM academic_enrollments WHERE json_extract(data,'$.legacy')=1 AND lower(json_extract(data,'$.email'))=(SELECT email FROM actor)) THEN 1 ELSE 0 END)
     UNION ALL SELECT 'settings',json_object('key',key,'value',value) FROM settings WHERE EXISTS(SELECT 1 FROM academic_campaigns p WHERE json_extract(p.data,'$.legacy')=1 AND ((SELECT campaignId FROM actor)='' OR p.id=(SELECT campaignId FROM actor)))
     ${pageFilter?`UNION ALL SELECT 'pageCount',json_object('total',count(*),'studentCount',count(DISTINCT student_id)) FROM records WHERE ${pageFilter.sql}
@@ -115,8 +115,11 @@ export function invalidateReadCache() {
 
 export async function readCampaignDetail(actor: AuthenticatedUser, id: string, section = 'full') {
   if (!['base','overview','content','management','full'].includes(section)) fail(422,'INVALID_SECTION','Phần dữ liệu không hợp lệ.');
-  const cacheKey = `detail:${actor.id}:${actor.role}:${id}:${section}`;
+  const accessRevision=Number((await db.execute('SELECT revision FROM academic_meta WHERE id=1')).rows[0].revision);
+  const cacheKey = `detail:${accessRevision}:${actor.id}:${actor.role}:${id}:${section}`;
   const now = Date.now();
+  for(const [key,item]of readCache)if(item.expiresAt<=now)readCache.delete(key);
+  if(readCache.size>100)readCache.delete(readCache.keys().next().value!);
   const cached = readCache.get(cacheKey);
   if (cached && cached.expiresAt > now) return structuredClone(cached.data);
   const ctx = await readContext(actor,id,section); const p = ctx.campaigns.find(p=>p.id===id)!;
@@ -126,8 +129,11 @@ export async function readCampaignDetail(actor: AuthenticatedUser, id: string, s
   return result;
 }
 export async function readCampaignCatalog(actor: AuthenticatedUser, section = 'full') {
-  const cacheKey = `catalog:${actor.id}:${actor.role}:${actor.is_lecturer || 0}:${actor.legacy_internship_access || 0}:${section}`;
+  const accessRevision=Number((await db.execute('SELECT revision FROM academic_meta WHERE id=1')).rows[0].revision);
+  const cacheKey = `catalog:${accessRevision}:${actor.id}:${actor.role}:${actor.is_lecturer || 0}:${actor.legacy_internship_access || 0}:${section}`;
   const now = Date.now();
+  for(const [key,item]of readCache)if(item.expiresAt<=now)readCache.delete(key);
+  if(readCache.size>100)readCache.delete(readCache.keys().next().value!);
   const cached = readCache.get(cacheKey);
   if (cached && cached.expiresAt > now) return structuredClone(cached.data);
   const ctx=await readContext(actor,'',section);
@@ -140,6 +146,19 @@ function listFilter(query: Record<string, any>) {
   for(const [name,sql] of [['classId','class_id'],['courseCode','courseCode']] as const) if(query[name]){filters.push(`${sql}=?`);args.push(String(query[name]));}
   if(query.lecturerId){filters.push(`EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.lecturerId')=?)`);args.push(Number(query.lecturerId));}
   if(query.q){const search=searchMatch("(student_id||' '||json_extract(j,'$.name')||' '||json_extract(j,'$.topic'))",String(query.q));filters.push(search.sql);args.push(...search.args);}
+  if(query.assignmentStatus){
+    const has=(role:string)=>`EXISTS(SELECT 1 FROM json_each(json_extract(j,'$.assignments')) a WHERE json_extract(a.value,'$.role')='${role}')`;
+    const cases:Record<string,string>={missingPrimary:`NOT ${has('primary')}`,missingReviewer:`NOT ${has('reviewer')}`,complete:`${has('primary')} AND ${has('reviewer')}`};
+    if(!cases[query.assignmentStatus])fail(422,'INVALID_ASSIGNMENT_FILTER','Trạng thái phân công không hợp lệ.');filters.push(cases[query.assignmentStatus]);
+  }
+  if(query.submissionStatus){
+    const cases:Record<string,string>={notSubmitted:`(json_extract(v,'$.state')!='submitted' OR requiresResubmission=1)`,submitted:`(json_extract(v,'$.state')='submitted' AND requiresResubmission=0 AND COALESCE(json_extract(j,'$.needsRevision'),0)=0)`,needsRevision:`(requiresResubmission=1 OR json_extract(j,'$.needsRevision')=1)`};
+    if(!cases[query.submissionStatus])fail(422,'INVALID_SUBMISSION_FILTER','Trạng thái bài nộp không hợp lệ.');filters.push(cases[query.submissionStatus]);
+  }
+  if(query.gradeStatus){
+    if(['advisorMissing','reviewerMissing'].includes(query.gradeStatus)){filters.push(`canSeeGrades=1 AND ${query.gradeStatus==='advisorMissing'?'advisor':'reviewer'} IS NULL`);}
+    else {if(!['missing','partial','complete','locked'].includes(query.gradeStatus))fail(422,'INVALID_GRADE_FILTER','Trạng thái điểm không hợp lệ.');filters.push('canSeeGrades=1 AND gradeStatus=?');args.push(query.gradeStatus);}
+  }
   if(query.topicStatus){filters.push(`json_extract(j,'$.topicReview.status')=?`);args.push(String(query.topicStatus));}
   if(query.status&&query.status!=='all'){
     filters.push(`(gradeStatus=? OR json_extract(j,'$.status')=? OR ?='notSubmitted' AND (json_extract(v,'$.state')!='submitted' OR requiresResubmission=1) OR ?='advisorMissing' AND canSeeGrades=1 AND advisor IS NULL OR ?='reviewerMissing' AND canSeeGrades=1 AND reviewer IS NULL)`);args.push(...Array(5).fill(String(query.status)));
@@ -147,10 +166,14 @@ function listFilter(query: Record<string, any>) {
   return {sql:filters.join(' AND '),args};
 }
 export async function readCampaignEnrollments(actor: AuthenticatedUser,id:string,query:Record<string,any>={},all=false,context?:Awaited<ReturnType<typeof readContext>>) {
-  const ctx=context || await readContext(actor,id,'management','',{...query,__all:all});
+  let ctx=context || await readContext(actor,id,'management','',{...query,__all:all});
+  if(query.focusEnrollmentId&&!query.page&&!all&&!ctx.s.enrollments.some(e=>e.id===query.focusEnrollmentId)){
+    const f=listFilter(query);const rank=(await db.execute({sql:`${recordCte}, ranked AS (SELECT id,row_number() OVER(ORDER BY student_id,classCode) n FROM records WHERE ${f.sql}) SELECT n FROM ranked WHERE id=?`,args:[...argsFor(actor,id),...f.args,String(query.focusEnrollmentId)]})).rows[0];
+    if(rank){query={...query,page:Math.floor((Number(rank.n)-1)/Math.min(100,Math.max(1,Number(query.limit)||25)))+1};ctx=await readContext(actor,id,'management','',{...query,__all:all});}
+  }
   if(query.classId&&!ctx.s.classes.some(c=>c.id===query.classId)||query.courseCode&&!ctx.s.classes.some(c=>c.courseCode===query.courseCode))fail(422,'INVALID_CAMPAIGN_FILTER','Lớp/học phần không thuộc nhóm môn.');
   if(query.topicStatus&&(!['unregistered','pending','approved'].includes(query.topicStatus)||ctx.campaigns[0]?.group!=='project'))fail(422,'INVALID_TOPIC_FILTER','Trạng thái đề tài không hợp lệ.');
-  const projection=query.projection;if(projection&&!['students','assignments','reports','grades'].includes(projection))fail(422,'INVALID_PROJECTION','Loại danh sách không hợp lệ.');
+  const projection=query.projection;if(projection&&!['students','assignments','reports','grades','student-list'].includes(projection))fail(422,'INVALID_PROJECTION','Loại danh sách không hợp lệ.');
   const page=Math.max(1,Math.floor(Number(query.page)||1)),limit=Math.min(100,Math.max(1,Math.floor(Number(query.limit)||25)));
   const filter=listFilter(query);
   let count=ctx.pageCount;
@@ -162,7 +185,7 @@ export async function readCampaignEnrollments(actor: AuthenticatedUser,id:string
     ctx.s.enrollments=rows.filter(r=>r.kind==='item').map(r=>JSON.parse(String(r.data)));
   }
   if(ctx.s.enrollments.some(e=>e.legacy))await hydrateLegacy(ctx.s);
-  const items=ctx.s.enrollments.map(e=>{const c=getClass(ctx.s,e.classId);const view=enrollmentView(ctx.s,c,e,actor);if(projection){view.versions=view.versions.slice(-1);if(projection!=='grades'){delete view.evaluations;delete view.internshipGrade;delete view.finalScore;}else if(view.evaluations)view.evaluations={[view.versions[0].id]:view.evaluations[view.versions[0].id]||{}};view.preferences=[];view.finalInternship=null;view.advisorRequest=null;view.note='';}return {...view,classCode:c.code,courseCode:c.courseCode};});
+  const items=ctx.s.enrollments.map(e=>{const c=getClass(ctx.s,e.classId);const view=enrollmentView(ctx.s,c,e,actor);if(projection){view.versions=view.versions.slice(-1);if(!['grades','student-list'].includes(projection)){delete view.evaluations;delete view.internshipGrade;delete view.finalScore;}else if(view.evaluations)view.evaluations={[view.versions[0].id]:view.evaluations[view.versions[0].id]||{}};view.preferences=[];view.finalInternship=null;view.advisorRequest=null;view.note='';}return {...view,classCode:c.code,courseCode:c.courseCode};});
   return {items,...count,page,limit,totalPages:Math.max(1,Math.ceil(count.total/limit))};
 }
 export async function readEnrollment(actor: AuthenticatedUser,id:string) {

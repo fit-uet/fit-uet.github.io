@@ -43,3 +43,9 @@ npx wrangler d1 export internship-turso-failover-20261029 --remote --config wran
 ```
 
 Đã phát hành Render/Pages ở commit `d049e9e`, readiness trả `databaseProvider=d1`. Báo cáo chi tiết nằm trong thư mục vận hành riêng, không chứa trong repo công khai. Bổ sung chỉ mục không unique theo `lower(users.email)` và `lower(trim(lecturers.email))` bằng `scripts/maintenance/d1-failover-indexes.sql` để các API xác thực dùng đúng index thay vì quét danh mục người dùng.
+
+## Hiệu chỉnh danh sách theo STT sau khôi phục
+
+Bản phục hồi 17:32 chứa số lịch sử 535 hồ sơ Dự án. Khoa đã xác nhận chỉ lấy dòng có STT: **408 hồ sơ / 405 sinh viên**, gồm 215 DACN và 193 DAKH. Trước hiệu chỉnh cần xuất D1 đầy đủ, thử phục hồi backup và chạy xem trước. Công cụ `scripts/correct-project-roster.ts` chỉ loại hồ sơ ngoài roster khi hoàn toàn chưa có đề tài/phân công/bài/điểm/chat riêng; gặp dữ liệu phát sinh phải dừng. Giữ tài khoản, mọi lần học được chọn và toàn bộ nguồn Thực tập. Lệnh ghi dùng command/CAS, kiểm lại revision, scope, dữ liệu bảo vệ và audit trong cùng statement. Không truy cập/xóa tệp R2; import thông thường không tự xóa người vắng danh sách.
+
+Khi quay lại Turso phải mang theo hiệu chỉnh này; không nhập lại 127 hồ sơ ngoài STT từ bản cũ. Báo cáo preview, backup và đối soát ở thư mục vận hành riêng, không commit dữ liệu sinh viên.

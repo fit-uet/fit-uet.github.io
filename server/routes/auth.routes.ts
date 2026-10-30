@@ -62,7 +62,7 @@ authRouter.post('/api/auth/google', async (req, res) => {
       try {
         admittedProject = !!(await db.execute({
           sql: `SELECT e.id FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id
-            WHERE lower(json_extract(e.data,'$.email'))=? AND json_extract(e.data,'$.status')='active'
+            WHERE lower(json_extract(e.data,'$.email'))=? AND COALESCE(json_extract(e.data,'$.status'),'active')='active'
               AND json_extract(c.data,'$.courseCode') IN ('INT3131','INT3132')
               AND json_extract(c.data,'$.status') IN ('active','archived') LIMIT 1`, args: [email],
         })).rows[0];

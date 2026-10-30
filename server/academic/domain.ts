@@ -31,7 +31,7 @@ export function mayRead(s: Snapshot, c: AcademicClass, actor: AuthenticatedUser,
   if (c.status === 'draft') return false;
   const l = lecturerFor(s, actor);
   const matches = e ? [e] : s.enrollments.filter(x => x.classId === c.id);
-  return matches.some(x => x.status === 'active' && (actor.role === 'student' && normalized(x.email) === normalized(actor.email) || l && x.assignments.some(a => a.lecturerId === l.id)));
+  return matches.some(x => x.status !== 'withdrawn' && (actor.role === 'student' && normalized(x.email) === normalized(actor.email) || l && x.assignments.some(a => a.lecturerId === l.id)));
 }
 export function requireRead(s: Snapshot, c: AcademicClass, actor: AuthenticatedUser, e?: CourseEnrollment) {
   if (!mayRead(s, c, actor, e)) fail(403, 'CLASS_ACCESS_DENIED', 'Bạn không có quyền truy cập dữ liệu lớp này.');
@@ -93,7 +93,7 @@ export function newEnrollment(c: AcademicClass, data: { studentId: string; name:
   return {
     id: randomUUID(), classId: c.id, studentId: data.studentId, email: `${data.studentId}@vnu.edu.vn`,
     name: text(data.name), dob: data.dob || '', className: data.className || '', note: data.note || '',
-    status: 'active', legacy: false, topic: '', assignments: [], versions: [emptyVersion()], evaluations: {},
+    ...(course(c).group === 'internship' ? {status: 'active' as const} : {}), legacy: false, topic: '', assignments: [], versions: [emptyVersion()], evaluations: {},
     ...(course(c).group === 'project' ? { topicReview: emptyTopicReview(), topicSubmissionUntil: null } : {}),
     internshipGrade: null, lockedAt: null, submissionLockedAt: null, reopenUntil: null,
     reviewComment: '', needsRevision: false, preferences: [], finalInternship: null, advisorRequest: null, revision: 0,
@@ -150,16 +150,16 @@ export function validateAssignments(s: Snapshot, c: AcademicClass, e: CourseEnro
 }
 export function reviewerPool(s: Snapshot, semesterId: string) {
   const classIds = new Set(s.classes.filter(c => c.semesterId === semesterId && c.status === 'active' && course(c).group === 'project').map(c => c.id));
-  const ids = new Set(s.enrollments.filter(e => classIds.has(e.classId) && e.status === 'active').flatMap(e => e.assignments.filter(a => a.role !== 'reviewer').map(a => a.lecturerId)));
+  const ids = new Set(s.enrollments.filter(e => classIds.has(e.classId) && e.status !== 'withdrawn').flatMap(e => e.assignments.filter(a => a.role !== 'reviewer').map(a => a.lecturerId)));
   return s.lecturers.filter(l => ids.has(l.id) && l.email && !isBachelor(l));
 }
 export function reviewerLoad(s: Snapshot, semesterId: string, lecturerId: number, exceptId = '') {
   const classIds = new Set(s.classes.filter(c => c.semesterId === semesterId && course(c).group === 'project').map(c => c.id));
-  return s.enrollments.filter(e => e.id !== exceptId && classIds.has(e.classId) && e.status === 'active' && e.assignments.some(a => a.role === 'reviewer' && a.lecturerId === lecturerId)).length;
+  return s.enrollments.filter(e => e.id !== exceptId && classIds.has(e.classId) && e.status !== 'withdrawn' && e.assignments.some(a => a.role === 'reviewer' && a.lecturerId === lecturerId)).length;
 }
 export function allocateReviewers(s: Snapshot, semesterId: string, classIds?: string[]) {
   const pool = reviewerPool(s, semesterId);
-  const targets = s.enrollments.filter(e => e.status === 'active' && !e.assignments.some(a => a.role === 'reviewer') && s.classes.some(c => c.id === e.classId && c.semesterId === semesterId && c.status === 'active' && course(c).group === 'project' && (!classIds?.length || classIds.includes(c.id))));
+  const targets = s.enrollments.filter(e => e.status !== 'withdrawn' && !e.assignments.some(a => a.role === 'reviewer') && s.classes.some(c => c.id === e.classId && c.semesterId === semesterId && c.status === 'active' && course(c).group === 'project' && (!classIds?.length || classIds.includes(c.id))));
   const load = new Map(pool.map(l => [l.id, reviewerLoad(s, semesterId, l.id)]));
   const eligible = (e: CourseEnrollment) => pool.filter(l => !e.assignments.some(a => a.lecturerId === l.id) && (s.quotas.find(q => q.semesterId === semesterId && q.lecturerId === l.id)?.maxReviews ?? Infinity) > load.get(l.id)!);
   targets.sort((a, b) => eligible(a).length - eligible(b).length || a.id.localeCompare(b.id));

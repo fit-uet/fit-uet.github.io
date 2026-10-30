@@ -37,8 +37,9 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
   }, [token, presentation?.stats, presentation?.legacy]);
 
   const isProject = !!presentation?.project;
+  const progressTotal = isProject ? stats.confirmedCount : stats.registeredCount;
   const navModules = [
-    { title: isProject ? 'Sinh viên & Đề tài Dự án' : 'Quản lý Đăng ký', path: isProject ? '/campaign/students' : '/admin/registrations', icon: <LayoutDashboard size={20} className="text-[#034ea1]" /> },
+    { title: isProject ? 'Danh sách sinh viên' : 'Quản lý Đăng ký', path: isProject ? '/campaign/students' : '/admin/registrations', icon: <LayoutDashboard size={20} className="text-[#034ea1]" /> },
     { title: 'Quản lý Sinh viên', path: '/admin/students', icon: <Users size={20} className="text-[#034ea1]" /> },
     { title: 'Quản lý Giảng viên', path: '/admin/lecturers', icon: <GraduationCap size={20} className="text-[#034ea1]" /> },
     ...(!isProject ? [{ title: 'Quản lý Doanh nghiệp', path: '/admin/companies', icon: <Building2 size={20} className="text-[#034ea1]" /> }] : []),
@@ -53,7 +54,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
     { title: 'Hướng dẫn GV', path: '/admin/lecturer-guide', icon: <BookOpen size={20} className="text-teal-600" /> },
     { title: 'Cài đặt FAQ', path: '/admin/faq', icon: <CircleHelp size={20} className="text-amber-600" /> },
     { title: 'Quản trị viên', path: '/admin/admins', icon: <Shield size={20} className="text-slate-600" /> },
-  ];
+  ].filter(item=>!isProject||!['/admin/advisors','/admin/reports','/admin/grades'].includes(item.path));
   if (presentation && !presentation.project) {
     navModules.splice(5, 0, { title: 'Nơi thực tập chính thức', path: '/admin/final-internships', icon: <Building2 size={20} className="text-[#034ea1]" /> });
   }
@@ -113,14 +114,14 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
           <div className="flex items-baseline justify-between mt-1">
             <span className="text-3xl font-bold text-[#034ea1]">{loadingStats ? '—' : stats.confirmedCount}</span>
             <span className="text-[11px] font-medium text-slate-400">
-              {stats.registeredCount ? `${Math.round((stats.confirmedCount / stats.registeredCount) * 100)}%` : '0%'}
+              {isProject ? 'hồ sơ học phần' : stats.registeredCount ? `${Math.round((stats.confirmedCount / stats.registeredCount) * 100)}%` : '0%'}
             </span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-amber-600 text-xs font-semibold uppercase tracking-wider">Số SV nộp báo cáo</span>
+            <span className="text-amber-600 text-xs font-semibold uppercase tracking-wider">{isProject ? 'Hồ sơ đã nộp báo cáo' : 'Số SV nộp báo cáo'}</span>
             <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
               <FileText size={18} />
             </div>
@@ -128,14 +129,14 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
           <div className="flex items-baseline justify-between mt-1">
             <span className="text-3xl font-bold text-[#b25e00]">{loadingStats ? '—' : stats.reportCount}</span>
             <span className="text-[11px] font-medium text-slate-400">
-              {stats.registeredCount ? `${Math.round((stats.reportCount / stats.registeredCount) * 100)}%` : '0%'}
+              {progressTotal ? `${Math.round((stats.reportCount / progressTotal) * 100)}%` : '0%'}
             </span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-emerald-600 text-xs font-semibold uppercase tracking-wider">Số SV có điểm</span>
+            <span className="text-emerald-600 text-xs font-semibold uppercase tracking-wider">{isProject ? 'Hồ sơ có điểm' : 'Số SV có điểm'}</span>
             <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
               <GraduationCap size={18} />
             </div>
@@ -143,7 +144,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
           <div className="flex items-baseline justify-between mt-1">
             <span className="text-3xl font-bold text-[#1b7f37]">{loadingStats ? '—' : stats.gradedCount}</span>
             <span className="text-[11px] font-medium text-slate-400">
-              {stats.registeredCount ? `${Math.round((stats.gradedCount / stats.registeredCount) * 100)}%` : '0%'}
+              {progressTotal ? `${Math.round((stats.gradedCount / progressTotal) * 100)}%` : '0%'}
             </span>
           </div>
         </div>

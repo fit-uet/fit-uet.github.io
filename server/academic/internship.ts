@@ -69,10 +69,10 @@ export async function autoInternshipAdvisors(actor: AuthenticatedUser, classId: 
   requireAdmin(actor); const s = await snapshot(); const c = getClass(s, classId); requireWritable(c);
   if (course(c).group !== 'internship') fail(422, 'WRONG_COURSE', 'Chỉ tự phân công GVHD cho Thực tập.');
   const classIds = new Set(s.classes.filter(x => x.semesterId === c.semesterId && course(x).group === 'internship').map(x => x.id));
-  const load = new Map(s.lecturers.map(l => [l.id, s.enrollments.filter(e => classIds.has(e.classId) && e.status === 'active').flatMap(e => e.assignments.filter(a => a.role !== 'reviewer')).filter(a => a.lecturerId === l.id).length]));
+  const load = new Map(s.lecturers.map(l => [l.id, s.enrollments.filter(e => classIds.has(e.classId) && e.status !== 'withdrawn').flatMap(e => e.assignments.filter(a => a.role !== 'reviewer')).filter(a => a.lecturerId === l.id).length]));
   const quota = (id: number) => s.quotas.find(q => q.semesterId === c.semesterId && q.lecturerId === id)?.internshipMax ?? (/\b(?:PGS|GS)\b/i.test(s.lecturers.find(l => l.id === id)!.name) ? 5 : /\bTS\b/i.test(s.lecturers.find(l => l.id === id)!.name) ? 8 : 10);
   const changed = []; const skipped = [];
-  for (const row of s.enrollments.filter(e => e.classId === c.id && (!enrollmentIds || enrollmentIds.has(e.id)) && e.status === 'active' && !e.assignments.some(a => a.role === 'primary') && e.advisorRequest?.status !== 'pending')) {
+  for (const row of s.enrollments.filter(e => e.classId === c.id && (!enrollmentIds || enrollmentIds.has(e.id)) && e.status !== 'withdrawn' && !e.assignments.some(a => a.role === 'primary') && e.advisorRequest?.status !== 'pending')) {
     const e = structuredClone(row);
     const l = s.lecturers.filter(l => l.email && !isBachelor(l) && !e.assignments.some(a => a.lecturerId === l.id) && load.get(l.id)! < quota(l.id)).sort((a, b) => load.get(a.id)! - load.get(b.id)! || a.id - b.id)[0];
     if (!l) { skipped.push(e.id); continue; }

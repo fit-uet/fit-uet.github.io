@@ -2,7 +2,7 @@
 
 Ngày cập nhật: **29/10/2026**. Trạng thái: **đã chốt nghiệp vụ; đã cài đặt quản lý học kỳ/nhóm môn và Dự án trên backend Express**. Phạm vi mã, kết quả kiểm thử và các bước đưa dữ liệu thật vào hệ thống nằm tại [hướng dẫn triển khai](IMPLEMENTATION_STATUS.md).
 
-Tài liệu này là nguồn yêu cầu nghiệp vụ chính. [Thiết kế kiến trúc](ARCHITECTURE.md) phân biệt mô hình nghiệp vụ, thiết kế chuẩn hóa và cách lưu trữ thực tế; [README](../README.md) hướng dẫn chạy và vận hành. Chưa chuyển đổi hoặc import vào database đang vận hành.
+Tài liệu này là nguồn yêu cầu nghiệp vụ chính. [Thiết kế kiến trúc](ARCHITECTURE.md) phân biệt mô hình nghiệp vụ, thiết kế chuẩn hóa và cách lưu trữ thực tế; [README](../README.md) hướng dẫn chạy và vận hành. Dữ liệu đã triển khai trước đây được giữ nguyên; tình trạng phát hành từng đợt xem tài liệu vận hành.
 
 **Điều chỉnh đã chốt:** quản lý chung theo học kỳ → nhóm môn cho cả ba vai trò. Lớp học phần là bộ lọc và đơn vị xuất danh sách; lần học vẫn giữ riêng. Nội dung/hạn/trạng thái thuộc nhóm; chat nhóm gộp theo GVHD/nhóm/kỳ, gồm cả Thực tập cũ. Chi tiết cài đặt và chuyển đổi tại [GROUP_MANAGEMENT.md](GROUP_MANAGEMENT.md).
 
@@ -82,7 +82,7 @@ Tất cả quyền đều yêu cầu đăng nhập và đúng phạm vi dữ li�
 | --- | --- | --- | --- | --- | --- |
 | Xem thông tin, đề tài, bài nộp | Có | Được phân công | Được phân công | Được phân công | Có |
 | Sửa tên đề tài, nộp/thay bộ bài | Trong hạn, chưa khóa; Dự án chỉ nộp sau duyệt | Dự án: sửa và tự duyệt đề tài | Không | Không | Mở lại/điều chỉnh có lý do; không tự duyệt nếu không là GVHD chính |
-| Đổi GVHD/GVNX, tiếp nhận/rút SV | Không | Không | Không | Không | Có |
+| Đổi GVHD/GVNX, import/xóa lần học Dự án | Không | Không | Không | Không | Có |
 | Xem điểm hai vai trò/tổng kết | Không | Có | Không | Có | Có |
 | Nhập/sửa điểm GVHD | Không | Có | Không | Không | Không nhập thay; quản lý khóa/mở |
 | Nhập/sửa điểm GVNX | Không | Không | Không | Có | Không nhập thay; quản lý khóa/mở |
@@ -113,7 +113,7 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 | REQ-CLS-03 / MR | Khoa cấu hình nhóm môn/kỳ | Hạn đăng ký/xác nhận/GVHD của TT, khai đề tài Dự án, nộp/chấm, kế hoạch/hướng dẫn/FAQ dùng chung trong nhóm/kỳ | TC-03: chỉnh một lần áp dụng mọi lớp trong nhóm; nhóm khác và kỳ khác độc lập |
 | REQ-CLS-04 / MR | Khoa đổi trạng thái nhóm/kỳ | Nhóm `draft` chỉ Khoa quản lý; `active` vận hành; `archived` chỉ đọc; Khoa mở lại cả nhóm có lý do/lịch sử | TC-04: mọi lớp trong nhóm cùng trạng thái, API ghi kể cả chat bị chặn khi lưu trữ |
 | REQ-AUTH-01 / HC+MR | Người dùng Google OAuth | Dùng chung xác thực; giữ admin/GV theo danh mục; SV được đăng nhập nếu đủ điều kiện TT hoặc có lần học Dự án hợp lệ | TC-05: người chỉ có tên DS Dự án đăng nhập được dù ngoài khóa TT; người không đủ cả hai bị từ chối |
-| REQ-AUTH-02 / MR | SV đăng nhập | Dự án chỉ truy cập lớp đã được Khoa tiếp nhận; TT giữ quy tắc khóa đang mở/ngoại lệ SV đã có trong danh sách hiện tại | TC-06: SV hợp lệ TT không tự có quyền Dự án; xóa/rút khỏi lớp thu hồi quyền ngay cả khi JWT còn hạn |
+| REQ-AUTH-02 / MR | SV đăng nhập | Dự án chỉ truy cập lớp đã được Khoa tiếp nhận; TT giữ quy tắc khóa đang mở/ngoại lệ SV đã có trong danh sách hiện tại | TC-06: SV hợp lệ TT không tự có quyền Dự án; xóa lần học Dự án/rút lớp TT thu hồi quyền ngay cả khi JWT còn hạn |
 | REQ-AUTH-03 / MR | SV/GV/Admin chọn học kỳ/nhóm môn | Chỉ liệt kê nhóm/lớp được phép; kiểm tra vai trò tài khoản, tư cách tham gia/phân công và phạm vi trên mọi API | TC-07: đổi `classId`, `enrollmentId`, phiên bản hoặc URL tải không vượt được quyền |
 | REQ-AUTH-04 / HC+MR | SV xem dashboard, bài nộp, thông báo | Không trả điểm thành phần/tổng kết qua UI, API, file xuất hoặc thông báo SV; tra cứu chính thức ở Cổng Đào tạo | TC-08: kiểm tra payload SV và nội dung email; không chỉ ẩn trường trên giao diện |
 
@@ -203,7 +203,7 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 | TC-03 | Chỉnh hạn/nội dung nhóm môn; thử trước mở, đúng mở/đóng, sau đóng | Mọi lớp trong nhóm dùng chung; UI/API cùng kết quả, đúng giờ Việt Nam |
 | TC-04 | Chuyển cả nhóm draft→active→archived, thử upload/điểm/chat/gán GV; Khoa mở lại | Chỉ active cho ghi theo quyền/hạn; archived chỉ đọc; mở lại có audit |
 | TC-05 | OAuth SV thuộc DS Dự án nhưng ngoài khóa TT; SV chỉ hợp lệ TT; SV không đủ cả hai | Hai trường hợp đầu đăng nhập và thấy đúng quyền; trường hợp cuối bị từ chối |
-| TC-06 | Tài khoản TT truy cập Dự án không trong DS; rút enrollment rồi tái dùng JWT | Không cấp quyền Dự án; phiên còn hạn không giữ quyền lớp đã rút |
+| TC-06 | Tài khoản TT truy cập Dự án không trong DS; xóa lần học Dự án/rút lớp TT rồi tái dùng JWT | Không cấp quyền Dự án; phiên còn hạn không giữ quyền lần học đã xóa/rút |
 | TC-07 | Đổi ID lần học, classId, revision và URL download; GV chưa phân công hoặc đã bị thay | Backend từ chối, không lộ nội dung/metadata được bảo vệ |
 | TC-08 | Kiểm tra response SV, email, notification, dashboard và export | Không có điểm số; hướng dẫn tra Cổng Đào tạo |
 | TC-09 | Đăng ký 5/6 nguyện vọng; công ty thẩm định/không thẩm định; xuất theo DN/lớp | Đúng giới hạn, trạng thái duyệt và dữ liệu xuất; không lộ danh mục nội bộ |
@@ -257,3 +257,15 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 Không bật luồng Dự án trên production trước khi các kiểm tra quyền lớp, file và điểm đạt nghiệm thu. Mốc thời gian cụ thể của HKI 2026–2027 do Khoa cấu hình; tên học kỳ không tự suy ra hạn nộp/chấm từ lịch cũ trong Excel.
 
 Các tiêu chí TC ở trên là bộ nghiệm thu nghiệp vụ, không đồng nghĩa mọi tích hợp đã được kiểm thử trên tài khoản thật. Bản Express hiện giữ bảng Thực tập cũ làm nguồn ghi duy nhất cho đợt legacy, bổ sung dữ liệu lớp/lần học cho đợt mới; xem [phạm vi và giới hạn thực tế](IMPLEMENTATION_STATUS.md#ranh-gioi-cua-ban-cai-dat) trước khi lập biên bản nghiệm thu.
+
+## 6. Danh sách sinh viên Dự án và xóa lần học
+
+[PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) bổ sung REQ-LST-01–05, REQ-DEL-01–04 và REQ-LST-MIG, thay thế nghiệp vụ tiếp nhận/rút trong nhóm Dự án: có lần học là có tên trong danh sách; xóa là không còn học phần đó. Khoa/GV dùng một bảng cho sinh viên, phân công, báo cáo và điểm. Thực tập giữ trạng thái cũ; trang SV giữ hồ sơ riêng từng lần học.
+
+## Đính chính danh sách Dự án theo STT
+
+Theo xác nhận của Khoa, chỉ tiếp nhận **dòng có giá trị STT** trong hai sheet `DACN`, `DAKH`. Dòng thiếu hoặc chỉ có khoảng trắng ở STT không tạo/cập nhật lần học, kể cả có MSSV hoặc GVHD; thiếu cột STT phải báo lỗi. Các dòng đủ điều kiện vẫn gộp theo MSSV + Mã LMH. Không dùng việc có GVHD làm điều kiện thay thế STT: sinh viên có STT nhưng chưa phân công vẫn được tiếp nhận.
+
+Với nguồn HKI 2026–2027 đã đối soát: **215 DACN + 193 DAKH = 408 lần học, 405 sinh viên duy nhất**. Ba sinh viên học cả hai môn có hai hồ sơ. Số 535/532 trong các báo cáo nhập cũ bao gồm các dòng không STT và là số lịch sử trước đính chính. Không tự xóa sinh viên chỉ vì vắng file nhập sau này; đây là đợt đối soát có nguồn, backup và xác nhận riêng.
+
+Bản xem trước import hiển thị số dòng bỏ qua do thiếu STT. Tổng quan không dùng tỷ lệ lần học/sinh viên; tiến độ báo cáo và điểm Dự án tính theo lần học. Thực tập giữ các chỉ số cũ.

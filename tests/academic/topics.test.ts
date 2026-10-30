@@ -135,8 +135,7 @@ test('missing grading close does not create an unlimited submission exception', 
 test('unassigned, archived and withdrawn records cannot bypass topic approval', async () => {
   let row = await fresh(); await enrollmentAction(admin, e.id, { expectedRevision: row.revision, assignments: [] }, 'assignments');
   await action(sv, 'topic', 'Chưa có GVHD'); await assert.rejects(submit(), errorCode('TOPIC_PENDING'));
-  row = await fresh(); await enrollmentAction(admin, e.id, { expectedRevision: row.revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status');
-  await assert.rejects(action(admin, 'topic', 'Sửa', 'Có lý do'), errorCode('ENROLLMENT_WITHDRAWN'));
+  row = await fresh(); await assert.rejects(enrollmentAction(admin, e.id, { expectedRevision: row.revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status'), errorCode('PROJECT_MEMBERSHIP_ONLY'));
   const s = await snapshot(); const p = s.campaigns!.find(p => p.id === c.campaignId)!; await updateCampaign(admin, p.id, { expectedRevision: p.revision, status: 'archived', reason: 'Lưu trữ' });
   await assert.rejects(action(admin, 'topic', 'Sửa', 'Có lý do'), errorCode('CLASS_READ_ONLY'));
 });
@@ -155,7 +154,7 @@ test('metadata migration recognizes old topics without inventing an approver and
 });
 test('imports are pending, repeated identical imports retain approval, and filtered exports use topicStatus', async () => {
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Mã SV','Họ và tên','Lớp khóa học','Mã LMH','Chủ đề'],[e.studentId,e.name,'','INT3132 1','Tên import']]), 'DACN');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['STT','Mã SV','Họ và tên','Lớp khóa học','Mã LMH','Chủ đề'],[1,e.studentId,e.name,'','INT3132 1','Tên import']]), 'DACN');
   const bytes = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   let s = await snapshot(); let plan = planImport(s, c.semesterId, bytes); assert.equal(plan.summary.errors, 0);
   assert.equal(plan.changes.enrollments![0].topicReview?.status, 'pending'); await commit(s, 1, 'admin.enrollments.import', plan.changes);

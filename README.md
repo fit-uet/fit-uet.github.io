@@ -16,6 +16,7 @@ Website: **https://fit-uet.github.io/** · Repository: [fit-uet/fit-uet.github.i
 | [Bản cài đặt và chạy thử](docs/IMPLEMENTATION_STATUS.md) | Phạm vi mã thực tế, bản thử độc lập, import tám lớp, chuyển dữ liệu cũ và kết quả kiểm thử |
 | [Quản lý theo nhóm môn](docs/GROUP_MANAGEMENT.md) | Cách vận hành theo nhóm/kỳ, API, migration cấu hình và giao diện chung Thực tập cũ |
 | [Staging cục bộ](docs/LOCAL_STAGING.md) | Database bản sao có lưu dữ liệu, đối soát, giao diện localhost và các bước nghiệm thu |
+| [Danh sách sinh viên Dự án](docs/PROJECT_STUDENT_LIST.md) | Bảng tổng hợp, lưu nhiều dòng, xóa lần học và chuyển metadata schema 4 |
 | [Phát hành production](docs/PRODUCTION_RELEASE.md) | Sao lưu Turso/R2, diễn tập, chờ backend đúng phiên bản trước phát hành Pages và khôi phục |
 | [Thiết kế giao diện](docs/UI_DESIGN_SYSTEM.md) | UI primitives, tokens và quy chuẩn trình bày |
 | [Hiệu năng và cache](docs/PERFORMANCE.md) | Tải theo chức năng, cache RAM/ETag, API đọc và cách nghiệm thu |
@@ -152,7 +153,7 @@ Thông báo thủ công có hai chế độ: website kèm email theo quota hoặ
 
 Cron dùng `POST /api/cron/process-email-queue` và `POST /api/cron/export-to-sheet` với header X-Cron-Secret. Nút gửi hàng đợi là công cụ kích hoạt bổ sung. Theo dõi queued/failed, lỗi provider và workflow để xác định việc gửi thực tế; lịch trên không phải bảo đảm thời điểm thực thi tuyệt đối của dịch vụ bên ngoài.
 
-Sao lưu database và manifest/file R2 trước tác vụ bảo trì dữ liệu, kiểm tra khả năng khôi phục. Đã ánh xạ 691 hồ sơ Thực tập hợp lệ vào Hè 2025–2026 và tiếp nhận 535 lần học Dự án HKI 2026–2027 vào Turso; 208 hồ sơ TT thiếu học phần được giữ để đối soát. Xem [quy trình phát hành](docs/PRODUCTION_RELEASE.md).
+Sao lưu database và manifest/file R2 trước tác vụ bảo trì dữ liệu, kiểm tra khả năng khôi phục. Đã ánh xạ 691 hồ sơ Thực tập hợp lệ vào Hè 2025–2026 và tiếp nhận 408 lần học Dự án HKI 2026–2027 theo điều kiện STT vào Turso; 208 hồ sơ TT thiếu học phần được giữ để đối soát. Xem [quy trình phát hành](docs/PRODUCTION_RELEASE.md).
 
 ## Xử lý sự cố thường gặp
 

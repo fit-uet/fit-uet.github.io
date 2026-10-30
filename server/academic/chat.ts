@@ -17,7 +17,7 @@ export async function chatThread(actor: AuthenticatedUser, classId: string, lect
   if (enrollmentId) requireRead(s, c, actor); else requireCampaign(s, c.campaignId, actor);
   const classIds = enrollmentId ? [c.id] : campaignClasses(s, c.campaignId).map(c => c.id);
   const l = lecturerFor(s, actor);
-  const participants = s.enrollments.filter(e => classIds.includes(e.classId) && e.status === 'active' && e.assignments.some(a => a.lecturerId === lecturerId && a.role !== 'reviewer'));
+  const participants = s.enrollments.filter(e => classIds.includes(e.classId) && e.status !== 'withdrawn' && e.assignments.some(a => a.lecturerId === lecturerId && a.role !== 'reviewer'));
   if (!participants.length) fail(403, 'CHAT_ACCESS_DENIED', 'Giảng viên không có nhóm hướng dẫn trong lớp.');
   if (enrollmentId) {
     const e = getEnrollment(s, enrollmentId);

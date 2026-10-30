@@ -1,3 +1,4 @@
+import {removeProjectFixture} from './delete-fixture';
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createClient, type Client } from '@libsql/client';
@@ -238,7 +239,7 @@ test('chat membership is scoped to class and revoked immediately', async () => {
   const c = await activeClass(); const e = await admit(c); await admit(c, '24020002', 2);
   await sendChat(student(e.studentId), c.id, 1, e.id, 'Xin chào'); assert.equal((await chatMessages(alpha, c.id, 1, e.id)).length, 1);
   await assert.rejects(chatMessages(beta, c.id, 1, e.id), rejects('CHAT_ACCESS_DENIED'));
-  await enrollmentAction(admin, e.id, { expectedRevision: (await fresh(e.id)).revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status');
+  await removeProjectFixture(admin, e.id);
   await assert.rejects(chatMessages(student(e.studentId), c.id, 1, e.id), rejects('CLASS_ACCESS_DENIED'));
 });
 test('completion outbox contains no scores and delivery retries do not duplicate notifications', async () => {
@@ -325,7 +326,7 @@ test('class announcements deduplicate recipients and revoked access removes web/
   const result = await announce(admin, c.id, { subject: 'Lịch nộp', body: 'Lịch riêng của lớp', deliveryMode: 'website_only', includeLecturers: true }); assert.equal(result.created, 3);
   await deliverAcademicOutbox(); const rows = (await db.execute("SELECT * FROM notifications WHERE type='course_announcement'")).rows;
   assert.equal(rows.length, 3); assert.ok(rows.every(r => r.status === 'website_only')); assert.equal((await visibleAcademicNotifications(rows, e.email)).length, 1);
-  await enrollmentAction(admin, e.id, { expectedRevision: (await fresh(e.id)).revision, status: 'withdrawn', reason: 'Rút lớp' }, 'status');
+  await removeProjectFixture(admin, e.id);
   assert.equal((await visibleAcademicNotifications(rows, e.email)).length, 0); assert.equal((await allowedAcademicQueue(rows)).size, 2);
 });
 test('expired grading window still applies after Khoa unlocks scores', async () => {
@@ -365,4 +366,10 @@ test('profile edits preserve verified student identity and cannot move a mapped 
     const valid = await update({ name: 'Hồ sơ', student_id: '', course_code: 'INT4002' }); assert.equal(valid.status, 200); assert.equal((await valid.json()).student_id, '22020001');
   });
   assert.equal((await snapshot()).enrollments.length, 1);
+});
+test('project roster imports require STT and skip blank STT even when advisor data is present',async()=>{
+ const sem=await createSemester(admin,2026,'1'),s=await snapshot();const plan=planImport(s,sem.id,workbook([[1,24020001,'Có STT','','CS1','INT3132 1','','','',''],['',24020002,'Thiếu STT','','CS1','INT3132 1','','Alpha','alpha@vnu.edu.vn'],['   ',24020001,'Không được ghi đè','','CS1','INT3132 1','','Delta','delta@vnu.edu.vn'],['2',24020003,'STT dạng chữ','','CS1','INT3132 1']]));
+ assert.equal(plan.summary.students,2);assert.equal(plan.summary.ignoredWithoutStt,2);assert.equal(plan.summary.errors,0);assert.deepEqual(plan.rows.map(r=>r.studentId),['24020001','24020003']);assert.equal(plan.rows[0].primaryId,null);assert.equal(plan.rows[0].name,'Có STT');
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Mã SV','Họ và tên','Lớp khóa học','Mã LMH'],['24020001','A','CS1','INT3132 1']]),'DACN');assert.throws(()=>planImport(s,sem.id,XLSX.write(wb,{type:'buffer',bookType:'xlsx'})),{code:'HEADERS_NOT_FOUND'});
+ assert.throws(()=>planImport(s,sem.id,workbook([['',24020001,'A','','CS1','INT3132 1']])),{code:'EMPTY_WORKBOOK'});
 });

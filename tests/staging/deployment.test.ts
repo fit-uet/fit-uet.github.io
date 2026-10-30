@@ -39,7 +39,7 @@ const sha = 'a'.repeat(40);
 function fixture(overrides: Record<string, unknown> = {}) {
   return (async (url: string | URL | Request) => {
     const path = new URL(String(url)).pathname;
-    const payload = path === '/api/me/campaigns' ? { error: 'Unauthorized' } : { status: path === '/api/ready' ? 'ready' : 'up', environment: 'production', release: sha, database: 'ok', academicSchema: 3, ...overrides };
+    const payload = path === '/api/me/campaigns' ? { error: 'Unauthorized' } : { status: path === '/api/ready' ? 'ready' : 'up', environment: 'production', release: sha, database: 'ok', academicSchema: 4, ...overrides };
     return Response.json(payload, { status: path === '/api/me/campaigns' ? 401 : 200 });
   }) as typeof fetch;
 }

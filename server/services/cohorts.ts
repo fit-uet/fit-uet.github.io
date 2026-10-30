@@ -42,7 +42,10 @@ export async function isListedStudentCohortException(email: string) {
       args: [normalizedEmail, studentId],
     })).rows[0];
     return Boolean(row);
-  } catch {
+  } catch (error) {
+    // Older internship-only schemas lack the flag; transient database failures
+    // must not admit a deleted project account through the legacy exception.
+    if (!/no such column:.*legacy_internship_access/i.test(String(error))) throw error;
     const row = (await db.execute({
       sql: `SELECT id FROM users
             WHERE role = 'student'

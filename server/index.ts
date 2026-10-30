@@ -1,3 +1,4 @@
+import {drainProjectCleanup} from './academic/projectCleanup';
 import { db } from './db';
 import { initDb, seedCompaniesIfEmpty } from './db/initDb';
 import { createApp } from './app';
@@ -19,6 +20,7 @@ export async function startServer() {
 
   // Chạy các tác vụ cập nhật ban đầu nền sau khi server đã lắng nghe cổng
   deliverAcademicOutbox().catch(err => console.error('[deliverAcademicOutbox error]:', err?.message || err));
+  drainProjectCleanup().catch(err => console.error('[project cleanup error]:', err?.message || err));
   seedCompaniesIfEmpty().catch(err => console.error('[seedCompaniesIfEmpty error]:', err?.message || err));
 
   // Tự động kiểm tra và xả hàng đợi email theo quota ngày (mỗi 30 phút và 10 giây sau khi khởi động)
@@ -43,6 +45,7 @@ export async function startServer() {
 
   if (stagingJobsEnabled()) {
     setTimeout(runAutoQueueDrain, 10000);
+    setInterval(()=>drainProjectCleanup().catch(()=>{}),60_000);
     setInterval(runAutoQueueDrain, 30 * 60 * 1000);
   }
 }

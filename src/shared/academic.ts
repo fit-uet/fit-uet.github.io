@@ -77,7 +77,7 @@ export interface InternshipPreference {
 }
 export interface CourseEnrollment {
   id: string; classId: string; studentId: string; email: string; name: string;
-  dob: string; className: string; note: string; status: 'active' | 'withdrawn'; legacy: boolean;
+  dob: string; className: string; note: string; status?: 'active' | 'withdrawn'; legacy: boolean;
   topic: string; assignments: CourseAssignment[]; versions: SubmissionVersion[];
   topicReview?: TopicReview; topicSubmissionUntil?: string | null;
   evaluations: Record<string, Partial<Record<'advisor' | 'reviewer', CourseEvaluation>>>;

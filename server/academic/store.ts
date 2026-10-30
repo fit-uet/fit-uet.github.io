@@ -44,6 +44,10 @@ export async function snapshot(): Promise<Snapshot> {
   return result;
 }
 export interface ChangeSet {
+  membershipMigration?:boolean;
+  deletedEnrollmentIds?:string[]; purgeCommands?:{id:unknown;paths:string[]}[]; deletePreviewIds?:string[];
+  cleanupFiles?:{id:string;jobId:string;kind:string;objectKey:string}[];
+  deletionJob?:{id:string;campaignId:string;actorId:number;enrollmentIds:string[];reason:string};
   semesters?: AcademicSemester[]; classes?: AcademicClass[]; enrollments?: CourseEnrollment[]; quotas?: Quota[];
   campaigns?: CourseCampaign[];
   legacySettings?: { key: string; value: string }[];

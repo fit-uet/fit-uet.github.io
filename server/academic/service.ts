@@ -24,7 +24,7 @@ export function classSummaries(s: Snapshot, actor: AuthenticatedUser) {
   return s.classes.filter(c => mayRead(s, c, actor) || canJoin(c, actor)).map(c => ({
     ...c, semesterName: s.semesters.find(x => x.id === c.semesterId)?.name || c.semesterId,
     courseName: course(c).name, group: course(c).group,
-    enrollmentCount: actor.role === 'admin' ? s.enrollments.filter(e => e.classId === c.id && e.status === 'active').length : undefined,
+    enrollmentCount: actor.role === 'admin' ? s.enrollments.filter(e => e.classId === c.id && e.status !== 'withdrawn').length : undefined,
     canJoin: canJoin(c, actor) && !s.enrollments.some(e => e.classId === c.id && e.email === actor.email), canManage: actor.role === 'admin',
   }));
 }
@@ -33,6 +33,7 @@ export function enrollmentView(s: Snapshot, c: AcademicClass, e: CourseEnrollmen
   const myAssignment = e.assignments.filter(a => a.lecturerId === lecturer?.id).map(a => a.role);
   const canSeeGrades = actor.role === 'admin' || myAssignment.some(r => r === 'primary' || r === 'reviewer');
   const copy = structuredClone(e);
+  if (course(c).group === 'project') delete copy.status;
   const finalScore = totalScore(c, e);
   const gradeStatus = e.lockedAt ? 'locked' : finalScore != null ? 'complete' : hasGrade(e) ? 'partial' : 'missing';
   if (!canSeeGrades) { delete copy.evaluations; delete copy.internshipGrade; }
@@ -77,17 +78,17 @@ export async function joinInternship(actor: AuthenticatedUser, classId: string) 
   const e = newEnrollment(c, { studentId: actor.email.split('@')[0], name: actor.name, dob: actor.dob, className: actor.class_name });
   await commit(s, actor.id, 'student.internship.join', { enrollments: [e] }); return enrollmentView(s, c, e, actor);
 }
-export async function enrollmentAction(actor: AuthenticatedUser, enrollmentId: string, input: any, action: 'status' | 'topic' | 'topicApprove' | 'assignments' | 'review' | 'reopen' | 'gradeLock') {
-  const s = await snapshot(); const e = getEnrollment(s, enrollmentId); const c = getClass(s, e.classId);
+export function applyEnrollmentAction(s: Snapshot, c: AcademicClass, e: CourseEnrollment, actor: AuthenticatedUser, input: any, action: 'status' | 'topic' | 'topicApprove' | 'assignments' | 'review' | 'reopen' | 'gradeLock') {
   requireRead(s, c, actor, e); requireRevision(e.revision, input.expectedRevision);
   if (c.legacy) fail(409, 'LEGACY_CONTEXT', 'Dùng màn Thực tập hiện có để xử lý đợt cũ.');
   if (c.status !== 'active' && !(actor.role === 'admin' && c.status === 'draft' && ['status', 'assignments'].includes(action))) fail(409, 'CLASS_READ_ONLY', 'Lớp hiện chỉ đọc.');
   if (action === 'status') {
     requireAdmin(actor);
+    if (course(c).group === 'project') fail(409, 'PROJECT_MEMBERSHIP_ONLY', 'Dự án quản lý bằng danh sách; dùng chức năng Xóa khỏi danh sách.');
     if (!['active', 'withdrawn'].includes(input.status) || !text(input.reason)) fail(422, 'INVALID_STATUS', 'Cần trạng thái và lý do tiếp nhận/rút sinh viên.');
     e.status = input.status;
   } else {
-    if (e.status !== 'active') fail(403, 'ENROLLMENT_WITHDRAWN', 'Sinh viên đã rút khỏi lớp.');
+    if (e.status === 'withdrawn') fail(403, 'ENROLLMENT_WITHDRAWN', 'Sinh viên đã rút khỏi lớp.');
     if (action === 'topic' || action === 'topicApprove') editTopic(s, c, e, actor, input, action === 'topicApprove');
     if (action === 'assignments') {
       requireAdmin(actor);
@@ -117,6 +118,10 @@ export async function enrollmentAction(actor: AuthenticatedUser, enrollmentId: s
       e.lockedAt = input.locked ? now() : null;
     }
   }
+}
+export async function enrollmentAction(actor: AuthenticatedUser, enrollmentId: string, input: any, action: 'status' | 'topic' | 'topicApprove' | 'assignments' | 'review' | 'reopen' | 'gradeLock') {
+  const s = await snapshot(); const e = getEnrollment(s, enrollmentId); const c = getClass(s, e.classId);
+  applyEnrollmentAction(s, c, e, actor, input, action);
   const events: AcademicEvent[] = [];
   if (action === 'review') events.push(event(e, 'submission_review', 'Phản hồi bài nộp', e.needsRevision ? e.reviewComment : 'Đã hủy yêu cầu sửa bài.', `${e.id}:review:${e.revision + 1}`));
   if (action === 'assignments') events.push(event(e, 'course_assignment', 'Cập nhật phân công giảng viên', `Khoa đã cập nhật phân công cho lớp ${c.code}.`, `${e.id}:assignment:${e.revision + 1}`));
@@ -126,8 +131,7 @@ export async function enrollmentAction(actor: AuthenticatedUser, enrollmentId: s
 export function event(e: CourseEnrollment, type: string, subject: string, body: string, id: string = randomUUID()): AcademicEvent {
   return { id, email: e.email, userId: null, classId: e.classId, enrollmentId: e.id, type, subject, body };
 }
-export async function grade(actor: AuthenticatedUser, enrollmentId: string, role: string, input: any) {
-  const s = await snapshot(); const e = getEnrollment(s, enrollmentId); const c = getClass(s, e.classId);
+export function applyGrade(s: Snapshot, c: AcademicClass, e: CourseEnrollment, actor: AuthenticatedUser, role: string, input: any): AcademicEvent[] {
   requireRead(s, c, actor, e); requireWritable(c, e); requireRevision(e.revision, input.expectedRevision); requireWindow(c, 'grading');
   if (e.lockedAt) fail(409, 'GRADE_LOCKED', 'Điểm đã khóa.');
   const l = lecturerFor(s, actor);
@@ -154,8 +158,12 @@ export async function grade(actor: AuthenticatedUser, enrollmentId: string, role
     if ((!progress && !report && !company || !v.objectKey) && !text(input.comment)) fail(422, 'COMMENT_REQUIRED', 'Cần ghi lý do điểm 0.');
     e.internshipGrade = { progress, report, company, comment: text(input.comment), lecturerId: l.id, assignmentId: assignment.id, submittedAt: e.internshipGrade?.submittedAt || now(), updatedAt: now() };
   }
-  const events = !beforeComplete && totalScore(c, e) != null && c.settings.notifyOnCompletion ? [event(e, 'course_evaluation_complete', `Hoàn tất đánh giá ${c.code}`, 'Giảng viên đã hoàn tất nộp đánh giá về Khoa. Điểm chính thức được công bố trên Cổng Đào tạo.', `${e.id}:${v.id}:completed`)] : [];
-  await commit(s, actor.id, 'lecturer.grade.submit', { enrollments: [e], events }); return enrollmentView(s, c, e, actor);
+  return !beforeComplete && totalScore(c, e) != null && c.settings.notifyOnCompletion ? [event(e, 'course_evaluation_complete', `Hoàn tất đánh giá ${c.code}`, 'Giảng viên đã hoàn tất nộp đánh giá về Khoa. Điểm chính thức được công bố trên Cổng Đào tạo.', `${e.id}:${v.id}:completed`)] : [];
+}
+export async function grade(actor: AuthenticatedUser, enrollmentId: string, role: string, input: any) {
+  const s = await snapshot(); const e = getEnrollment(s, enrollmentId); const c = getClass(s, e.classId);
+  const events = applyGrade(s,c,e,actor,role,input);
+  await commit(s, actor.id, 'lecturer.grade.submit', { enrollments: [e], events }); return enrollmentView(s,c,e,actor);
 }
 export async function reviewerPreview(actor: AuthenticatedUser, semesterId: string, input: any) {
   requireAdmin(actor); const s = await snapshot();
@@ -208,7 +216,7 @@ export async function bulkLock(actor: AuthenticatedUser, classId: string, input:
   requireAdmin(actor); const s = await snapshot(); const c = getClass(s, classId); requireWritable(c);
   if (typeof input.locked !== 'boolean' || !text(input.reason)) fail(422, 'INVALID_LOCK', 'Cần trạng thái khóa và lý do.');
   const changed: CourseEnrollment[] = []; const skipped: { enrollmentId: string; reason: string }[] = [];
-  for (const row of s.enrollments.filter(e => e.classId === c.id && e.status === 'active')) {
+  for (const row of s.enrollments.filter(e => e.classId === c.id && e.status !== 'withdrawn')) {
     const e = structuredClone(row);
     if (input.locked && totalScore(c, e) == null) { skipped.push({ enrollmentId: e.id, reason: 'incomplete_grades' }); continue; }
     e.lockedAt = input.locked ? now() : null; changed.push(e);

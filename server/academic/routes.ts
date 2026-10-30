@@ -1,3 +1,6 @@
+import {previewProjectDeletion,applyProjectDeletion,projectDeletionStatus} from './projectDeletion';
+import {drainProjectCleanup} from './projectCleanup';
+import {saveProjectRows} from './projectList';
 import { readCampaignCatalog, readCampaignDetail, readCampaignEnrollments, readContext, readEnrollment, readCommunicationContext, invalidateReadCache } from './reads';
 import { validateJsonCache } from '../services/httpCache';
 import express, { Router } from 'express';
@@ -45,6 +48,11 @@ export function academicRoute(method: 'get' | 'post' | 'put' | 'patch' | 'delete
 }
 academicRoute('get', '/api/me/campaigns', req => readCampaignCatalog(req.user, req.query.section === 'base' ? 'base' : 'full'));
 academicRoute('get', '/api/campaigns/:campaignId', req => readCampaignDetail(req.user, req.params.campaignId, req.query.section || 'full'));
+academicRoute('post','/api/campaigns/:campaignId/deletions/preview',req=>previewProjectDeletion(req.user,req.params.campaignId,req.body));
+academicRoute('post','/api/campaigns/:campaignId/deletions/:previewId/apply',req=>applyProjectDeletion(req.user,req.params.campaignId,req.params.previewId,req.body));
+academicRoute('get','/api/campaigns/:campaignId/deletions/:jobId',req=>projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId));
+academicRoute('post','/api/campaigns/:campaignId/deletions/:jobId/retry',async req=>{await projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId);await drainProjectCleanup();return projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId);});
+academicRoute('patch', '/api/campaigns/:campaignId/enrollments/bulk', req => saveProjectRows(req.user,req.params.campaignId,req.body));
 academicRoute('get', '/api/campaigns/:campaignId/enrollments', req => readCampaignEnrollments(req.user, req.params.campaignId, req.query));
 academicRoute('patch', '/api/admin/campaigns/:campaignId', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
 academicRoute('put', '/api/admin/campaigns/:campaignId/settings', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
@@ -185,9 +193,9 @@ academicRoute('put', '/api/admin/semesters/:semesterId/reviewer-quotas', req => 
 async function gradeRows(req: any, semester = false, scoped = false) {
   const s = await snapshot();
   if (!scoped) requireAdmin(req.user);
-  else { const c = getClass(s, req.params.classId); requireRead(s, c, req.user); if (req.user.role !== 'admin' && !s.enrollments.some(e => e.classId === c.id && e.status === 'active' && service.enrollmentView(s, c, e, req.user).myAssignment.some(r => r !== 'co'))) fail(403, 'GRADES_PRIVATE', 'Bạn không có phân công chấm trong lớp.'); }
+  else { const c = getClass(s, req.params.classId); requireRead(s, c, req.user); if (req.user.role !== 'admin' && !s.enrollments.some(e => e.classId === c.id && e.status !== 'withdrawn' && service.enrollmentView(s, c, e, req.user).myAssignment.some(r => r !== 'co'))) fail(403, 'GRADES_PRIVATE', 'Bạn không có phân công chấm trong lớp.'); }
   const classes = s.classes.filter(c => (semester ? c.semesterId === req.params.semesterId : c.id === req.params.classId) && (!req.query.group || req.query.group === 'all' || course(c).group === req.query.group) && (!req.query.courseCode || c.courseCode === req.query.courseCode));
-  return s.enrollments.filter(e => classes.some(c => c.id === e.classId) && (!scoped || req.user.role === 'admin' || e.status === 'active' && service.enrollmentView(s, getClass(s, e.classId), e, req.user).myAssignment.some(r => r !== 'co'))).map(e => {
+  return s.enrollments.filter(e => classes.some(c => c.id === e.classId) && (!scoped || req.user.role === 'admin' || e.status !== 'withdrawn' && service.enrollmentView(s, getClass(s, e.classId), e, req.user).myAssignment.some(r => r !== 'co'))).map(e => {
     const c = getClass(s, e.classId); const pair = e.evaluations[currentVersion(e).id] || {};
     const name = (role: AssignmentRole) => e.assignments.filter(a => a.role === role).map(a => s.lecturers.find(l => l.id === a.lecturerId)?.name || '').join('; ');
     return { semester: s.semesters.find(x => x.id === c.semesterId)?.name, class: c.code, studentId: e.studentId, name: e.name, topic: currentVersion(e).title || e.topic,

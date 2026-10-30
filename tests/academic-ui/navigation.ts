@@ -3,6 +3,7 @@ import { expect, type Page } from '@playwright/test';
 export async function feature(page: Page, tab: string) {
   const nav = page.getByRole('navigation', {name:'Chức năng nhóm môn'});
   await expect(nav).toBeVisible();
+  if(['assignments','reports','grades'].includes(tab)&&await nav.getByRole('button',{name:'Danh sách sinh viên',exact:true}).count())tab='students';
   const primary = nav.locator(`[data-campaign-tab="${tab}"]`);
   if (await primary.count()) await primary.click();
   else {

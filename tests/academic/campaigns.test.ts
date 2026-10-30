@@ -1,3 +1,4 @@
+import {removeProjectFixture} from './delete-fixture';
 import { beforeEach, afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createAcademicFixture } from './fixture';
@@ -95,7 +96,7 @@ test('group chat merges classes in one campaign without merging private chats or
   await sendChat(x.actor, a.id, 1, undefined, 'A'); await sendChat(y.actor, b.id, 1, undefined, 'B'); await sendChat(alpha, later.id, 1, undefined, 'Kỳ sau');
   assert.equal((await chatMessages(y.actor, b.id, 1)).length, 2); assert.equal((await chatMessages(alpha, later.id, 1)).length, 1);
   await sendChat(x.actor, a.id, 1, x.e.id, 'Riêng A'); await assert.rejects(chatMessages(y.actor, a.id, 1, x.e.id));
-  await enrollmentAction(admin, y.e.id, { expectedRevision: (await snapshot()).enrollments.find(e => e.id === y.e.id)!.revision, status: 'withdrawn', reason: 'Rút' }, 'status');
+  await removeProjectFixture(admin, y.e.id);
   await assert.rejects(chatMessages(y.actor, b.id, 1));
 });
 test('merged storage over quota retains history and still permits a text message', async () => {
@@ -107,9 +108,9 @@ test('group announcements deduplicate two enrollments and retain visibility whil
   const a = await cls(), b = await cls('INT3131'); const x = await admit(a); const y = await admit(b);
   const r = await announce(admin, a.campaignId, { subject: 'Nhóm', body: 'Chung', deliveryMode: 'website_only' }); assert.equal(r.created, 1); await deliverAcademicOutbox();
   const notifications = (await db.execute("SELECT * FROM notifications WHERE type='course_announcement'")).rows;
-  await enrollmentAction(admin, x.e.id, { expectedRevision: (await snapshot()).enrollments.find(e => e.id === x.e.id)!.revision, status: 'withdrawn', reason: 'Rút một môn' }, 'status');
+  await removeProjectFixture(admin, x.e.id);
   assert.equal((await visibleAcademicNotifications(notifications, x.actor.email)).length, 1);
-  await enrollmentAction(admin, y.e.id, { expectedRevision: (await snapshot()).enrollments.find(e => e.id === y.e.id)!.revision, status: 'withdrawn', reason: 'Rút môn còn lại' }, 'status');
+  await removeProjectFixture(admin, y.e.id);
   assert.equal((await visibleAcademicNotifications(notifications, x.actor.email)).length, 0);
 });
 test('announcement preview lists the actual scoped recipients, rejects changes and applies idempotently', async () => {
