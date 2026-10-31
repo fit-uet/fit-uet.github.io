@@ -24,7 +24,7 @@ test('restored role screens on a prepared local copy of production data', async 
       if (role === 'admin') {
         await expect(page.getByText('Số lần học', {exact:true})).toBeVisible();
         await page.getByRole('region', { name: 'Chức năng quản lý' }).getByRole('button', { name: 'Danh sách sinh viên',exact:true }).click();
-        await expect(page.getByRole('columnheader', { name: 'Điểm GVHD — 60%' })).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'Điểm GVHD — 60%' })).toHaveCount(0);
         await applyFilters(page, {'Lớp học phần': {label:'INT3132 1'}});
         await expect(page.getByText('80 lần học · 80 sinh viên', { exact: true })).toBeVisible();
       }

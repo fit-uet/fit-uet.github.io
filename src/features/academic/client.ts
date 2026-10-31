@@ -1,4 +1,4 @@
-import { requestJson, clearRequestCache, invalidateRequestCache } from '../../shared/utils/requestCache';
+import { requestJson, clearRequestCache, invalidateRequestCache,ApiError } from '../../shared/utils/requestCache';
 import { API_BASE } from '../../shared/config';
 
 const pdfs = new Map<string, { url: string; etag: string }>();
@@ -24,7 +24,7 @@ export async function academicApi<T = any>(token: string, path: string, method =
   if (!response.ok) {
     if (response.status === 401) { clearAcademicCache(); window.dispatchEvent(new Event('auth-expired')); }
     if (response.status === 403) clearAcademicCache();
-    throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Không xử lý được yêu cầu.');
+    throw new ApiError(typeof result.error === 'string' ? result.error : result.error?.message || 'Không xử lý được yêu cầu.',response.status,result);
   }
   invalidateRequestCache(path, result);
   return result;

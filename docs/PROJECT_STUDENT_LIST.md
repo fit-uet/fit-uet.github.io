@@ -6,8 +6,8 @@
 
 | Mã | Vai trò / điều kiện | Hành vi và tiêu chí nghiệm thu |
 | --- | --- | --- |
-| REQ-LST-01 | Khoa/GV mở Dự án | Một mục **Danh sách sinh viên**, một dòng/lần học; không còn Tư cách, cột Thao tác hoặc cửa sổ hồ sơ tổng quát. DACN/DAKH của cùng SV vẫn là hai dòng. |
-| REQ-LST-02 | Người có quyền sửa ô | Đề tài, phân công, điểm/nhận xét, phản hồi và khóa/mở lại được sửa tại dòng. Lưu thay đổi mới ghi dữ liệu. Điểm chỉ do đúng GVHD/GVNX nhập; đồng HD chỉ xem. |
+| REQ-LST-01 | Khoa/GV mở Dự án | Hai mục **Danh sách sinh viên** và **Chấm điểm**, một dòng/lần học; không còn Tư cách, cột Thao tác hoặc cửa sổ hồ sơ tổng quát. DACN/DAKH của cùng SV vẫn là hai dòng. |
+| REQ-LST-02 | Người có quyền sửa ô | Đề tài, phân công và phản hồi sửa tại dòng Danh sách, chỉ ghi khi Lưu thay đổi. Điểm/nhận xét, khóa/mở lại thuộc Chấm điểm; lưu riêng sinh viên đang chọn. Chỉ đúng GVHD/GVNX nhập điểm; đồng HD chỉ xem bài, không xem điểm. |
 | REQ-LST-03 | Có bản nháp | RAM giữ bản gốc và expectedRevision. Lưu các dòng hợp lệ; một dòng lỗi không lưu một phần, giữ bản nháp và đánh dấu lỗi. Chuyển trang/lọc/chức năng/nhóm/vai trò phải chọn Lưu, Bỏ hoặc Ở lại. Tải lại dữ liệu không ghi đè bản nháp. |
 | REQ-LST-04 | Lọc/xuất | Học phần, lớp, GV, đề tài, phân công, bài và điểm là các bộ lọc riêng. XLSX dùng cùng điều kiện và đủ các trang; vẫn có xuất chuyên biệt. Không xuất Tư cách cho Dự án. |
 | REQ-LST-05 | Khoa phân công GVNX | Nút Phân công mở quy trình xem trước/xác nhận; phải lưu hoặc bỏ bản nháp bảng trước. Không phân công khi chỉ mở trang/import/tải lại. |
@@ -19,11 +19,11 @@
 
 ## Giao diện và dữ liệu
 
-Các cột: Sinh viên; Học phần/lớp; Đề tài; GVHD/Đồng HD; GVNX; Bài nộp; Điểm GVHD — 60%; Điểm GVNX — 40%; Tổng kết. GV thấy vai trò của mình, chỉ thấy phần điểm được phép xem. Mobile cuộn bên trong bảng; chiều rộng trang giữ nguyên.
+Các cột Danh sách: Sinh viên; Học phần/lớp; Đề tài; GVHD/Đồng HD; GVNX; Bài nộp. Bảng Chấm điểm riêng có bài nộp, GVHD/GVNX, hai phần điểm, tổng kết và trạng thái khóa. GV thấy vai trò của mình, chỉ thấy phần điểm được phép xem. Mobile cuộn bên trong bảng; chiều rộng trang giữ nguyên.
 
-PDF chỉ tải khi bấm Xem PDF; cửa sổ riêng hỗ trợ chọn phiên bản và cache có kiểm quyền. Không dùng dữ liệu lịch sử cho bảng phân trang. Các URL `tab=assignments|reports|grades` chuyển về `tab=students`, chuyển bộ lọc trạng thái phù hợp; `enrollmentId` định vị dòng, `panel` mở phần tương ứng. Nếu không chỉ định page, backend tìm trang chứa dòng trong chính phạm vi/bộ lọc đang có.
+PDF chỉ tải khi bấm Xem PDF; cửa sổ riêng hỗ trợ chọn phiên bản và cache có kiểm quyền. Không dùng dữ liệu lịch sử cho bảng phân trang. Các URL `tab=assignments|reports` chuyển về `tab=students`, chuyển bộ lọc trạng thái phù hợp. `tab=grades` giữ màn Chấm điểm; `panel=grades` cũ cũng chuyển tới đó. `enrollmentId` định vị dòng hoặc sinh viên đang chấm. Nếu không chỉ định page, backend tìm trang chứa dòng trong chính phạm vi/bộ lọc đang có.
 
-`ProjectStudentList` giữ bản nháp theo instance tài khoản/vai trò/campaign và Enrollment. `CampaignWorkspace` tải `projection=student-list`. Khung điều hướng, tìm kiếm 300 ms, ETag, export theo bộ lọc và cache RAM tiếp tục dùng cơ chế hiện có. Bảng không gắn handler mở hồ sơ vào tên SV.
+`ProjectStudentList` giữ bản nháp theo instance tài khoản/vai trò/campaign và Enrollment. `CampaignWorkspace` tải `projection=students` cho Danh sách (không có đánh giá/điểm số), `projection=grades` cho Chấm điểm. `student-list` giữ cho tương thích và xuất tổng hợp. Khung điều hướng, tìm kiếm 300 ms, ETag, export theo bộ lọc và cache RAM tiếp tục dùng cơ chế hiện có. Bảng không gắn handler mở hồ sơ vào tên SV.
 
 ## API và giao dịch
 
@@ -58,3 +58,21 @@ Bản tích hợp giữ các cập nhật giao diện trên main và quy tắc S
 ## Trạng thái phát hành
 
 Đã phát hành production ngày **30/10/2026** ở bản ứng dụng `68d9548`, Render/D1 schema **4** và Pages cùng phiên bản. Đã kiểm tra giao diện Khoa/GV desktop/mobile không còn Tư cách/Thao tác/Mở hồ sơ, quyền đọc, ETag, export tám lớp và bảo toàn dữ liệu. Hiệu chỉnh STT riêng đã hoàn tất: **408 lần học / 405 SV**; xem [D1_FAILOVER.md](D1_FAILOVER.md#đã-áp-dụng-ngày-30102026). Nút xóa hàng loạt được nghiệm thu trên bản sao local có dữ liệu và lỗi tệp/retry; không xóa hồ sơ có bài/điểm thật để thử production.
+
+
+## Chấm điểm riêng và thêm sinh viên — 31/10/2026
+
+| Mã | Vai trò / điều kiện | Hành vi và nghiệm thu |
+| --- | --- | --- |
+| REQ-GUI-GRADE-01 | Khoa/GV, chỉ Dự án | Chấm điểm là chức năng riêng; chọn SV mới tải chi tiết và PDF. Desktop PDF cạnh biểu mẫu; mobile Báo cáo/Đánh giá. Có phiên bản cũ chỉ đọc, slide/video, Trước/Sau theo lọc. |
+| REQ-GUI-GRADE-02 | GV đúng phân công, trong hạn | Lưu điểm hoặc Lưu & tiếp theo; không tự lưu. Chuyển SV/lọc/màn/nhóm khi còn nháp phải lưu/bỏ/ở lại. Xung đột giữ nháp, yêu cầu tải lại; không chấm bản cũ, ngoại lệ 0 có lý do giữ nguyên. |
+| REQ-GUI-GRADE-03 | Khoa | Tiến độ GVHD/GVNX tính toàn bộ kết quả lọc ở SQL, không đếm riêng trang. Xuất đủ bảng điểm; khóa/mở lại ở chức năng chấm. Không có phân công thì chỉ theo dõi/quản trị, không nhập thay điểm. |
+| REQ-MANUAL-01 | Khoa, nhóm draft/active đã chuyển đổi | Nút Thêm sinh viên: MSSV 8 chữ số, họ tên, lớp học phần bắt buộc; ngày sinh/lớp khóa học tùy chọn. Lookup theo MSSV; dùng thông tin người cũ chỉ đọc hoặc tạo người mới. |
+| REQ-MANUAL-02 | Xác nhận thêm | Tài khoản và enrollment được ghi cùng command/CAS. Trùng MSSV+lớp, sai phạm vi/identity hoặc thay đổi đồng thời không ghi một phần. Không upsert/sửa tài khoản dùng chung; người mới có legacy_internship_access=0. |
+| REQ-MANUAL-03 | Sau thêm | Không có đề tài, GVHD/GVNX, bài/điểm; không tự phân công hoặc chuyển lớp. DACN/DAKH độc lập. Xóa rồi tiếp nhận lại tạo ID mới, không phục hồi nội dung cũ. |
+
+`GET /api/admin/campaigns/:campaignId/student-lookup?studentId=…` trả `{revision,found,student,enrollments}` trong phạm vi Khoa. Không tải toàn danh mục. `POST /api/admin/campaigns/:campaignId/enrollments` nhận `{expectedRevision,studentId,classId,name,dob?,className?}` và trả `{enrollment,createdAccount}`. Revision ở đây là revision học vụ từ lookup, không phải revision lớp. Người cũ lấy thông tin hiện hành từ tài khoản, bỏ qua các trường tên/ngày sinh/lớp do client gửi.
+
+Guard `academic_project_admission_guard` kiểm lại trạng thái/revision campaign, lớp và identity ngay trước command. Ghi dùng trigger/CAS hiện có, không thêm bảng hay chuyển đổi dữ liệu nghiệp vụ; schema readiness vẫn là 4. Guard lỗi và lỗi constraint phải rollback cả account/enrollment/audit. Projection `grades` thêm `gradingSummary={advisorSubmitted,reviewerSubmitted,completed,locked}` tính trên cùng điều kiện lọc; chỉ các hồ sơ có quyền xem điểm được cộng.
+
+GET/PUT đánh giá theo enrollment/version được tái sử dụng. Cache, SQL phân trang, ETag, quota đọc và tiêu chí đo theo [PERFORMANCE.md](PERFORMANCE.md) tiếp tục áp dụng; không tải trang tiếp theo/PDF trước khi cần.

@@ -2,7 +2,7 @@ import type { AcademicClassSummary, CampaignSummary, EnrollmentView, LecturerInf
 
 export type CampaignRecord = EnrollmentView & { classCode: string; courseCode: string };
 export type CampaignMeta = { campaign: CampaignSummary; classes: AcademicClassSummary[]; lecturers: LecturerInfo[]; quotas: any[]; stats: Record<string, number> };
-export type CampaignRecordPage = { items: CampaignRecord[]; total: number; studentCount: number; page: number; limit: number; totalPages: number };
+export type CampaignRecordPage = { items: CampaignRecord[]; total: number; studentCount: number; page: number; limit: number; totalPages: number;gradingSummary?:{advisorSubmitted:number;reviewerSubmitted:number;completed:number;locked:number} };
 export type EnrollmentPanelMode = 'profile' | 'assignments' | 'reports' | 'grades' | 'all';
 export const gradeNames: Record<string, string> = { missing: 'Chưa có điểm', partial: 'Chưa đủ phần điểm', complete: 'Đã nộp điểm', locked: 'Đã khóa' };
 export const recordPages = ['students', 'assignments', 'reports', 'grades', 'registrations', 'final-internships'];
@@ -37,7 +37,8 @@ export function campaignModules(admin: boolean, student: boolean, internship: bo
     ] : []),
     ...(admin && internship ? [{ id: 'assignments', title: 'Phân công', description: internship ? 'GVHD chính và đồng hướng dẫn' : 'GVHD, đồng hướng dẫn và GV nhận xét', icon: 'assignments' }] : []),
     ...(internship ? [{ id: 'reports', title: 'Báo cáo', description: internship ? 'Xem PDF và nhận xét báo cáo' : 'PDF, slide và video demo', icon: 'reports' },
-    { id: 'grades', title: 'Bảng điểm', description: internship ? 'Chấm điểm, tổng hợp kết quả' : 'Điểm GVHD 60% và GVNX 40%', icon: 'grades' }] : []),
+    ] : []),
+    { id: 'grades', title: internship ? 'Bảng điểm' : 'Chấm điểm', description: internship ? 'Chấm điểm, tổng hợp kết quả' : 'Báo cáo, điểm GVHD 60% và GVNX 40%', icon: 'grades' },
     { id: 'chat', title: 'Trao đổi', description: 'Trao đổi riêng và nhóm hướng dẫn', icon: 'chat' },
     { id: 'plan', title: 'Kế hoạch và hướng dẫn', description: 'Kế hoạch triển khai và hướng dẫn giảng viên', icon: 'plan' },
     { id: 'guide', title: 'Hướng dẫn sử dụng', description: 'Hướng dẫn giảng viên', icon: 'plan' },
@@ -89,7 +90,8 @@ export function campaignSwitchQuery(current: URLSearchParams, modules: ReturnTyp
 
 export function projectListQuery(current:URLSearchParams){
   const next=new URLSearchParams(current),tab=next.get('tab'),status=next.get('status');
-  if(['assignments','reports','grades'].includes(tab||''))next.set('tab','students');
+  if(['assignments','reports'].includes(tab||''))next.set('tab','students');
+  if(next.get('panel')==='grades')next.set('tab','grades');
   if(status&&tab==='grades')next.set('gradeStatus',status);
   if(status&&tab==='reports'){if(status==='complete')next.set('gradeStatus','complete');else next.set('submissionStatus',status);}
   next.delete('status');return next;

@@ -84,6 +84,11 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
   const needsLecturerDirectory=['management','full'].includes(section)&&!accessOnly;
   const page = Math.max(1,Math.floor(Number(pageQuery?.page)||1)), limit=Math.min(100,Math.max(1,Math.floor(Number(pageQuery?.limit)||25)));
   const light = section === 'base' || section === 'overview' || section === 'management';
+  const gradingSummary=pageQuery?.projection==='grades'?`, 'gradingSummary',json_object(
+    'advisorSubmitted',COALESCE(sum(CASE WHEN canSeeGrades=1 AND advisor IS NOT NULL THEN 1 ELSE 0 END),0),
+    'reviewerSubmitted',COALESCE(sum(CASE WHEN canSeeGrades=1 AND reviewer IS NOT NULL THEN 1 ELSE 0 END),0),
+    'completed',COALESCE(sum(CASE WHEN canSeeGrades=1 AND complete=1 THEN 1 ELSE 0 END),0),
+    'locked',COALESCE(sum(CASE WHEN canSeeGrades=1 AND gradeStatus='locked' THEN 1 ELSE 0 END),0))`:'';
   const result = (await db.execute({ sql: compoundSelect(`
     SELECT 'revision' kind,CAST(revision AS TEXT) data FROM academic_meta WHERE id=1
     UNION ALL SELECT 'campaigns',${light ? withoutContent('data') : 'data'} data FROM academic_campaigns WHERE (SELECT campaignId FROM actor)='' OR id=(SELECT campaignId FROM actor)
@@ -97,7 +102,7 @@ export async function readContext(actor: AuthenticatedUser, id = '', section = '
     UNION ALL SELECT 'classCounts',json_object('classId',class_id,'n',count(*)) FROM ${records} WHERE COALESCE(json_extract(${membershipOnly?'data':'j'},'$.status'),'active')='active' GROUP BY class_id
     UNION ALL SELECT 'unmapped',json_object('value',CASE WHEN (SELECT role FROM actor)='student' AND NOT EXISTS(SELECT 1 FROM academic_enrollments WHERE json_extract(data,'$.legacy')=1 AND lower(json_extract(data,'$.email'))=(SELECT email FROM actor)) THEN 1 ELSE 0 END)
     UNION ALL SELECT 'settings',json_object('key',key,'value',value) FROM settings WHERE EXISTS(SELECT 1 FROM academic_campaigns p WHERE json_extract(p.data,'$.legacy')=1 AND ((SELECT campaignId FROM actor)='' OR p.id=(SELECT campaignId FROM actor)))
-    ${pageFilter?`UNION ALL SELECT 'pageCount',json_object('total',count(*),'studentCount',count(DISTINCT student_id)) FROM records WHERE ${pageFilter.sql}
+    ${pageFilter?`UNION ALL SELECT 'pageCount',json_object('total',count(*),'studentCount',count(DISTINCT student_id)${gradingSummary}) FROM records WHERE ${pageFilter.sql}
     UNION ALL SELECT 'pageItem',j FROM (SELECT * FROM records WHERE ${pageFilter.sql} ORDER BY student_id,classCode ${pageQuery.__all?'':'LIMIT ? OFFSET ?'})`:''}`.split(/\n\s*UNION ALL /),cte), args: [...argsFor(actor, id, enrollmentId),...(pageFilter?[...pageFilter.args,...pageFilter.args,...(pageQuery.__all?[]:[limit,(page-1)*limit])]:[])] })).rows;
   const s: Snapshot = { revision: 0, campaigns: [], semesters: [], classes: [], enrollments: [], quotas: [], lecturers: [] };
   const counts = new Map<string, any>(), classCounts = new Map<string, number>(); let unmapped = false, targetExists = false; let pageCount:{total:number;studentCount:number}|undefined;

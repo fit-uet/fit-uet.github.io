@@ -269,3 +269,8 @@ Theo xác nhận của Khoa, chỉ tiếp nhận **dòng có giá trị STT** tr
 Với nguồn HKI 2026–2027 đã đối soát: **215 DACN + 193 DAKH = 408 lần học, 405 sinh viên duy nhất**. Ba sinh viên học cả hai môn có hai hồ sơ. Số 535/532 trong các báo cáo nhập cũ bao gồm các dòng không STT và là số lịch sử trước đính chính. Không tự xóa sinh viên chỉ vì vắng file nhập sau này; đây là đợt đối soát có nguồn, backup và xác nhận riêng.
 
 Bản xem trước import hiển thị số dòng bỏ qua do thiếu STT. Tổng quan không dùng tỷ lệ lần học/sinh viên; tiến độ báo cáo và điểm Dự án tính theo lần học. Thực tập giữ các chỉ số cũ.
+
+
+## Điều chỉnh giao diện Dự án ngày 31/10/2026
+
+Khoa và giảng viên dùng hai mục Danh sách sinh viên/Chấm điểm. Danh sách giữ đề tài, phân công và bài nộp; điểm/khóa/mở lại nằm ở Chấm điểm, PDF cạnh biểu mẫu và lưu từng SV. Khoa có thêm nút tiếp nhận thủ công người cũ hoặc mới vào lớp, không sửa danh mục chung hoặc cấp quyền Thực tập. Tiêu chí REQ-GUI-GRADE-01–03 và REQ-MANUAL-01–03 tại [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) thay thế phần bố cục bảng gộp trước đó; giữ nghiệp vụ điểm và xóa lần học.

@@ -16,7 +16,7 @@ test('campaign navigation preserves common filters but drops incompatible state 
 
 test('function cards respect course group and role without exposing management to students or lecturers', () => {
   const project = campaignModules(true, false, false).map(x => x.id);
-  assert.ok(project.includes('students'));assert.ok(!project.includes('assignments')&&!project.includes('grades')&&!project.includes('reports'));
+  assert.ok(project.includes('students'));assert.ok(!project.includes('assignments')&&project.includes('grades')&&!project.includes('reports'));
   assert.ok(!project.includes('registrations') && !project.includes('final-internships'));
   assert.ok(campaignModules(true, false, true).some(x => x.id === 'registrations'));
   assert.deepEqual(campaignModules(false, true, false).map(x => x.id), ['students', 'plan', 'chat', 'questions']);
@@ -52,3 +52,10 @@ test('compact navigation keeps every permitted function reachable on desktop and
   assert.equal(campaignQuery(new URLSearchParams('tab=reports&advisor=Alpha&page=4'),{tab:'students'}).has('advisor'),false);
   assert.equal(campaignQuery(new URLSearchParams('tab=reports&advisor=Alpha&page=4'),{advisor:'Beta'}).has('page'),false);
 });
+
+ test('project grading links retain their own workspace and legacy panels select the right destination',async()=>{
+ const {projectListQuery}=await import('../../src/features/academic/campaignPresentation');
+ assert.equal(projectListQuery(new URLSearchParams('tab=grades&status=partial&enrollmentId=A')).toString(),'tab=grades&enrollmentId=A&gradeStatus=partial');
+ const old=projectListQuery(new URLSearchParams('tab=students&panel=grades&enrollmentId=A'));assert.equal(old.get('tab'),'grades');assert.equal(old.get('enrollmentId'),'A');
+ for(const tab of ['assignments','reports'])assert.equal(projectListQuery(new URLSearchParams('tab='+tab)).get('tab'),'students');
+ });
