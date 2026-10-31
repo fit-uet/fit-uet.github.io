@@ -616,13 +616,28 @@ export function ClassQuestions({ token, user, c }: { token: string; user: any; c
                 : 'Đặt câu hỏi và nhận giải đáp từ Khoa CNTT. Câu hỏi đã trả lời sẽ được chia sẻ cho cả nhóm môn.'}
             </p>
           </div>
-          <button
-            onClick={() => load()}
-            disabled={busy}
-            className="bg-white text-slate-700 border border-black/[0.08] px-3.5 py-1.5 rounded-xl hover:bg-[#f8fafc] active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto disabled:opacity-50"
-          >
-            <RefreshCw size={13} className={`text-slate-500 ${busy ? 'animate-spin' : ''}`} /> Tải lại
-          </button>
+          {user.role !== 'admin' && c.status === 'active' ? (
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('class-question-form');
+                el?.scrollIntoView({ behavior: 'smooth' });
+                el?.querySelector('textarea')?.focus();
+              }}
+              className="bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto"
+            >
+              <Send size={13} /> Đặt câu hỏi cho Khoa
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => load()}
+              disabled={busy}
+              className="bg-white text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-50 active:scale-[0.98] text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto disabled:opacity-50"
+            >
+              <RefreshCw size={13} className={`text-slate-500 ${busy ? 'animate-spin' : ''}`} /> Tải lại
+            </button>
+          )}
         </div>
 
         {/* Filter bar */}
@@ -669,10 +684,15 @@ export function ClassQuestions({ token, user, c }: { token: string; user: any; c
         {/* Question List */}
         <div className="divide-y divide-slate-100">
           {!filtered.length ? (
-            <div className="p-12 text-center text-xs text-slate-400 font-medium">
-              {rows.length === 0
-                ? 'Chưa có câu hỏi nào trong nhóm môn.'
-                : 'Không tìm thấy câu hỏi phù hợp với bộ lọc.'}
+            <div className="py-12 px-4 text-center">
+              <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2.5">
+                <CircleHelp size={20} />
+              </div>
+              <p className="text-xs text-slate-500 font-medium">
+                {rows.length === 0
+                  ? 'Chưa có câu hỏi nào trong nhóm môn.'
+                  : 'Không tìm thấy câu hỏi phù hợp với bộ lọc.'}
+              </p>
             </div>
           ) : (
             filtered.map(q => {
@@ -784,7 +804,7 @@ export function ClassQuestions({ token, user, c }: { token: string; user: any; c
 
       {/* Student/Lecturer asking form */}
       {user.role !== 'admin' && c.status === 'active' && (
-        <form onSubmit={handleAsk} className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-4">
+        <form id="class-question-form" onSubmit={handleAsk} className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#034ea1] flex items-center justify-center">
               <Send size={15} />

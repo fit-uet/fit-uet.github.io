@@ -25,6 +25,7 @@ const RegistrationRulesSettingsAdmin = lazy(() => import('../admin/pages/Registr
 const PlanView=lazy(()=>import('../shared/pages/PlanView').then(module=>({default:module.PlanView})));
 const LecturerGuideView=lazy(()=>import('../shared/pages/LecturerGuideView').then(module=>({default:module.LecturerGuideView})));
 const CampaignMarkdown = lazy(() => import('./CampaignMarkdown').then(module => ({ default: module.CampaignMarkdown })));
+const CampaignFAQ = lazy(() => import('./CampaignFAQ').then(module => ({ default: module.CampaignFAQ })));
 
 const LegacyCampaignPanels = lazy(() => import('./LegacyCampaignPanels').then(module => ({ default: module.LegacyCampaignPanels })));
 const ClassAnnouncement = lazy(() => import('./ClassCommunications').then(module => ({ default: module.ClassAnnouncement })));
@@ -244,15 +245,25 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
       {admin && currentMeta && tab.endsWith('-editor') && <CampaignEditorContext campaign={p} token={token} refresh={refresh}>{tab === 'plan-editor' ? <PlanSettingsAdmin token={token}/> : tab === 'guide-editor' ? <LecturerGuideSettingsAdmin token={token}/> : tab === 'faq-editor' ? <FAQSettingsAdmin token={token}/> : <RegistrationRulesSettingsAdmin token={token}/>}</CampaignEditorContext>}
       {tab === 'plan' && !legacyPanel && currentMeta && <PlanView user={actor}/>}
       {tab === 'guide' && currentMeta && <LecturerGuideView token={token} user={actor}/>}
-      {tab === 'settings' && admin && <><CampaignSettingsPanel key={p.revision} token={token} c={p} run={run} busy={busy} /><div className="bg-white border rounded-xl p-5"><h3 className="font-semibold mb-3">Danh mục dùng chung</h3><div className="flex flex-wrap gap-4 text-sm text-[#034ea1]">{[['students', 'Sinh viên'], ['lecturers', 'Giảng viên'], ['companies', 'Doanh nghiệp'], ['approved-companies', 'CSDL thẩm định'], ['admins', 'Quản trị viên']].map(([key, name]) => <Link key={key} to={`/admin/${key}`}>{name}</Link>)}</div><div className="flex flex-wrap gap-4 text-sm text-[#034ea1] mt-3"><Link to="/system/settings">Tích hợp hệ thống / Sheets</Link><Link to="/system/notifications">Thông báo hệ thống</Link></div></div></>}
-      {tab === 'questions' && !legacyPanel && currentMeta && <><section className="bg-white rounded-xl border border-slate-200 p-6"><CampaignMarkdown content={(student?p.settings.studentFaq:p.settings.lecturerFaq)||'Khoa chưa cập nhật câu hỏi thường gặp.'}/></section><ClassQuestions token={token} user={actor} c={synthetic} /></>}
-      {tab === 'announcements' && admin && <>
-        <section className="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4" aria-label="Phạm vi thông báo">
-          <FormField label="Gửi tới học phần"><select className={academicInput} value={query.get('courseCode')||''} onChange={e=>editQuery({courseCode:e.target.value,classId:''})}><option value="">Toàn nhóm môn</option>{[...new Set(data.classes.map(c=>c.courseCode))].map(code=><option key={code} value={code}>{code}</option>)}</select></FormField>
-          <FormField label="Gửi tới lớp"><select className={academicInput} value={query.get('classId')||''} onChange={e=>editQuery({classId:e.target.value})}><option value="">Tất cả lớp trong phạm vi</option>{data.classes.filter(c=>!query.get('courseCode')||c.courseCode===query.get('courseCode')).map(c=><option key={c.id} value={c.id}>{c.code}</option>)}</select></FormField>
-        </section>
-        <ClassAnnouncement key={`${id}:${query.get('classId')}:${query.get('courseCode')}`} token={token} c={synthetic} filters={{ ...(query.get('classId') ? { classId: query.get('classId')! } : {}), ...(query.get('courseCode') ? { courseCode: query.get('courseCode')! } : {}) }} scopeLabel={chosenClass?.code || query.get('courseCode') || 'Toàn nhóm môn trong học kỳ'} />
-      </>}
+      {tab === 'settings' && admin && <><CampaignSettingsPanel key={p.revision} token={token} c={p} run={run} busy={busy} /><div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5"><h3 className="font-semibold mb-3">Danh mục dùng chung</h3><div className="flex flex-wrap gap-4 text-sm text-[#034ea1]">{[['students', 'Sinh viên'], ['lecturers', 'Giảng viên'], ['companies', 'Doanh nghiệp'], ['approved-companies', 'CSDL thẩm định'], ['admins', 'Quản trị viên']].map(([key, name]) => <Link key={key} to={`/admin/${key}`}>{name}</Link>)}</div><div className="flex flex-wrap gap-4 text-sm text-[#034ea1] mt-3"><Link to="/system/settings">Tích hợp hệ thống / Sheets</Link><Link to="/system/notifications">Thông báo hệ thống</Link></div></div></>}
+      {tab === 'questions' && !legacyPanel && currentMeta && (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <CampaignFAQ
+            content={(student ? p.settings.studentFaq : p.settings.lecturerFaq) || 'Khoa chưa cập nhật câu hỏi thường gặp.'}
+            isStudent={student}
+          />
+          <ClassQuestions token={token} user={actor} c={synthetic} />
+        </div>
+      )}
+      {tab === 'announcements' && admin && (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs" aria-label="Phạm vi thông báo">
+            <FormField label="Gửi tới học phần"><select className={academicInput} value={query.get('courseCode')||''} onChange={e=>editQuery({courseCode:e.target.value,classId:''})}><option value="">Toàn nhóm môn</option>{[...new Set(data.classes.map(c=>c.courseCode))].map(code=><option key={code} value={code}>{code}</option>)}</select></FormField>
+            <FormField label="Gửi tới lớp"><select className={academicInput} value={query.get('classId')||''} onChange={e=>editQuery({classId:e.target.value})}><option value="">Tất cả lớp trong phạm vi</option>{data.classes.filter(c=>!query.get('courseCode')||c.courseCode===query.get('courseCode')).map(c=><option key={c.id} value={c.id}>{c.code}</option>)}</select></FormField>
+          </section>
+          <ClassAnnouncement key={`${id}:${query.get('classId')}:${query.get('courseCode')}`} token={token} c={synthetic} filters={{ ...(query.get('classId') ? { classId: query.get('classId')! } : {}), ...(query.get('courseCode') ? { courseCode: query.get('courseCode')! } : {}) }} scopeLabel={chosenClass?.code || query.get('courseCode') || 'Toàn nhóm môn trong học kỳ'} />
+        </div>
+      )}
       {tab === 'chat' && !legacyPanel && chat && <ClassChat token={token} user={actor} data={{ class: synthetic, enrollments: chat.enrollments, lecturers: data.lecturers }} />}
       {student && p.group === 'internship' && data.classes.some(c => c.canJoin) && <section className="bg-white border rounded-xl p-5 space-y-3"><h3 className="font-semibold">Tham gia lớp Thực tập</h3>{data.classes.filter(c => c.canJoin).map(c => <Button key={c.id} disabled={busy} onClick={() => run(() => academicApi(token, `/api/classes/${c.id}/enrollments/join`, 'POST'))}>Tham gia {c.code}</Button>)}</section>}
     </>}
