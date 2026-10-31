@@ -143,6 +143,9 @@ test('ETag validates actual data and permission changes before returning 304',as
   const path=`${base}/api/campaigns/${campaignId}/enrollments?projection=students`;
   const first=await fetch(path,{headers});assert.equal(first.status,200);const tag=first.headers.get('ETag')!;assert.ok(tag);await first.text();
   queries.length=0;
+  const newClient=await fetch(path,{headers});assert.equal(newClient.status,200);await newClient.text();
+  assert.ok(!queries.some(sql=>sql.includes("'pageCount'")),'A fresh client without an ETag should reuse the revision-checked server page.');
+  queries.length=0;
   const unchanged=await fetch(path,{headers:{...headers,'If-None-Match':tag}});assert.equal(unchanged.status,304);assert.equal(await unchanged.text(),'');
   assert.ok(!queries.some(sql=>sql.includes("'pageCount'")),'Warm 304 must not re-run the full page query.');
   const forced=await fetch(path,{headers:{...headers,'If-None-Match':tag,'Cache-Control':'no-cache'}});assert.equal(forced.status,304);

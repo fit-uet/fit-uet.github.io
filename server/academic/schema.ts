@@ -37,6 +37,7 @@ export async function initAcademicSchema(client: DatabaseClient) {
     `CREATE INDEX IF NOT EXISTS idx_users_email_casefold ON users(lower(email))`,
     `CREATE INDEX IF NOT EXISTS idx_lecturers_email_casefold_trim ON lecturers(lower(trim(email)))`,
     `CREATE INDEX IF NOT EXISTS academic_message_thread ON academic_messages(class_id,lecturer_id,enrollment_id,created_at)`,
+    `CREATE INDEX IF NOT EXISTS academic_message_lecturer ON academic_messages(lecturer_id,enrollment_id,class_id)`,
     `CREATE UNIQUE INDEX IF NOT EXISTS academic_notification_event ON notifications(academic_event_id) WHERE academic_event_id IS NOT NULL`,
     `CREATE TABLE IF NOT EXISTS academic_file_cleanup(id TEXT PRIMARY KEY,job_id TEXT NOT NULL,kind TEXT NOT NULL,object_key TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,last_error TEXT)`,
     `CREATE TABLE IF NOT EXISTS academic_deletions(id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,actor_id INTEGER NOT NULL,enrollment_ids TEXT NOT NULL,reason TEXT NOT NULL,created_at TEXT NOT NULL)`,

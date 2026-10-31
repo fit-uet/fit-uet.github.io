@@ -228,9 +228,13 @@ export async function ensureDbIndexes(force = false) {
 
     CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON chat_messages(student_user_id, lecturer_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_chat_messages_unread ON chat_messages(student_user_id, lecturer_id, sender_user_id, read_at);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_thread_unread ON chat_messages(student_user_id, lecturer_id, read_at, sender_user_id);
     CREATE INDEX IF NOT EXISTS idx_chat_messages_student_lecturer_id ON chat_messages(student_user_id, lecturer_id, id DESC);
     CREATE INDEX IF NOT EXISTS idx_notifications_recipient_nocase ON notifications(recipient_email COLLATE NOCASE);
     CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_notifications_unbound_recipient_created
+      ON notifications(recipient_email COLLATE NOCASE, created_at DESC) WHERE user_id IS NULL;
     CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status);
     CREATE INDEX IF NOT EXISTS idx_system_notifications_active_role ON system_notifications(active, target_role, created_at);
   `);

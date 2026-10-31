@@ -49,7 +49,9 @@ export function academicRoute(method: 'get' | 'post' | 'put' | 'patch' | 'delete
     }
   });
 }
-const mayUseReadCache=(req:any)=>!!req.get('If-None-Match')&&!/no-cache|no-store/i.test(req.get('Cache-Control')||'');
+// Server memoization is revision/identity checked even when a new client has
+// no ETag yet. Explicit refresh still bypasses it; legacy reads remain live.
+const mayUseReadCache=(req:any)=>!/no-cache|no-store/i.test(req.get('Cache-Control')||'');
 academicRoute('get', '/api/me/campaigns', req => readCampaignCatalog(req.user, req.query.section === 'base' ? 'base' : 'full',mayUseReadCache(req)));
 academicRoute('get', '/api/campaigns/:campaignId', req => readCampaignDetail(req.user, req.params.campaignId, req.query.section || 'full',mayUseReadCache(req)));
 academicRoute('get','/api/admin/campaigns/:campaignId/student-lookup',req=>lookupProjectStudent(req.user,req.params.campaignId,req.query.studentId));
@@ -59,7 +61,7 @@ academicRoute('post','/api/campaigns/:campaignId/deletions/:previewId/apply',req
 academicRoute('get','/api/campaigns/:campaignId/deletions/:jobId',req=>projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId));
 academicRoute('post','/api/campaigns/:campaignId/deletions/:jobId/retry',async req=>{await projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId);await drainProjectCleanup();return projectDeletionStatus(req.user,req.params.campaignId,req.params.jobId);});
 academicRoute('patch', '/api/campaigns/:campaignId/enrollments/bulk', req => saveProjectRows(req.user,req.params.campaignId,req.body));
-academicRoute('get', '/api/campaigns/:campaignId/enrollments', req => readCampaignEnrollments(req.user, req.params.campaignId, req.query,false,undefined,!!req.get('If-None-Match')&&!/no-cache|no-store/i.test(req.get('Cache-Control')||'')));
+academicRoute('get', '/api/campaigns/:campaignId/enrollments', req => readCampaignEnrollments(req.user, req.params.campaignId, req.query,false,undefined,mayUseReadCache(req)));
 academicRoute('patch', '/api/admin/campaigns/:campaignId', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
 academicRoute('put', '/api/admin/campaigns/:campaignId/settings', req => campaigns.updateCampaign(req.user, req.params.campaignId, req.body));
 academicRoute('post', '/api/admin/campaign-migrations/preview', req => campaigns.campaignMigrationPreview(req.user, req.body?.resolutions || {}));
