@@ -78,6 +78,24 @@ D1 adapter cộng `meta.rows_read`, `rows_written`, `duration` cho mọi stateme
 
 Sau khi D1 mở lại, deploy backend đúng SHA rồi kiểm một vòng nhỏ ba vai trò: cold GET, conditional GET, force refresh và thu hồi quyền trên bản sao. Đối chiếu log thực tế với Query Insights/Row Metrics cùng cửa sổ thời gian. Không lặp export toàn bộ hoặc sao lưu/quét lại mọi bảng để đo hiệu năng. Nếu một GET Dự án vẫn đọc hàng trăm nghìn dòng, lấy SQL fingerprint và kế hoạch thực thi D1 trước khi mở rộng nghiệm thu. Chưa đánh dấu phát hành thành công khi readiness/đo production chưa đạt.
 
+## Giảm lượng đọc của header — 31/10/2026
+
+Số đếm thông báo/chat vẫn tốn khoảng 5.000 dòng mỗi lần hết cache: điều kiện `user_id IS NULL OR recipient_email=…` đọc nhiều thông báo của người khác, còn truy vấn chat có thể quét ngoài các hội thoại được phân công. Vì header cập nhật định kỳ, cần đo cả API này, không chỉ lượt mở lại bảng trả 304.
+
+- Tách thông báo theo tài khoản, email chính và email cá nhân thành các nhánh dùng chỉ mục theo người nhận/thời điểm. Kiểm tra quyền trước khi giới hạn từng nhánh, sau đó lấy 100 thông báo mới nhất chung với thông báo hệ thống. Email trùng không bị tính hai lần.
+- Chat riêng bắt đầu từ phân công, chat nhóm tìm theo giảng viên; tin học vụ tìm theo giảng viên có quyền. Giữ quy tắc người gửi, dấu đọc, đồng hướng dẫn, loại GVNX và phạm vi nhóm/lần học.
+- GET Dự án chưa có ETag cũng dùng được cache server 30 giây, nhưng vẫn kiểm tra tài khoản, revision và danh tính giảng viên ở mỗi lượt. Yêu cầu `no-cache`/`no-store` đọc lại nguồn. Nguồn legacy tiếp tục đọc trực tiếp.
+
+Đo trên bản sao dữ liệu bằng workerd D1:
+
+```sh
+npm run academic:profile-unread -- --database=/path/to/verified-backup.db --baseline-ref=1bbd08c --output=private/unread-cost.json
+```
+
+Lệnh không kết nối production, chỉ sửa bản sao tạm. Kiểm tra kết quả đếm giữ nguyên, giảm ít nhất 90% lượt đọc mới, cache nóng tối đa 2 dòng (chưa tính xác thực HTTP) và thêm 1.000 thông báo/tin nhắn ngoài phạm vi ở mỗi nguồn không làm tăng lượng đọc quá 64 dòng. Báo cáo chỉ có số tổng hợp. Các chỉ mục được tạo khi khởi động; không đổi hồ sơ, điểm, tệp hoặc hạn thao tác.
+
+Khi đối chiếu Cloudflare, chọn cùng database và khoảng thời gian sau bản phát hành. Số cộng dồn trong ngày vẫn gồm các truy vấn trước phát hành, kiểm thử, sao lưu và tác vụ nền; không coi số đã tiêu là tốc độ tiêu mới. Dùng `rowsRead` của từng request trong log Render để đối chiếu với chênh lệch trên dashboard.
+
 ## Kiểm chứng và đo
 
 ```bash

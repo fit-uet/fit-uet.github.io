@@ -18,6 +18,7 @@
     "test:academic:ui": "playwright test -c playwright.academic.config.ts",
     "test:academic:d1": "tsx scripts/check-academic-d1.ts",
     "academic:profile-reads": "tsx scripts/profile-academic-reads.cts",
+    "academic:profile-unread": "tsx scripts/profile-unread-reads.cts",
     "academic:topics-preview": "tsx scripts/preview-project-topics.ts",
     "academic:preview": "tsx scripts/academic-preview.ts",
     "academic:migrate": "tsx scripts/migrate-academic.ts",
