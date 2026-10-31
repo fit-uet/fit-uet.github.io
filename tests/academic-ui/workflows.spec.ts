@@ -30,7 +30,7 @@ test('Khoa checks mail connectivity without sending messages and sees the server
     expect(providerRequests).toEqual(['GET', 'GET']); expect(historyRequests).toHaveLength(1); expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
-async function session(browser: Browser, role: 'admin' | 'student' | 'lecturer' | 'reviewer', mobile = false) {
+async function session(browser: Browser, role: 'admin' | 'student' | 'lecturer' | 'reviewer' | 'legacy-student', mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } });
   await context.route('**/*', route => { const url = new URL(route.request().url()); return ['127.0.0.1', 'localhost'].includes(url.hostname) || url.protocol === 'blob:' || url.protocol === 'data:' ? route.continue() : route.abort(); });
   const response = await context.request.get(`${previewOrigin}/__academic_preview/session?role=${role}`); const data = await response.json();
@@ -541,12 +541,20 @@ test('grading workbench preserves drafts on navigation, saves one record and sho
 test('concurrent grading rejects a stale draft and old PDF versions remain read-only',async({browser})=>{
  const {page,context,classes,token,errors}=await session(browser,'lecturer'),c=classes.find(c=>c.courseCode==='INT3132'),headers={Authorization:'Bearer '+token};
  try{
+  // This case also runs alone: prepare a valid local submission instead of
+  // relying on reports or grade locks left by earlier UI tests.
+  const rows=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments?classId=${c.id}`,{headers})).json();let ready=rows.items.find(e=>e.studentId==='24020001');
+  const adminSession=await(await context.request.get(`${previewOrigin}/__academic_preview/session?role=admin`)).json(),adminHeaders={Authorization:'Bearer '+adminSession.token};
+  if(ready.lockedAt){const unlocked=await context.request.put(`${previewOrigin}/api/admin/enrollments/${ready.id}/grade-lock`,{headers:adminHeaders,data:{expectedRevision:ready.revision,locked:false,reason:'Chuẩn bị fixture kiểm thử'}});expect(unlocked.status()).toBe(200);ready=await unlocked.json();}
+  const reopened=await context.request.post(`${previewOrigin}/api/admin/enrollments/${ready.id}/submission/reopen`,{headers:adminHeaders,data:{expectedRevision:ready.revision,submissionUntil:'2099-01-01T00:00:00Z',reason:'Chuẩn bị fixture kiểm thử'}});expect(reopened.status()).toBe(200);ready=await reopened.json();
+  if(ready.topicReview.status!=='approved'){const approved=await context.request.put(`${previewOrigin}/api/enrollments/${ready.id}/topic`,{headers,data:{expectedRevision:ready.revision,title:'Đề tài kiểm thử xung đột'}});expect(approved.status()).toBe(200);ready=await approved.json();}
+  const sv=await(await context.request.get(`${previewOrigin}/__academic_preview/session?role=student`)).json();const submitted=await context.request.post(`${previewOrigin}/api/enrollments/${ready.id}/submission`,{headers:{Authorization:'Bearer '+sv.token},multipart:{expectedRevision:String(ready.revision),slidesUrl:'https://drive.google.com/file/d/slides/view',demoUrl:'https://drive.google.com/file/d/video/view',pdf:{name:'fixture.pdf',mimeType:'application/pdf',buffer:pdf()}}});expect(submitted.status()).toBe(200);
   await page.goto(`/#/campaigns/${c.campaignId}?tab=grades&classId=${c.id}`);await page.getByRole('row').filter({hasText:'24020001'}).getByRole('button',{name:'Sinh viên An',exact:true}).click();await page.getByRole('spinbutton',{name:'Điểm GVHD',exact:true}).fill('8.7');await page.getByRole('textbox',{name:'Nhận xét chấm điểm',exact:true}).fill('Bản nháp sẽ xung đột');
   const id=new URLSearchParams(page.url().split('?')[1]).get('enrollmentId')!;const e=await(await context.request.get(`${previewOrigin}/api/enrollments/${id}`,{headers})).json();
   const updated=await context.request.put(`${previewOrigin}/api/enrollments/${id}/project-evaluations/advisor`,{headers,data:{score:8.3,comment:'Phiên làm việc khác',submissionVersionId:e.versions.at(-1).id,expectedRevision:e.revision}});expect(updated.status()).toBe(200);
   await page.getByRole('button',{name:'Lưu điểm',exact:true}).click();await expect(page.getByRole('alert').filter({hasText:'Hồ sơ đã thay đổi'})).toBeVisible();await expect(page.getByRole('spinbutton',{name:'Điểm GVHD',exact:true})).toHaveValue('8.7');
   await page.getByRole('button',{name:'Tải lại hồ sơ',exact:true}).click();await page.getByRole('dialog',{name:'Thay đổi chưa lưu'}).getByRole('button',{name:'Bỏ thay đổi',exact:true}).click();await expect(page.getByRole('spinbutton',{name:'Điểm GVHD',exact:true})).toHaveValue('8.3');
-  await page.getByRole('combobox',{name:'Phiên bản báo cáo',exact:true}).selectOption(e.versions[0].id);await expect(page.getByText('Đang xem bản cũ',{exact:false})).toBeVisible();await expect(page.getByRole('button',{name:'Lưu điểm',exact:true})).toBeDisabled();expect(errors).toEqual([]);
+  await page.getByRole('combobox',{name:'Phiên bản báo cáo',exact:true}).selectOption(e.versions[0].id);await expect(page.getByText('Đang xem bản cũ',{exact:false})).toBeVisible();await expect(page.getByRole('button',{name:'Lưu điểm',exact:true})).toBeDisabled();await expect(page.getByRole('spinbutton',{name:'Điểm GVHD',exact:true})).toHaveValue(String(e.evaluations?.[e.versions[0].id]?.advisor?.score??''));expect(errors).toEqual([]);
  }finally{await context.close();}
 });
 
@@ -576,4 +584,47 @@ test('a real invalid session is cleared when the database is ready',async({brows
  const {page,context}=await session(browser,'admin');
  await context.route('**/api/ready',route=>route.fulfill({json:{status:'ready'}}));
  try{await page.goto('/#/classes');await expect(page.getByRole('heading',{name:'Trang chủ',exact:true})).toBeVisible();await page.evaluate(()=>window.dispatchEvent(new Event('auth-expired')));await expect(page.getByRole('heading',{name:'Không thể đăng nhập',exact:true})).toBeVisible();expect(await page.evaluate(()=>localStorage.getItem('token'))).toBeNull();}finally{await context.close();}
+});
+
+test('project search, filters and guide navigation keep project wording for Khoa and lecturers on desktop and mobile',async({browser})=>{
+ for(const role of ['admin','lecturer']as const){
+  const {page,context,classes,errors}=await session(browser,role),campaign=classes.find(c=>c.courseCode==='INT3132').campaignId;
+  try{
+   await page.goto(`/#/campaigns/${campaign}?tab=students`);
+   await expect(page.getByRole('heading',{name:'Danh sách sinh viên',exact:true})).toBeVisible();
+   await expect(page.getByLabel('Tìm sinh viên',{exact:true})).toHaveAttribute('placeholder','Tìm MSSV, họ tên, đề tài…');await page.screenshot({path:`${screenshots}/business-${role}-desktop.png`,fullPage:true});
+   await page.getByRole('button',{name:/^Bộ lọc/}).click();const filters=page.getByRole('dialog',{name:'Bộ lọc danh sách'});await expect(filters.getByRole('option',{name:'Đã rút',exact:true})).toHaveCount(0);await filters.getByRole('button',{name:'Hủy',exact:true}).click();
+   await page.setViewportSize({width:390,height:844});await expect(page.getByLabel('Tìm sinh viên',{exact:true})).toHaveAttribute('placeholder','Tìm MSSV, họ tên, đề tài…');
+   await page.screenshot({path:`${screenshots}/business-${role}-mobile.png`,fullPage:true});await page.goto('/#/lecturer-guide');await expect(page).toHaveURL(/tab=guide/);await expect(page.getByRole('heading',{name:'Hướng dẫn sử dụng',exact:true})).toBeVisible();
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);expect(errors).toEqual([]);
+  }finally{await context.close();}
+ }
+});
+
+test('project-only personal profile has no internship selector or legacy settings request and accepts optional academic details',async({browser})=>{
+ const {page,context,errors}=await session(browser,'student');const legacyRequests:string[]=[];
+ page.on('request',r=>{if(new URL(r.url()).pathname==='/api/settings/campaign')legacyRequests.push(r.method());});
+ try{
+  await page.goto('/#/profile');await expect(page.getByRole('heading',{name:/Cập nhật Hồ sơ cá nhân/})).toBeVisible();
+  await expect(page.getByLabel('Học phần Thực tập (hồ sơ cũ)',{exact:true})).toHaveCount(0);
+  await expect(page.getByLabel('Ngày sinh',{exact:true})).not.toHaveAttribute('required');await page.getByLabel('Ngày sinh',{exact:true}).fill('');
+  await expect(page.getByLabel('Lớp khóa học',{exact:true})).not.toHaveAttribute('required');await page.getByLabel('Lớp khóa học',{exact:true}).fill('');
+  await page.locator('input[type=tel]').fill('0912345678');page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Lưu Hồ sơ',exact:true}).click();await expect(page).toHaveURL(/\/#\/$/);
+  expect(legacyRequests).toEqual([]);expect(errors).toEqual([]);
+ }finally{await context.close();}
+});
+
+test('legacy personal profile retains its internship course and class controls',async({browser})=>{
+ const {page,context,errors}=await session(browser,'legacy-student');
+ try{
+  await page.goto('/#/profile');const course=page.getByLabel('Học phần Thực tập (hồ sơ cũ)',{exact:true});await expect(course).toBeVisible();await expect(course).toHaveValue('Thực tập Doanh nghiệp INT4002');await expect(course.getByRole('option')).toHaveCount(4);await expect(page.getByLabel('Lớp khóa học',{exact:true})).toHaveAttribute('required');expect(errors).toEqual([]);
+ }finally{await context.close();}
+});
+
+test('lecturer profile changes the display name while preserving the official qualification',async({browser})=>{
+ const {page,context,errors}=await session(browser,'lecturer');
+ try{
+  await page.goto('/#/profile');await page.locator('input[type=text]:not([disabled])').fill('Alpha chỉnh tên');page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Lưu Hồ sơ',exact:true}).click();await expect(page).toHaveURL(/\/#\/$/);
+  const session=await(await context.request.get(`${previewOrigin}/__academic_preview/session?role=lecturer`)).json();expect(session.user.name).toBe('TS. Alpha chỉnh tên');expect(session.user.role).toBe('lecturer');expect(errors).toEqual([]);
+ }finally{await context.close();}
 });

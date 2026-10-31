@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { campaignModules, campaignQuery } from '../../src/features/academic/campaignPresentation';
+import { campaignModules, campaignQuery, campaignSearchPlaceholder, projectVersionResult } from '../../src/features/academic/campaignPresentation';
 import { matchesCourseCode } from '../../src/shared/utils/format';
 
 test('campaign navigation preserves common filters but drops incompatible state between functions', () => {
@@ -21,6 +21,23 @@ test('function cards respect course group and role without exposing management t
   assert.ok(campaignModules(true, false, true).some(x => x.id === 'registrations'));
   assert.deepEqual(campaignModules(false, true, false).map(x => x.id), ['students', 'plan', 'chat', 'questions']);
   assert.ok(campaignModules(false, false, false).every(x => !['settings', 'assignments', 'announcements'].includes(x.id)));
+});
+
+test('search wording reflects the actual project and legacy search fields',()=>{
+ assert.equal(campaignSearchPlaceholder('project'),'Tìm MSSV, họ tên, đề tài…');
+ assert.equal(campaignSearchPlaceholder('project',true),'Tìm MSSV, họ tên, đề tài…');
+ assert.equal(campaignSearchPlaceholder('internship',true),'Tìm MSSV, họ tên, nơi thực tập…');
+ assert.equal(campaignSearchPlaceholder('internship',false),'Tìm MSSV, họ tên, đề tài…');
+});
+
+test('historical project results belong to the selected submission, retain zero, and stay hidden without permission',()=>{
+ const e:any={canSeeGrades:true,versions:[{id:'old'},{id:'current'}],evaluations:{old:{advisor:{score:7,comment:'Old HD'},reviewer:{score:9,comment:'Old NX'}},current:{advisor:{score:8,comment:'Current HD'},reviewer:{score:8.5}}},finalScore:8.2};
+ assert.equal(projectVersionResult(e,'old').total,7.8);assert.equal(projectVersionResult(e,'old').pair.advisor?.comment,'Old HD');
+ assert.equal(projectVersionResult(e,'current').total,8.2);
+ e.evaluations.old={advisor:{score:0}};assert.equal(projectVersionResult(e,'old').total,null);
+ e.evaluations.old.reviewer={score:0};assert.equal(projectVersionResult(e,'old').total,0);
+ assert.deepEqual(projectVersionResult({...e,canSeeGrades:false},'old'),{pair:{},total:null});
+ assert.equal(projectVersionResult({...e,finalScore:null},'current').total,null);
 });
 
 test('legacy course filters match canonical codes against stored full names without mixing subjects', () => {

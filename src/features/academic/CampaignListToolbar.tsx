@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { TOPIC_STATUS_NAMES } from '../../shared/academic';
 import { Button } from '../../shared/ui';
-import { gradeNames } from './campaignPresentation';
+import { gradeNames, campaignSearchPlaceholder } from './campaignPresentation';
 import { useCampaignLayout, type CampaignFilter } from './CampaignLayoutContext';
 import { CampaignPopover } from './CampaignPopover';
 
@@ -38,7 +38,7 @@ export function CampaignListToolbar() {
     editQuery({...patch,page:'',enrollmentId:'',panel:''});setOpen(false);
   };
   return <div className="campaign-list-toolbar flex flex-wrap items-center gap-2" data-testid="campaign-list-toolbar">
-    <div className="relative min-w-[180px] flex-1 sm:max-w-sm"><Search size={15} className="pointer-events-none absolute left-3 top-2.5 text-slate-400"/><input aria-label="Tìm sinh viên" className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-700 focus:border-blue-300 focus:outline-none" placeholder="Tìm MSSV, họ tên, nơi thực tập…" value={query.get('q')||''} onChange={event=>editQuery({q:event.target.value,enrollmentId:'',panel:''})}/></div>
+    <div className="relative min-w-[180px] flex-1 sm:max-w-sm"><Search size={15} className="pointer-events-none absolute left-3 top-2.5 text-slate-400"/><input aria-label="Tìm sinh viên" className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-700 focus:border-blue-300 focus:outline-none" placeholder={campaignSearchPlaceholder(meta.campaign.group,legacy)} value={query.get('q')||''} onChange={event=>editQuery({q:event.target.value,enrollmentId:'',panel:''})}/></div>
     <button ref={trigger} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={count?`Bộ lọc (${count})`:'Bộ lọc'} onClick={start} className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${count?'border-blue-200 bg-blue-50 text-[#034ea1]':'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}><SlidersHorizontal size={14}/>Bộ lọc{count>0&&<span>({count})</span>}</button>
     <div ref={layout.setActionsHost} className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2" data-testid="campaign-list-actions"/>
     {open&&<CampaignPopover title="Bộ lọc danh sách" trigger={trigger} close={()=>setOpen(false)} width={448}><form className="space-y-4" onSubmit={event=>{event.preventDefault();apply();}}>

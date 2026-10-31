@@ -230,6 +230,8 @@ adminRouter.delete('/api/admin/students/:id', requireAuth, requireAdmin, async (
         args: [isUserIdSelector ? userId : selector]
       })).rows[0] as any;
       if (user) {
+        const enrollment=(await db.execute({sql:"SELECT id FROM academic_enrollments WHERE student_id=? OR lower(json_extract(data,'$.email'))=lower(?) LIMIT 1",args:[user.student_id||'',user.email]})).rows[0];
+        if(enrollment)return res.status(409).json({error:'Tài khoản còn hồ sơ học phần. Hãy quản lý từng lần học trong nhóm môn; xóa khỏi danh sách Dự án không xóa tài khoản dùng chung.'});
         const reports = (await db.execute({
           sql: 'SELECT object_key FROM final_reports WHERE user_id = ?',
           args: [user.id],

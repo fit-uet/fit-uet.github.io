@@ -1,4 +1,4 @@
-import type { AcademicClassSummary, CampaignSummary, EnrollmentView, LecturerInfo } from '../../shared/academic';
+import type { AcademicClassSummary, CampaignSummary, EnrollmentView, LecturerInfo, CourseEvaluation } from '../../shared/academic';
 
 export type CampaignRecord = EnrollmentView & { classCode: string; courseCode: string };
 export type CampaignMeta = { campaign: CampaignSummary; classes: AcademicClassSummary[]; lecturers: LecturerInfo[]; quotas: any[]; stats: Record<string, number> };
@@ -6,6 +6,15 @@ export type CampaignRecordPage = { items: CampaignRecord[]; total: number; stude
 export type EnrollmentPanelMode = 'profile' | 'assignments' | 'reports' | 'grades' | 'all';
 export const gradeNames: Record<string, string> = { missing: 'Chưa có điểm', partial: 'Chưa đủ phần điểm', complete: 'Đã nộp điểm', locked: 'Đã khóa' };
 export const recordPages = ['students', 'assignments', 'reports', 'grades', 'registrations', 'final-internships'];
+export const campaignSearchPlaceholder = (group: CampaignSummary['group'], legacy = false) =>
+  group === 'internship' && legacy ? 'Tìm MSSV, họ tên, nơi thực tập…' : 'Tìm MSSV, họ tên, đề tài…';
+export function projectVersionResult(e:EnrollmentView,versionId:string):{pair:Partial<Record<'advisor'|'reviewer',CourseEvaluation>>;total:number|null}{
+  if(!e.canSeeGrades)return {pair:{},total:null};
+  const pair=e.evaluations?.[versionId]||{};
+  const total=versionId===e.versions.at(-1)?.id?e.finalScore??null
+    :pair.advisor&&pair.reviewer?Math.round(pair.advisor.score*6+pair.reviewer.score*4+Number.EPSILON*100)/10:null;
+  return {pair,total};
+}
 
 export function toLetterGrade(score: number | null | undefined): string {
   if (score == null || isNaN(score)) return '';
