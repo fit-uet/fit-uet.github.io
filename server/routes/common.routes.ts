@@ -3,7 +3,6 @@ import { Router } from 'express';
 import { db } from '../db';
 import { requireAuth, requireStudentOrAdmin } from '../middlewares/auth';
 import { cleanStudentName, rowsToSettings, getItCompanyNameSet } from '../services/helpers';
-import { syncLecturerUsers } from '../services/advisorSync';
 import { createNotification } from '../services/notifications';
 import { visibleAcademicNotifications } from '../academic/notificationAccess';
 import {
@@ -80,7 +79,7 @@ commonRouter.get('/api/companies/:id', requireAuth, requireStudentOrAdmin, async
 commonRouter.put('/api/users/profile', requireAuth, async (req: any, res: any) => {
   const { name, student_id, dob, class_name, course_code, phone, personal_email } = req.body;
   const isStaffProfile = req.user.role === 'admin' || req.user.role === 'lecturer';
-  if (!name) {
+  if (typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'Họ và tên là bắt buộc.' });
   }
   if (!isStaffProfile && student_id && String(student_id).trim() !== String(req.user.email).split('@')[0]) {
@@ -100,26 +99,37 @@ commonRouter.put('/api/users/profile', requireAuth, async (req: any, res: any) =
   }
   try {
     if (isStaffProfile) {
+      let displayName=String(name).trim();
+      if(req.user.role==='lecturer'||req.user.is_lecturer){
+        const lecturer=(await db.execute({sql:'SELECT id,name FROM lecturers WHERE lower(trim(email))=? LIMIT 1',args:[String(req.user.email).trim().toLowerCase()]})).rows[0];
+        if(lecturer){
+          // Qualifications determine Project eligibility and internship quota.
+          // Self-service edits change the name, never the official qualification.
+          const title=/^(?:(?:PGS|GS|TS|ThS|CN)(?:[.\s]+|$))+/iu,prefix=String(lecturer.name).match(title)?.[0].trim()||'';
+          const personalName=displayName.replace(title,'').trim();
+          if(!personalName)return res.status(400).json({error:'Họ và tên là bắt buộc.'});
+          displayName=[prefix,personalName].filter(Boolean).join(' ');
+          const changed=await db.execute({sql:'UPDATE lecturers SET name=? WHERE id=? AND name=?',args:[displayName,lecturer.id,lecturer.name]});
+          if(changed.rowsAffected===0)return res.status(409).json({error:'Danh mục giảng viên đã thay đổi. Vui lòng tải lại hồ sơ trước khi sửa.'});
+        }
+      }
       await db.execute({
         sql: 'UPDATE users SET name = ? WHERE id = ?',
-        args: [name, req.user.id]
+        args: [displayName, req.user.id]
       });
-      if (req.user.role === 'lecturer' || req.user.is_lecturer) {
-        await db.execute({
-          sql: 'UPDATE lecturers SET name = ? WHERE email = ?',
-          args: [name, req.user.email]
-        });
-        await syncLecturerUsers();
-      }
     } else {
       const verifiedStudentId = String(req.user.email).split('@')[0];
       const studentCleanName = cleanStudentName(name, verifiedStudentId, req.user.email);
-      if (String(course_code || '') !== String(req.user.course_code || '') && (await db.execute({ sql: "SELECT id FROM academic_enrollments WHERE student_id=? AND json_extract(data,'$.legacy')=1 LIMIT 1", args: [verifiedStudentId] })).rows[0]) {
+      const nextCourseCode = course_code === undefined ? req.user.course_code : course_code;
+      if (String(nextCourseCode || '') !== String(req.user.course_code || '') && req.user.legacy_internship_access === 0) {
+        return res.status(409).json({error:'Học phần được Khoa quản lý theo từng lần học. Hồ sơ cá nhân không dùng để đăng ký hoặc đổi học phần.'});
+      }
+      if (String(nextCourseCode || '') !== String(req.user.course_code || '') && (await db.execute({ sql: "SELECT id FROM academic_enrollments WHERE student_id=? AND json_extract(data,'$.legacy')=1 LIMIT 1", args: [verifiedStudentId] })).rows[0]) {
         return res.status(409).json({ error: 'Hồ sơ Thực tập cũ đã được ánh xạ lớp. Liên hệ Khoa để đối soát khi cần sửa mã học phần; hồ sơ các lần học mới được quản lý trong từng lớp.' });
       }
       await db.execute({
         sql: 'UPDATE users SET name = ?, student_id = ?, dob = ?, class_name = ?, course_code = ?, phone = ?, personal_email = ? WHERE id = ?',
-        args: [studentCleanName, verifiedStudentId, dob || null, class_name || null, course_code || null, phone || null, personal_email || null, req.user.id]
+        args: [studentCleanName, verifiedStudentId, dob || null, class_name || null, nextCourseCode || null, phone || null, personal_email || null, req.user.id]
       });
     }
     const updatedUser = (await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [req.user.id] })).rows[0];

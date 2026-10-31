@@ -1,4 +1,4 @@
-import type { AcademicClassSummary, CampaignSummary, EnrollmentView, LecturerInfo } from '../../shared/academic';
+import type { AcademicClassSummary, CampaignSummary, EnrollmentView, LecturerInfo, CourseEvaluation } from '../../shared/academic';
 
 export type CampaignRecord = EnrollmentView & { classCode: string; courseCode: string };
 export type CampaignMeta = { campaign: CampaignSummary; classes: AcademicClassSummary[]; lecturers: LecturerInfo[]; quotas: any[]; stats: Record<string, number> };
@@ -6,6 +6,15 @@ export type CampaignRecordPage = { items: CampaignRecord[]; total: number; stude
 export type EnrollmentPanelMode = 'profile' | 'assignments' | 'reports' | 'grades' | 'all';
 export const gradeNames: Record<string, string> = { missing: 'Chưa có điểm', partial: 'Chưa đủ phần điểm', complete: 'Đã nộp điểm', locked: 'Đã khóa' };
 export const recordPages = ['students', 'assignments', 'reports', 'grades', 'registrations', 'final-internships'];
+export const campaignSearchPlaceholder = (group: CampaignSummary['group'], legacy = false) =>
+  group === 'internship' && legacy ? 'Tìm MSSV, họ tên, nơi thực tập…' : 'Tìm MSSV, họ tên, đề tài…';
+export function projectVersionResult(e:EnrollmentView,versionId:string):{pair:Partial<Record<'advisor'|'reviewer',CourseEvaluation>>;total:number|null}{
+  if(!e.canSeeGrades)return {pair:{},total:null};
+  const pair=e.evaluations?.[versionId]||{};
+  const total=versionId===e.versions.at(-1)?.id?e.finalScore??null
+    :pair.advisor&&pair.reviewer?Math.round(pair.advisor.score*6+pair.reviewer.score*4+Number.EPSILON*100)/10:null;
+  return {pair,total};
+}
 
 export function toLetterGrade(score: number | null | undefined): string {
   if (score == null || isNaN(score)) return '';
@@ -68,10 +77,12 @@ export function campaignQuery(current: URLSearchParams, patch: Record<string, st
 export const panelForPage = (page: string): EnrollmentPanelMode => ['assignments', 'reports', 'grades'].includes(page) ? page as EnrollmentPanelMode : 'profile';
 export const lecturerNames = (e: EnrollmentView, lecturers: LecturerInfo[], role: string) => e.assignments.filter(a => a.role === role).map(a => lecturers.find(l => l.id === a.lecturerId)?.name || 'Giảng viên').join('; ') || 'Chưa phân công';
 
-export const HEADER_ICON_MODULE_IDS = new Set(['chat', 'announcements']);
+// The bell shows the personal inbox; it does not replace Khoa's campaign
+// announcement composer. Keep that distinct management function reachable.
+export const HEADER_ICON_MODULE_IDS = new Set(['chat']);
 
-export function campaignNavigation(modules: ReturnType<typeof campaignModules>, role: string, internship: boolean, wide = true) {
-  const available = modules.filter(m => !HEADER_ICON_MODULE_IDS.has(m.id));
+export function campaignNavigation(modules: ReturnType<typeof campaignModules>, role: string, internship: boolean, wide = true, headerChatAvailable = true) {
+  const available = modules.filter(m => !HEADER_ICON_MODULE_IDS.has(m.id)||m.id==='chat'&&!headerChatAvailable);
   const labels: Record<string, string> = {
     students: role === 'student' ? 'Hồ sơ' : internship ? 'Sinh viên' : 'Danh sách sinh viên',
     reports: 'Báo cáo',

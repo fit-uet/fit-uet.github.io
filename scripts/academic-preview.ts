@@ -23,6 +23,7 @@ const { newEnrollment } = await import('../server/academic/domain');
 const { createSemester, createClass, updateClass } = await import('../server/academic/service');
 const { updateCampaign } = await import('../server/academic/campaigns');
 const { academicRouter } = await import('../server/academic/routes');
+const { commonRouter } = await import('../server/routes/common.routes');
 const { legacyPreview, applyLegacy } = await import('../server/academic/legacy');
 const projectRoot = process.cwd();
 const storageRoot = await mkdtemp(join(tmpdir(), 'academic-preview-'));
@@ -76,7 +77,7 @@ app.get('/__academic_preview/login', async (req, res) => {
   res.type('html').send(`<!doctype html><meta charset="utf-8"><title>Academic local fixture</title><script>localStorage.setItem('token',${JSON.stringify(token)});localStorage.setItem('user',${JSON.stringify(JSON.stringify(user))});location.replace('/#/classes');</script>`);
 });
 app.get('/__academic_preview/session', async (req, res) => {
-  const email = req.query.role === 'student' ? '24020001@vnu.edu.vn' : req.query.role === 'lecturer' ? 'alpha@vnu.edu.vn' : req.query.role === 'reviewer' ? 'beta@vnu.edu.vn' : 'admin@vnu.edu.vn';
+  const email = req.query.role === 'student' ? '24020001@vnu.edu.vn' : req.query.role === 'legacy-student' ? '23029901@vnu.edu.vn' : req.query.role === 'lecturer' ? 'alpha@vnu.edu.vn' : req.query.role === 'reviewer' ? 'beta@vnu.edu.vn' : 'admin@vnu.edu.vn';
   const user = (await database.db.execute({ sql: 'SELECT * FROM users WHERE email=?', args: [email] })).rows[0];
   res.json({ token: jwt.sign({ email }, process.env.JWT_SECRET!, { expiresIn: '1h' }), user });
 });
@@ -84,9 +85,10 @@ app.get('/api/notifications/my', (_req, res) => res.json({ rows: [], unread: 0 }
 app.get('/api/chat/threads', (_req, res) => res.json([]));
 app.get('/api/me/unread-counts', (_req,res) => res.json({notifications:0,chats:0}));
 app.use(academicRouter);
+app.use(commonRouter);
 const server = createHttpServer(app);
 process.chdir(storageRoot);
-const vite = await createServer({ configFile: false, envDir: false, root: projectRoot, cacheDir: join(storageRoot, '.vite'), plugins: [react(), tailwindcss()], server: { middlewareMode: true, hmr: { server }, watch: { ignored: ['**/scratch/**', '**/private/**'] } }, appType: 'spa', define: { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify('') } });
+const vite = await createServer({ configFile: false, envDir: false, root: projectRoot, cacheDir: join(storageRoot, '.vite'), plugins: [react(), tailwindcss()], server: { middlewareMode: true, hmr: process.env.DISABLE_HMR === 'true' ? false : { server }, watch: { ignored: ['**/scratch/**', '**/private/**'] } }, appType: 'spa', define: { 'import.meta.env.VITE_API_BASE_URL': JSON.stringify('') } });
 app.use(vite.middlewares);
 const port = Number(process.env.ACADEMIC_PREVIEW_PORT || 4318);
 server.listen(port, '127.0.0.1', () => console.log(`Academic isolated preview: http://127.0.0.1:${port}`));

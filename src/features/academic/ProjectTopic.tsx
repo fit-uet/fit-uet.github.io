@@ -35,7 +35,7 @@ export function ProjectTopic({
           </div>
           <div>
             <h4 className="text-sm font-bold text-slate-900">Đề tài Dự án</h4>
-            <p className="text-xs text-slate-500">Tên đề tài đã thống nhất cùng Giảng viên hướng dẫn</p>
+            <p className="text-xs text-slate-500">Sinh viên gửi tên đề tài để GVHD chính xem xét, duyệt trước khi nộp bài</p>
           </div>
         </div>
 
@@ -133,7 +133,7 @@ export function ProjectTopic({
           <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
             {e.topicReview?.source === 'legacy' ? (
               <span className="text-slate-500 flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-emerald-600" /> Đã duyệt — công nhận dữ liệu từ học kỳ trước
+                <CheckCircle2 size={14} className="text-emerald-600" /> Đã duyệt — công nhận dữ liệu trước nâng cấp
               </span>
             ) : e.topicReview?.approvedAt ? (
               <span className="text-slate-500 flex items-center gap-1.5">

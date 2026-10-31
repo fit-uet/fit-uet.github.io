@@ -556,3 +556,5 @@ Cài đặt thực tế vẫn dùng JSON enrollment: `topicReview`, `topicSubmis
 ### Tách Chấm điểm và tiếp nhận thủ công Dự án
 
 Projection `students` loại điểm/đánh giá, `grades` trả điểm được phép xem và `gradingSummary` toàn bộ kết quả lọc. Màn chấm lấy chi tiết theo enrollment khi chọn, PDF cache có kiểm quyền, giữ draft/revision khi cập nhật nền. Các URL chấm dùng `tab=grades`, không alias về students. Tiếp nhận thủ công thêm GET lookup/POST enrollment theo campaign, command/CAS cùng một statement và BEFORE INSERT guard campaign/class/identity, không dùng upsert danh mục. Không cần data migration, readiness schema 4 được giữ. Chi tiết API, quyền và nghiệm thu tại [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md).
+
+[Rà soát nghiệp vụ Dự án/Thực tập ngày 31/10/2026](PROJECT_BUSINESS_AUDIT.md) ghi các chỉnh sửa về tìm kiếm, export đúng nhóm, hồ sơ/tài khoản dùng chung, học vị giảng viên và điểm đúng phiên bản báo cáo; không chuyển đổi dữ liệu hoặc đổi công thức.

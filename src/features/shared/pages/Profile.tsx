@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { User as UserIcon, Save } from 'lucide-react';
 import { API_BASE, CACHE_TTL, cachedJsonFetch, PageDescriptionTooltip } from '../../../shared';
+import {COURSE_CATALOG} from '../../../shared/academic';
+import {matchesCourseCode} from '../../../shared/utils/format';
 
 export function Profile({ user, setUser, token }: { user: any, setUser: any, token: string }) {
   const isAdmin = user?.role === 'admin';
   const isLecturer = user?.role === 'lecturer';
   const isStaff = isAdmin || isLecturer;
+  const legacyStudent = !isStaff && user?.legacy_internship_access !== 0;
   const [formData, setFormData] = useState({
     name: user?.name || '',
     student_id: user?.student_id || user?.email?.split('@')[0] || '',
@@ -22,7 +25,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isStaff) {
+    if (legacyStudent) {
       cachedJsonFetch<any>(`${API_BASE}/api/settings/campaign`, {
         cacheKey: 'settings:campaign',
         ttlMs: CACHE_TTL.campaign,
@@ -36,7 +39,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
         .catch(() => { });
 
     }
-  }, [token, isStaff]);
+  }, [token, legacyStudent]);
 
   // Sync formData when user prop changes (e.g. after registration updates phone/personal_email)
   useEffect(() => {
@@ -101,7 +104,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
               description={
                 <>
                   Với tư cách <strong>{isLecturer ? 'Giảng viên' : `Quản trị viên${user.is_lecturer ? ' / Giảng viên' : ''}`}</strong>, hồ sơ của bạn chỉ cần cập nhật họ tên hiển thị.
-                  {!!(isLecturer || user.is_lecturer) && <span> Tên này sẽ được <strong>đồng bộ tự động</strong> vào danh sách Giảng viên hướng dẫn.</span>}
+                  {!!(isLecturer || user.is_lecturer) && <span> Tên này sẽ được <strong>đồng bộ tự động</strong> vào danh mục giảng viên. Học vị/chức danh được giữ theo danh mục do Khoa quản lý.</span>}
                 </>
               }
             />
@@ -159,6 +162,7 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
           ) : (
             /* ── STUDENT VIEW ── */
             <>
+              {!legacyStudent && <p className="text-sm text-slate-500">Học phần, lớp học phần và phân công được Khoa quản lý trong từng học kỳ/nhóm môn.</p>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Mã sinh viên <span className="text-red-500">*</span></label>
@@ -181,11 +185,12 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Ngày sinh <span className="text-red-500">*</span></label>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Ngày sinh {legacyStudent && <span className="text-red-500">*</span>}</label>
                   <input
                     type="date"
                     max={new Date().toISOString().split('T')[0]}
-                    required
+                    aria-label="Ngày sinh"
+                    required={legacyStudent}
                     value={formData.dob}
                     onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
@@ -214,33 +219,33 @@ export function Profile({ user, setUser, token }: { user: any, setUser: any, tok
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Lớp khóa học <span className="text-red-500">*</span></label>
-                  <select
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Lớp khóa học {legacyStudent && <span className="text-red-500">*</span>}</label>
+                  {legacyStudent ? <select
+                    aria-label="Lớp khóa học"
                     required
                     value={formData.class_name}
                     onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                   >
                     <option value="">-- Chọn lớp khóa học --</option>
-                    {classesList.map(c => (
+                    {[...new Set([formData.class_name,...classesList].filter(Boolean))].map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
-                  </select>
+                  </select> : <input aria-label="Lớp khóa học" type="text" value={formData.class_name} onChange={e=>setFormData({...formData,class_name:e.target.value})} className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" />}
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Học phần thực tập <span className="text-red-500">*</span></label>
+                {legacyStudent && <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Học phần Thực tập (hồ sơ cũ) <span className="text-red-500">*</span></label>
                   <select
+                    aria-label="Học phần Thực tập (hồ sơ cũ)"
                     required
                     value={formData.course_code}
                     onChange={(e) => setFormData({ ...formData, course_code: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-[#f8fafc]/60 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all shadow-inner"
                   >
                     <option value="">-- Chọn học phần --</option>
-                    <option value="Thực tập Doanh nghiệp INT4002">Thực tập Doanh nghiệp INT4002</option>
-                    <option value="Thực tập Chuyên ngành INT3508">Thực tập Chuyên ngành INT3508</option>
-                    <option value="Thực tập Doanh nghiệp Nhật Bản INT4003">Thực tập Doanh nghiệp Nhật Bản INT4003</option>
+                    {COURSE_CATALOG.filter(c=>c.group==='internship').map(c=><option key={c.code} value={matchesCourseCode(formData.course_code,c.code)?formData.course_code:`${c.name} ${c.code}`}>{c.name} {c.code}</option>)}
                   </select>
-                </div>
+                </div>}
               </div>
             </>
           )}

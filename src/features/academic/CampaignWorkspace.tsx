@@ -63,7 +63,7 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
   const [search, setSearch] = useState(query.get('q') || '');
   useEffect(() => { const timer = window.setTimeout(() => setSearch(query.get('q') || ''), 300); return () => window.clearTimeout(timer); }, [query.get('q')]);
   if (search) filters.q = search; else delete filters.q;
-  const section = tab === 'overview' ? 'overview' : ['plan','guide','questions'].includes(tab) ? 'content' : (tab === 'settings' || tab.endsWith('-editor')) ? 'full' : ['students','assignments','reports','grades','settings','chat'].includes(tab) ? 'management' : 'base';
+  const section = tab === 'overview' ? 'overview' : ['plan','guide','questions'].includes(tab) ? 'content' : tab.endsWith('-editor') ? 'full' : tab==='settings' ? 'base' : ['students','assignments','reports','grades','settings','chat'].includes(tab) ? 'management' : 'base';
   const filterKey = new URLSearchParams(filters).toString(); const selectedId = query.get('enrollmentId') || '';
   const cacheScope = `${user.id}:${actor.role}:${id}`;
   const metaKey = `${token}:${cacheScope}:${section}`, rowsKey = `${token}:${cacheScope}:${tab}:${filterKey}`, detailKey = `${token}:${cacheScope}:${tab}:${selectedId}`;

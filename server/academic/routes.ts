@@ -203,20 +203,25 @@ async function gradeRows(req: any, semester = false, scoped = false) {
   if (!scoped) requireAdmin(req.user);
   else { const c = getClass(s, req.params.classId); requireRead(s, c, req.user); if (req.user.role !== 'admin' && !s.enrollments.some(e => e.classId === c.id && e.status !== 'withdrawn' && service.enrollmentView(s, c, e, req.user).myAssignment.some(r => r !== 'co'))) fail(403, 'GRADES_PRIVATE', 'Bạn không có phân công chấm trong lớp.'); }
   const classes = s.classes.filter(c => (semester ? c.semesterId === req.params.semesterId : c.id === req.params.classId) && (!req.query.group || req.query.group === 'all' || course(c).group === req.query.group) && (!req.query.courseCode || c.courseCode === req.query.courseCode));
-  return s.enrollments.filter(e => classes.some(c => c.id === e.classId) && (!scoped || req.user.role === 'admin' || e.status !== 'withdrawn' && service.enrollmentView(s, getClass(s, e.classId), e, req.user).myAssignment.some(r => r !== 'co'))).map(e => {
+  const rows = s.enrollments.filter(e => classes.some(c => c.id === e.classId) && (!scoped || req.user.role === 'admin' || e.status !== 'withdrawn' && service.enrollmentView(s, getClass(s, e.classId), e, req.user).myAssignment.some(r => r !== 'co'))).map(e => {
     const c = getClass(s, e.classId); const pair = e.evaluations[currentVersion(e).id] || {};
     const name = (role: AssignmentRole) => e.assignments.filter(a => a.role === role).map(a => s.lecturers.find(l => l.id === a.lecturerId)?.name || '').join('; ');
     return { semester: s.semesters.find(x => x.id === c.semesterId)?.name, class: c.code, studentId: e.studentId, name: e.name, topic: currentVersion(e).title || e.topic,
-      primary: name('primary'), co: name('co'), reviewer: name('reviewer'), advisorScore: pair.advisor?.score ?? null, reviewerScore: pair.reviewer?.score ?? null,
-      progress: e.internshipGrade?.progress ?? null, report: e.internshipGrade?.report ?? null, company: e.internshipGrade?.company ?? null,
-      finalScore: totalScore(c, e), submission: currentVersion(e).state, status: e.status, lockedAt: e.lockedAt };
+      primary: name('primary'), co: name('co'),
+      ...(course(c).group==='project'?{reviewer:name('reviewer'),advisorScore:pair.advisor?.score??null,reviewerScore:pair.reviewer?.score??null}:{progress:e.internshipGrade?.progress??null,report:e.internshipGrade?.report??null,company:e.internshipGrade?.company??null,status:e.status}),
+      finalScore: totalScore(c, e), submission: currentVersion(e).state, lockedAt: e.lockedAt };
   }).filter(row => !req.query.status || req.query.status === 'complete' && row.finalScore != null || req.query.status === 'missing' && row.finalScore == null);
+  return {rows,groups:new Set(classes.map(c=>course(c).group))};
 }
 for (const [base, semester, scoped] of [['/api/admin/classes/:classId/grades', false, false], ['/api/admin/semesters/:semesterId/grades', true, false], ['/api/classes/:classId/grades', false, true]] as const) {
-  academicRoute('get', base, req => gradeRows(req, semester, scoped));
+  academicRoute('get', base, async req => (await gradeRows(req, semester, scoped)).rows);
   academicRoute('get', `${base}/export.xlsx`, async (req, res) => {
-    const rows = await gradeRows(req, semester, scoped); const headers = ['Học kỳ', 'Lớp học phần', 'MSSV', 'Họ tên', 'Đề tài', 'GVHD', 'Đồng HD', 'GVNX', 'Điểm GVHD', 'Điểm GVNX', 'Tiến độ', 'Báo cáo', 'Doanh nghiệp', 'Tổng kết', 'Bài nộp', 'Tư cách', 'Khóa lúc'];
-    const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows.map(r => Object.values(r))]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, sheet, 'Bang diem');
+    const {rows,groups}=await gradeRows(req,semester,scoped);
+    const columns=[['semester','Học kỳ'],['class','Lớp học phần'],['studentId','MSSV'],['name','Họ tên'],['topic','Đề tài'],['primary','GVHD'],['co','Đồng HD'],
+      ...(groups.has('project')?[['reviewer','GVNX'],['advisorScore','Điểm GVHD (60%)'],['reviewerScore','Điểm GVNX (40%)']]:[]),
+      ...(groups.has('internship')?[['progress','Tiến độ (20%)'],['report','Báo cáo (20%)'],['company','Doanh nghiệp (60%)']]:[]),
+      ['finalScore','Tổng kết'],['submission','Bài nộp'],...(groups.has('internship')?[['status','Tư cách']]:[]),['lockedAt','Khóa lúc']];
+    const sheet = XLSX.utils.aoa_to_sheet([columns.map(([,label])=>label), ...rows.map(row => columns.map(([key])=>(row as Record<string,unknown>)[key]??null))]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, sheet, 'Bang diem');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', 'attachment; filename="bang-diem.xlsx"'); res.end(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
   });
 }

@@ -113,7 +113,7 @@ export function AppRoutes({
       <Route path="/reports/final" element={<ContextRedirect token={token} tab="reports" internshipOnly={false} />} />
       <Route path="/company/:id" element={<CompanyDetail user={user} token={token} />} />
       <Route path="/plan" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
-      <Route path="/lecturer-guide" element={<ContextRedirect token={token} tab="plan" internshipOnly={false} />} />
+      <Route path="/lecturer-guide" element={<ContextRedirect token={token} tab="guide" internshipOnly={false} />} />
       <Route path="/faq" element={<ContextRedirect token={token} tab="questions" internshipOnly={false} />} />
       <Route path="/system/settings" element={adminOnly(<AdminSettings token={token} />)} />
       <Route path="/system/notifications" element={adminOnly(<NotificationAdmin token={token} />)} />

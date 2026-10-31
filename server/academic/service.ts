@@ -71,6 +71,7 @@ export async function updateClass(actor: AuthenticatedUser, classId: string, inp
 
 export async function joinInternship(actor: AuthenticatedUser, classId: string) {
   const s = await snapshot(); const c = getClass(s, classId);
+  if(course(c).group!=='internship')fail(422,'WRONG_COURSE','Dự án được Khoa tiếp nhận theo danh sách; sinh viên không tự đăng ký lớp.');
   if (!canJoin(c, actor)) fail(403, 'JOIN_DENIED', 'Bạn không đủ điều kiện tham gia lớp Thực tập này.');
   const existing = s.enrollments.find(e => e.classId === c.id && e.email === actor.email);
   if (existing?.status === 'withdrawn') fail(403, 'ENROLLMENT_WITHDRAWN', 'Cần Khoa tiếp nhận lại sinh viên đã rút.');
@@ -168,7 +169,7 @@ export async function grade(actor: AuthenticatedUser, enrollmentId: string, role
 export async function reviewerPreview(actor: AuthenticatedUser, semesterId: string, input: any) {
   requireAdmin(actor); const s = await snapshot();
   if (!s.semesters.some(x => x.id === semesterId)) fail(404, 'SEMESTER_NOT_FOUND', 'Không tìm thấy học kỳ.');
-  if (input.classIds && (!Array.isArray(input.classIds) || input.classIds.some(id => !s.classes.some(c => c.id === id && c.semesterId === semesterId)))) fail(422, 'INVALID_CLASSES', 'Lớp không thuộc học kỳ.');
+  if (input.classIds && (!Array.isArray(input.classIds) || input.classIds.some(id => !s.classes.some(c => c.id === id && c.semesterId === semesterId && course(c).group==='project')))) fail(422, 'INVALID_CLASSES', 'Chỉ chọn các lớp Dự án thuộc học kỳ này.');
   const rows = allocateReviewers(s, semesterId, input.classIds);
   if (input.overrides && !Array.isArray(input.overrides)) fail(422, 'INVALID_PREVIEW', 'Điều chỉnh phân công không hợp lệ.');
   for (const override of input.overrides || []) {
