@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, CheckCircle2, Clock, AlertCircle, AlertTriangle, Send, Edit3, X } from 'lucide-react';
+import { FileText, CheckCircle2, Clock, AlertCircle, AlertTriangle, Send, Edit3, X } from 'lucide-react';
 import { TOPIC_STATUS_NAMES, type EnrollmentView } from '../../shared/academic';
 import { Button, FormField } from '../../shared/ui';
 import { academicInput } from './form';
@@ -27,11 +27,11 @@ export function ProjectTopic({
   const isPending = status === 'pending';
 
   return (
-    <section className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-4" aria-label="Đề tài Dự án">
+    <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4" aria-label="Đề tài Dự án">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#034ea1] flex items-center justify-center shrink-0 border border-blue-100/50">
-            <Sparkles size={18} />
+          <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#034ea1] flex items-center justify-center shrink-0 border border-blue-100">
+            <FileText size={16} />
           </div>
           <div>
             <h4 className="text-sm font-bold text-slate-900">Đề tài Dự án</h4>

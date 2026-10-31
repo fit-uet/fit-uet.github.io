@@ -2,10 +2,11 @@ import { PdfView } from './PdfView';
 import { useEffect, useState, useRef } from 'react';
 import {
   Users, CheckCircle2, Clock, AlertCircle, AlertTriangle, FileText,
-  BookOpen, GraduationCap, UploadCloud, ExternalLink, Presentation,
-  Video, Milestone, Check, Send, Lock, Award, Info, RefreshCw, X
+  BookOpen, GraduationCap, ExternalLink, Presentation,
+  Video, ChevronDown, Check, Send, Lock, Award, Info, RefreshCw, X, Upload, Download, Eye
 } from 'lucide-react';
 import { Button, FormField } from '../../shared/ui';
+import { Badge } from '../../shared/ui/Badge';
 import type { AcademicClassSummary, EnrollmentView, LecturerInfo, SubmissionVersion } from '../../shared/academic';
 import { academicApi, academicPdf, academicDownload } from './client';
 import type { EnrollmentPanelMode } from './campaignPresentation';
@@ -20,6 +21,26 @@ type Props = {
   lecturers: LecturerInfo[];
   refresh: () => Promise<void>;
   mode?: EnrollmentPanelMode;
+};
+
+const formatGMT7 = (dateStr?: string | null) => {
+  if (!dateStr) return 'Theo thông báo';
+  try {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime())
+      ? dateStr
+      : d.toLocaleString('vi-VN', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+  } catch {
+    return dateStr;
+  }
 };
 
 export function EnrollmentPanel({
@@ -52,6 +73,15 @@ export function EnrollmentPanel({
   const requiresResubmission = project && !!e.topicPermissions?.requiresResubmission;
   const pair = e.evaluations?.[current.id] || {};
 
+  // For students in project: select stage
+  const initialStage = () => {
+    if (['complete', 'locked'].includes(e.gradeStatus)) return 'grade';
+    if (current.state === 'submitted' || e.topicReview?.status === 'approved') return 'submission';
+    if (e.topic) return 'approval';
+    return 'topic';
+  };
+  const [activeStage, setActiveStage] = useState<'topic' | 'approval' | 'submission' | 'grade'>(initialStage);
+
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
     setError('');
@@ -81,267 +111,597 @@ export function EnrollmentPanel({
   const reviewerLecturer = e.assignments.find(a => a.role === 'reviewer');
   const reviewerLecturerName = lecturers.find(l => l.id === reviewerLecturer?.lecturerId)?.name;
 
-  // Project Progress Steps
-  const projectSteps = [
+  // Student 4-stage stepper navigation tabs (identical layout to Internship)
+  const stageTabs = [
     {
+      id: 'topic' as const,
       step: '1',
       title: 'Khai báo đề tài',
-      done: Boolean(e.topic),
-      active: !e.topic,
-      statusText: e.topic ? 'Đã khai báo' : 'Cần khai báo',
-      sub: e.topic || 'Chưa gửi tên đề tài',
+      isDone: Boolean(e.topic),
+      status: e.topic ? 'Đã khai báo' : 'Chưa có',
+      variant: (e.topic ? 'success' : 'warning') as any,
     },
     {
+      id: 'approval' as const,
       step: '2',
-      title: 'GVHD duyệt đề tài',
-      done: e.topicReview?.status === 'approved',
-      active: Boolean(e.topic) && e.topicReview?.status !== 'approved',
-      statusText: e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa có',
-      sub: e.topicReview?.status === 'approved' ? 'Đã được thông qua' : e.topic ? 'Đang đợi GVHD duyệt' : 'Chưa gửi đề tài',
+      title: 'GVHD duyệt',
+      isDone: e.topicReview?.status === 'approved',
+      status: e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa có',
+      variant: (e.topicReview?.status === 'approved' ? 'success' : e.topic ? 'warning' : 'neutral') as any,
     },
     {
+      id: 'submission' as const,
       step: '3',
       title: 'Nộp bộ bài',
-      done: current.state === 'submitted' && !requiresResubmission,
-      active: e.topicReview?.status === 'approved' && (current.state !== 'submitted' || requiresResubmission),
-      statusText: requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã nộp đủ' : 'Chưa nộp',
-      sub: current.state === 'submitted' ? `Phiên bản ${current.number}` : 'PDF, Slide & Demo',
+      isDone: current.state === 'submitted' && !requiresResubmission,
+      status: requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã nộp đủ' : 'Chưa nộp',
+      variant: (requiresResubmission ? 'warning' : current.state === 'submitted' ? 'success' : 'neutral') as any,
     },
     {
+      id: 'grade' as const,
       step: '4',
-      title: 'Đánh giá & Hoàn tất',
-      done: ['complete','locked'].includes(e.gradeStatus),
-      active: current.state === 'submitted' && !['complete','locked'].includes(e.gradeStatus) && !requiresResubmission,
-      statusText: ['complete','locked'].includes(e.gradeStatus) ? 'Đã hoàn tất đánh giá' : e.gradeStatus==='partial'?'Đang đánh giá':current.state === 'submitted' ? 'Chờ đánh giá' : 'Chưa đánh giá',
-      sub: 'Điểm chính thức tra cứu tại Cổng Đào tạo',
+      title: 'Đánh giá & Điểm',
+      isDone: ['complete', 'locked'].includes(e.gradeStatus),
+      status: ['complete', 'locked'].includes(e.gradeStatus)
+        ? 'Đã hoàn tất đánh giá'
+        : e.gradeStatus === 'partial'
+        ? 'Đang đánh giá'
+        : current.state === 'submitted'
+        ? 'Chờ đánh giá'
+        : 'Chưa đánh giá',
+      variant: (['complete', 'locked'].includes(e.gradeStatus) ? 'success' : 'neutral') as any,
     },
   ];
 
-  return (
-    <section className="bg-white border border-black/[0.06] rounded-3xl p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-6">
-      {/* 1. Header Profile Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-black/[0.05]">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#034ea1] to-[#023a7a] text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-            {e.name ? e.name.charAt(0).toUpperCase() : 'S'}
+  /* -------------------------------------------------------------
+   * 1. STUDENT VIEW (Exact match to Internship Dashboard layout)
+   * ------------------------------------------------------------- */
+  if (owner && project) {
+    return (
+      <div className="space-y-6">
+        {/* Notice / Feedback Banners */}
+        {error && (
+          <div role="alert" className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-800 shadow-xs">
+            <AlertCircle size={16} className="text-rose-600 shrink-0" />
+            <span>{error}</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold text-xl sm:text-2xl text-slate-900 tracking-tight leading-tight">{e.name}</h3>
-              <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200/80">
-                {e.studentId}
-              </span>
-            </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
-              <span>Lớp: <strong className="text-slate-700">{e.className || '—'}</strong></span>
+        )}
+        {notice && (
+          <div role="status" className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs text-emerald-800 shadow-xs">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <span>{notice}</span>
+          </div>
+        )}
+
+        {/* Top Academic Info & Quick Actions Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-xs">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="text-xs font-bold text-[#034ea1] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+              Kỳ {c.semesterName || c.semesterId}
+            </span>
+            <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
+              <h2 className="text-xs font-bold text-slate-900 inline">{e.name}</h2>
               <span className="text-slate-300">·</span>
-              <span>Mã HP: <strong className="text-slate-700 font-mono">{c.code}</strong></span>
-              {e.email && (
-                <>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-slate-400 font-mono">{e.email}</span>
-                </>
-              )}
+              <span>MSSV: <strong className="text-slate-900">{e.studentId}</strong></span>
+              <span className="text-slate-300">·</span>
+              <span>Lớp: <strong className="text-slate-900">{e.className || '—'}</strong></span>
+              <span className="text-slate-300">·</span>
+              <span>Học phần: <strong className="text-slate-900">{c.courseName} ({c.code})</strong></span>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const nav = new URLSearchParams(window.location.search);
+                nav.set('tab', 'plan');
+                window.history.pushState({}, '', '?' + nav.toString());
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-xs font-semibold text-slate-700 hover:text-[#034ea1] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <FileText size={13} className="text-blue-600" /> Kế hoạch triển khai
+            </button>
+            <a
+              href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-slate-600 hover:text-[#034ea1] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 transition-colors"
+            >
+              <ExternalLink size={13} className="text-slate-500" /> Biểu mẫu Drive
+            </a>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 self-start sm:self-auto ${
-            e.status === 'withdrawn'
-              ? 'bg-rose-50 text-rose-700 border-rose-200'
-              : requiresResubmission
-              ? 'bg-amber-50 text-amber-700 border-amber-200'
-              : current.state === 'submitted'
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : 'bg-slate-100 text-slate-600 border-slate-200'
-          }`}>
-            {e.status === 'withdrawn' ? (
-              <><AlertCircle size={13} className="text-rose-600" /> Đã rút</>
-            ) : requiresResubmission ? (
-              <><AlertTriangle size={13} className="text-amber-600" /> Cần nộp lại theo đề tài mới</>
-            ) : current.state === 'submitted' ? (
-              <><CheckCircle2 size={13} className="text-emerald-600" /> Đã nộp bộ bài</>
-            ) : (
-              <><Clock size={13} className="text-slate-500" /> Chưa hoàn tất nộp bài</>
+        {/* Main Two-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Sidebar (lg:col-span-3): Trạng thái hệ thống & Quy định */}
+          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-6">
+            {/* Card 1: Trạng thái hệ thống */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <Clock size={15} className="text-blue-600" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Trạng thái hệ thống</h3>
+                </div>
+                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">GMT+7</span>
+              </div>
+              <div className="space-y-2">
+                {/* 1. Khai báo đề tài */}
+                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-semibold text-slate-800 truncate">Khai báo đề tài</span>
+                    <Badge variant={e.topic ? 'success' : 'warning'} size="sm">
+                      {e.topic ? 'Đã khai báo' : 'Chưa có'}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>Hạn:</span>
+                    <span className="font-medium text-slate-700">
+                      {c.settings.topicCloseAt ? formatGMT7(c.settings.topicCloseAt) : 'Theo kế hoạch'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. GVHD duyệt đề tài */}
+                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-semibold text-slate-800 truncate">GVHD duyệt đề tài</span>
+                    <Badge variant={e.topicReview?.status === 'approved' ? 'success' : e.topic ? 'warning' : 'neutral'} size="sm">
+                      {e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa có'}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>GVHD:</span>
+                    <span className="font-medium text-slate-700 truncate" title={primaryLecturerName}>
+                      {primaryLecturerName || 'Chờ phân công'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Nộp bộ bài Dự án */}
+                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-semibold text-slate-800 truncate">Nộp bộ bài Dự án</span>
+                    <Badge variant={requiresResubmission ? 'warning' : current.state === 'submitted' ? 'success' : 'neutral'} size="sm">
+                      {requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã nộp đủ' : 'Chưa nộp'}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>Hạn:</span>
+                    <span className="font-medium text-slate-700">
+                      {c.settings.submissionCloseAt ? formatGMT7(c.settings.submissionCloseAt) : 'Theo thông báo'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Đánh giá & Điểm */}
+                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-semibold text-slate-800 truncate">Đánh giá & Điểm</span>
+                    <Badge variant={['complete', 'locked'].includes(e.gradeStatus) ? 'success' : 'neutral'} size="sm">
+                      {['complete', 'locked'].includes(e.gradeStatus)
+                        ? 'Đã hoàn tất'
+                        : e.gradeStatus === 'partial'
+                        ? 'Đang chấm'
+                        : 'Chờ đánh giá'}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>Hạn chấm:</span>
+                    <span className="font-medium text-slate-700">
+                      {c.settings.gradingCloseAt ? formatGMT7(c.settings.gradingCloseAt) : 'Theo kế hoạch'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Quy định Dự án */}
+            <details open className="group bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+              <summary className="flex items-center justify-between font-bold text-slate-800 cursor-pointer select-none text-xs uppercase tracking-wider">
+                <span className="flex items-center gap-1.5">
+                  <BookOpen size={15} className="text-blue-600" />
+                  Quy định Dự án
+                </span>
+                <ChevronDown size={14} className="text-slate-400 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 leading-relaxed max-h-72 overflow-y-auto pr-1 space-y-2">
+                <p>• Sinh viên cần thống nhất và được Giảng viên hướng dẫn duyệt tên đề tài trước khi nộp bài.</p>
+                <p>• Bộ bài nộp đầy đủ gồm 3 thành phần: Báo cáo PDF (tối đa 10 MB), link Google Drive slide thuyết trình, link Google Drive video demo sản phẩm.</p>
+                <p>• Cần cấp quyền xem slide và video cho GVHD/GVNX trước khi nộp.</p>
+              </div>
+            </details>
+          </aside>
+
+          {/* Right Content Column (lg:col-span-9): Stepper & Active Stage Workspace */}
+          <div className="lg:col-span-9 min-w-0 space-y-5">
+            {/* 4 Giai đoạn Dự án - Sleek Stepper Navigation Bar */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-1.5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+                {stageTabs.map((tab) => {
+                  const isSelected = activeStage === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveStage(tab.id);
+                        const targetId = tab.id === 'topic' || tab.id === 'approval' ? 'step-topic' : tab.id === 'submission' ? 'step-submission' : 'step-grade';
+                        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className={`py-2.5 px-3 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
+                        isSelected
+                          ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/80 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? 'bg-blue-600 text-white'
+                            : tab.isDone
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {tab.isDone ? <CheckCircle2 size={12} /> : tab.step}
+                        </span>
+                        <span className="text-xs truncate">{tab.title}</span>
+                      </div>
+                      <Badge variant={tab.variant} size="sm">
+                        {tab.status}
+                      </Badge>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Main Workspace Cards */}
+            <main className="space-y-5">
+              {/* CARD 1: ĐỀ TÀI DỰ ÁN */}
+              <div id="step-topic" className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Khai báo & Duyệt đề tài Dự án</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Hạn duyệt đề tài: {c.settings.topicCloseAt ? formatGMT7(c.settings.topicCloseAt) : 'Theo kế hoạch'} (GMT+7) · GVHD: <strong className="text-slate-700">{primaryLecturerName || 'Chờ phân công'}</strong>
+                    </p>
+                  </div>
+                  <div>
+                    <Badge variant={e.topicReview?.status === 'approved' ? 'success' : e.topic ? 'warning' : 'neutral'} size="md">
+                      {e.topicReview?.status === 'approved' ? 'Đã duyệt đề tài' : e.topic ? 'Chờ GVHD duyệt' : 'Chưa khai báo'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Topic Component (contains region 'Đề tài Dự án') */}
+                <ProjectTopic enrollment={e} owner={owner} admin={admin} busy={busy} post={post} />
+
+                {e.reviewComment && (
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                    <strong>Ý kiến từ giảng viên:</strong> {e.reviewComment}
+                  </div>
+                )}
+              </div>
+
+              {/* CARD 2: BÁO CÁO & BỘ BÀI NỘP DỰ ÁN */}
+              <section id="step-submission" aria-label="Bộ bài nộp Dự án" className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Báo cáo & Bộ bài nộp Dự án</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Hạn nộp: {c.settings.submissionCloseAt ? formatGMT7(c.settings.submissionCloseAt) : 'Theo kế hoạch'} (GMT+7)
+                    </p>
+                  </div>
+                  <div>
+                    <Badge variant={requiresResubmission ? 'warning' : current.state === 'submitted' ? 'success' : 'neutral'} size="md">
+                      {requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã hoàn tất nộp' : 'Chưa nộp'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {e.topicReview?.status !== 'approved' && (
+                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed font-medium">
+                    <strong>Chưa thể nộp bài:</strong> Bạn cần gửi tên đề tài và được Giảng viên hướng dẫn chính phê duyệt trước khi có thể tải lên bộ bài nộp.
+                  </div>
+                )}
+
+                <form
+                  className="space-y-5"
+                  onSubmit={event => {
+                    event.preventDefault();
+                    const f = new FormData(event.currentTarget);
+                    f.set('expectedRevision', String(e.revision));
+                    f.set('reusePdfVersionId', current.id);
+                    run(() => academicApi(token, `${base}/submission`, 'POST', f));
+                  }}
+                >
+                  <fieldset disabled={busy || !e.topicPermissions?.canSubmit} className="space-y-5">
+                    {/* 1. PDF File Upload Area */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-2">
+                        Báo cáo PDF (tối đa 10 MB) <span className="text-rose-500">*</span>
+                      </label>
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        name="pdf"
+                        accept="application/pdf,.pdf"
+                        required={!current.objectKey && !selectedPdfFile}
+                        disabled={busy || !e.topicPermissions?.canSubmit || !!e.lockedAt || !!e.submissionLockedAt}
+                        className="hidden"
+                        onChange={event => {
+                          const file = event.target.files?.[0] || null;
+                          if (file && file.size > 10 * 1024 * 1024) {
+                            setFileError('Kích thước file PDF không được vượt quá 10 MB.');
+                            setSelectedPdfFile(null);
+                            event.target.value = '';
+                          } else {
+                            setFileError('');
+                            setSelectedPdfFile(file);
+                          }
+                        }}
+                      />
+
+                      {selectedPdfFile ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-bold text-slate-900 truncate">{selectedPdfFile.name}</div>
+                            <div className="text-xs text-emerald-700 mt-0.5">
+                              {(selectedPdfFile.size / 1024 / 1024).toFixed(2)} MB · File mới đã sẵn sàng để nộp
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-white text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Upload size={14} className="text-slate-500" /> Chọn file khác
+                          </button>
+                        </div>
+                      ) : current.objectKey ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-slate-50/70 border border-slate-200 gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-bold text-slate-900 truncate" title={current.filename}>
+                              {current.filename || 'Bao_cao_du_an.pdf'}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              {(current.size / 1024 / 1024).toFixed(2)} MB · Nộp lúc {current.submittedAt ? formatGMT7(current.submittedAt) : 'Phiên bản hiện tại'}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => academicDownload(token, `/api/enrollments/${e.id}/submissions/${current.id}/download`, current.filename || 'report.pdf')}
+                              className="bg-white text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                            >
+                              <Download size={14} className="text-slate-500" /> Tải PDF
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="bg-white text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                            >
+                              <Upload size={14} className="text-slate-500" /> Nộp lại PDF
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl space-y-2.5 bg-slate-50/40">
+                          <p className="text-xs text-slate-500">Bạn chưa nộp file báo cáo dự án.</p>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={!e.topicPermissions?.canSubmit}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#034ea1] text-white hover:bg-[#023a7a] cursor-pointer shadow-xs hover:shadow transition-all disabled:opacity-50"
+                          >
+                            <Upload size={14} /> Chọn file PDF để nộp
+                          </button>
+                        </div>
+                      )}
+
+                      {fileError && <p className="text-xs text-rose-600 mt-1">{fileError}</p>}
+                    </div>
+
+                    {/* 2. Slide Google Drive Link */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <Presentation size={14} className="text-amber-600" />
+                        Link Google Drive slide <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        aria-label="Link Google Drive slide"
+                        name="slidesUrl"
+                        type="url"
+                        required
+                        defaultValue={current.slidesUrl}
+                        placeholder="https://docs.google.com/presentation/d/..."
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs bg-slate-50/50 focus:bg-white focus:border-[#034ea1] outline-none transition-colors"
+                        disabled={!e.topicPermissions?.canSubmit || !!e.submissionLockedAt}
+                      />
+                    </div>
+
+                    {/* 3. Video Demo Google Drive Link */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <Video size={14} className="text-indigo-600" />
+                        Link Google Drive video demo <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        aria-label="Link Google Drive video demo"
+                        name="demoUrl"
+                        type="url"
+                        required
+                        defaultValue={current.demoUrl}
+                        placeholder="https://drive.google.com/file/d/..."
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs bg-slate-50/50 focus:bg-white focus:border-[#034ea1] outline-none transition-colors"
+                        disabled={!e.topicPermissions?.canSubmit || !!e.submissionLockedAt}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-500">
+                      <Info size={14} className="text-[#034ea1] shrink-0" />
+                      <span>Cấp quyền xem slide và video cho GVHD/GVNX trước khi nộp.</span>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={busy || !e.topicPermissions?.canSubmit || !!e.lockedAt || !!e.submissionLockedAt}
+                        className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {busy ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                        {busy ? 'Đang gửi…' : 'Xác nhận nộp bài'}
+                      </button>
+                    </div>
+                  </fieldset>
+                </form>
+
+                {/* Embedded PDF Viewer if exists */}
+                {current.objectKey && (
+                  <div className="pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between pb-3">
+                      <span className="text-xs font-bold text-slate-800">Xem trước bản nộp:</span>
+                      <span className="text-xs text-slate-500">Phiên bản {current.number}</span>
+                    </div>
+                    <PdfView token={token} enrollmentId={e.id} version={viewed} />
+                  </div>
+                )}
+
+                <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-100 text-xs text-blue-900 leading-relaxed font-medium">
+                  <strong className="text-blue-950">Lưu ý:</strong> Bộ bài nộp đầy đủ gồm 3 thành phần: file PDF báo cáo (tối đa 10 MB), link Google Drive slide thuyết trình và video demo. Vui lòng cấp quyền xem (Viewer) cho liên kết Google Drive trước khi nộp.
+                </div>
+              </section>
+
+              {/* CARD 3: ĐÁNH GIÁ & ĐIỂM SỐ */}
+              <div id="step-grade" className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Đánh giá & Điểm số</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Hạn chấm: {c.settings.gradingCloseAt ? formatGMT7(c.settings.gradingCloseAt) : 'Theo kế hoạch'} (GMT+7)
+                    </p>
+                  </div>
+                  <div>
+                    <Badge variant={['complete', 'locked'].includes(e.gradeStatus) ? 'success' : 'neutral'} size="md">
+                      {['complete', 'locked'].includes(e.gradeStatus)
+                        ? 'Đã hoàn tất đánh giá'
+                        : e.gradeStatus === 'partial'
+                        ? 'Đang đánh giá'
+                        : 'Chờ đánh giá'}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Giảng viên hướng dẫn:</span>
+                      <strong className="text-slate-800">{primaryLecturerName || 'Chờ phân công'}</strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Giảng viên nhận xét:</span>
+                      <strong className="text-slate-800">{reviewerLecturerName || 'Chờ phân công'}</strong>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-2.5">
+                      <span className="text-slate-500">Tình trạng đánh giá:</span>
+                      <span className="font-semibold text-slate-800">
+                        {['complete', 'locked'].includes(e.gradeStatus)
+                          ? 'Đã hoàn tất đánh giá cả hai phần điểm'
+                          : e.gradeStatus === 'partial'
+                          ? 'Đang tiến hành chấm điểm'
+                          : 'Chờ đánh giá'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                    Điểm chính thức của học phần được quản lý theo quy chế đào tạo và tra cứu tại Cổng Đào tạo.
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+   * 2. LECTURER / ADMIN VIEW (Administrative & Grading Workbench)
+   * ------------------------------------------------------------- */
+  return (
+    <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+      {/* Header Profile Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h3 className="font-bold text-lg text-slate-900">{e.name}</h3>
+            <span className="font-mono text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+              {e.studentId}
+            </span>
+          </div>
+          <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+            <span>Lớp: <strong className="text-slate-700">{e.className || '—'}</strong></span>
+            <span className="text-slate-300">·</span>
+            <span>Mã HP: <strong className="text-slate-700 font-mono">{c.code}</strong></span>
+            {e.email && (
+              <>
+                <span className="text-slate-300">·</span>
+                <span className="text-slate-400 font-mono">{e.email}</span>
+              </>
             )}
-          </span>
+          </div>
+        </div>
+
+        <div>
+          <Badge
+            variant={
+              e.status === 'withdrawn'
+                ? 'error'
+                : requiresResubmission
+                ? 'warning'
+                : current.state === 'submitted'
+                ? 'success'
+                : 'neutral'
+            }
+            size="md"
+          >
+            {e.status === 'withdrawn'
+              ? 'Đã rút'
+              : requiresResubmission
+              ? 'Cần nộp lại'
+              : current.state === 'submitted'
+              ? 'Đã nộp bộ bài'
+              : 'Chưa hoàn tất nộp bài'}
+          </Badge>
         </div>
       </div>
 
-      {/* 2. Stepper Timeline (Project Milestone Stepper) */}
-      {project && owner && (
-        <div className="bg-gradient-to-b from-[#f8fafc] to-white border border-black/[0.06] rounded-2xl p-4.5 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between px-0.5">
-            <div className="flex items-center gap-2">
-              <Milestone size={16} className="text-[#034ea1]" />
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b]">Tiến độ học phần Dự án</span>
-            </div>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold border border-slate-200/60">
-              {c.semesterName || c.semesterId}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {projectSteps.map(s => (
-              <div
-                key={s.step}
-                className={`rounded-2xl p-3.5 border transition-all duration-200 flex flex-col justify-between ${
-                  s.done
-                    ? 'bg-emerald-50/40 border-emerald-200/80 shadow-2xs'
-                    : s.active
-                    ? 'bg-blue-50/70 border-[#034ea1]/40 shadow-xs ring-2 ring-blue-500/10'
-                    : 'bg-white/90 border-slate-200/70 opacity-75'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black font-mono shadow-2xs ${
-                      s.done
-                        ? 'bg-emerald-600 text-white'
-                        : s.active
-                        ? 'bg-[#034ea1] text-white ring-2 ring-blue-200'
-                        : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      {s.done ? <Check size={12} strokeWidth={3} /> : s.step}
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Bước {s.step}</span>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    s.done
-                      ? 'bg-emerald-100/80 text-emerald-800 border-emerald-200'
-                      : s.active
-                      ? 'bg-blue-100/80 text-blue-800 border-blue-200'
-                      : 'bg-slate-100 text-slate-500 border-slate-200'
-                  }`}>
-                    {s.statusText}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-bold text-xs text-slate-900 leading-snug">{s.title}</p>
-                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-1" title={s.sub}>{s.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Notice / Feedback Banners */}
       {error && (
-        <div role="alert" className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2.5 text-xs text-rose-800 shadow-2xs">
-          <AlertCircle size={16} className="text-rose-600 shrink-0" />
+        <div role="alert" className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs text-rose-800">
+          <AlertCircle size={15} className="text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {notice && (
-        <div role="status" className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-800 shadow-2xs">
-          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+        <div role="status" className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs text-emerald-800">
+          <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
           <span>{notice}</span>
         </div>
       )}
 
-      {c.legacy && (
-        <div className="bg-blue-50 border border-blue-200/80 rounded-2xl p-4 text-xs text-blue-900 leading-relaxed shadow-2xs">
-          Hồ sơ Thực tập Hè 2025–2026 được đọc từ dữ liệu hiện có. Các tác vụ Thực tập tiếp tục được duy trì tại các mục chức năng của nhóm môn.
-        </div>
-      )}
-
-      {/* 3. Executive Info Cards (Học phần, GVHD, Báo cáo, Hạn nộp) */}
-      {showProfile && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Học phần */}
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
-              <span>Học phần</span>
-              <BookOpen size={16} className="text-[#034ea1]" />
-            </div>
-            <div>
-              <div className="text-base sm:text-lg font-extrabold text-[#034ea1] tracking-tight leading-snug truncate" title={c.courseName}>
-                {c.courseName}
-              </div>
-              <div className="text-xs text-slate-500 mt-1 font-mono">{c.code}</div>
-            </div>
-            <span className="text-[11px] text-[#034ea1] mt-2 font-medium">Lớp học phần chính khóa</span>
-          </div>
-
-          {/* Card 2: Giảng viên hướng dẫn */}
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
-              <span>GVHD chính</span>
-              <GraduationCap size={16} className="text-emerald-600" />
-            </div>
-            <div>
-              <div className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug truncate">
-                {primaryLecturerName || 'Chưa phân công'}
-              </div>
-              <div className="text-xs text-slate-500 mt-1 truncate">
-                {coLecturerNames.length > 0 ? `Đồng HD: ${coLecturerNames.join('; ')}` : 'Giảng viên hướng dẫn chính'}
-              </div>
-            </div>
-            <span className="text-[11px] text-emerald-600 mt-2 font-medium">
-              {primaryLecturerName ? 'Đã được phân công GVHD' : 'Chờ Khoa phân công'}
-            </span>
-          </div>
-
-          {/* Card 3: Báo cáo */}
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
-              <span>Bộ bài nộp</span>
-              <FileText size={16} className="text-amber-600" />
-            </div>
-            <div>
-              <div className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug truncate">
-                {requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã hoàn tất nộp' : 'Chưa hoàn tất'}
-              </div>
-              <div className="text-xs text-slate-500 mt-1">
-                {current.objectKey ? 'Đã có file PDF báo cáo' : 'Chưa đính kèm PDF'} · Bản {current.number}
-              </div>
-            </div>
-            <span className={`text-[11px] mt-2 font-medium ${current.state === 'submitted' && !requiresResubmission ? 'text-emerald-600' : 'text-amber-600'}`}>
-              {requiresResubmission ? 'Cần nộp lại theo đề tài mới' : current.state === 'submitted' ? 'Đã nộp đủ các thành phần' : 'Cần tải lên bộ bài nộp'}
-            </span>
-          </div>
-
-          {/* Card 4: Hạn nộp bài */}
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-4.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#64748b] text-[11px] font-bold uppercase tracking-wider mb-2">
-              <span>Hạn nộp bài</span>
-              <Clock size={16} className="text-slate-700" />
-            </div>
-            <div>
-              <div className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug">
-                {c.settings.submissionCloseAt
-                  ? new Date(c.settings.submissionCloseAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
-                  : 'Theo thông báo'}
-              </div>
-              <div className="text-xs text-slate-500 mt-1">Học kỳ {c.semesterId}</div>
-            </div>
-            <span className="text-[11px] text-slate-500 mt-2 font-medium">Hạn chốt nộp bộ sản phẩm</span>
-          </div>
-        </div>
-      )}
-
-      {mode === 'profile' && (
-        <dl className="grid sm:grid-cols-2 gap-4 text-xs bg-[#f8fafc] border border-slate-200/80 rounded-2xl p-4">
-          <div>
-            <dt className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Email VNU</dt>
-            <dd className="mt-1 font-mono font-semibold text-slate-800">{e.email}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Ngày sinh</dt>
-            <dd className="mt-1 font-semibold text-slate-800">{e.dob || 'Chưa có thông tin'}</dd>
-          </div>
-        </dl>
-      )}
-
       {/* Admin Assignment Management */}
       {admin && showProfile && !c.legacy && (
-        <details open={mode === 'assignments'} className="border border-slate-200/80 rounded-2xl p-4.5 bg-[#f8fafc]/50">
+        <details open={mode === 'assignments'} className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
           <summary className="font-bold text-xs sm:text-sm text-slate-800 cursor-pointer">
             Phân công và tư cách tham gia lớp
           </summary>
-          <div className="space-y-4 mt-4 pt-3 border-t border-slate-200/60">
+          <div className="space-y-4 mt-4 pt-3 border-t border-slate-200">
             <form
               key={e.assignments.map(a => a.id).join(':')}
               onSubmit={event => {
@@ -391,7 +751,7 @@ export function EnrollmentPanel({
                 const f = new FormData(event.currentTarget);
                 post(`/api/admin/enrollments/${e.id}`, { status: e.status === 'active' ? 'withdrawn' : 'active', reason: f.get('reason') }, 'PATCH');
               }}
-              className="flex flex-wrap gap-2 pt-2 border-t border-slate-200/50"
+              className="flex flex-wrap gap-2 pt-2 border-t border-slate-200"
             >
               <input name="reason" className={`${academicInput} max-w-sm`} required placeholder="Lý do thay đổi tư cách tham gia" />
               <Button type="submit" disabled={busy || c.status === 'archived'}>
@@ -402,232 +762,26 @@ export function EnrollmentPanel({
         </details>
       )}
 
-      {/* 4. Project Topic Section */}
+      {/* Project Topic Section */}
       {project && (
         <ProjectTopic enrollment={e} owner={owner} admin={admin} busy={busy} post={post} />
       )}
 
-      {/* Internship Flow (for internship groups) */}
-      {!project && !c.legacy && (
-        <InternshipFlow token={token} user={user} c={c} e={e} lecturers={lecturers} post={post} busy={busy} readOnly={readOnly} />
-      )}
-
-      {/* Revision Request Banner */}
-      {e.needsRevision && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 leading-relaxed space-y-1 shadow-2xs">
-          <div className="font-bold flex items-center gap-1.5 text-amber-800">
-            <AlertTriangle size={15} /> Giảng viên yêu cầu chỉnh sửa bài nộp
-          </div>
-          <p className="whitespace-pre-wrap">{e.reviewComment}</p>
-        </div>
-      )}
-
-      {/* Topic Block Reason Banner */}
-      {owner && project && e.topicPermissions?.submissionBlockReason && (
-        <div role="status" className="p-4 bg-amber-50/90 border border-amber-200/80 rounded-2xl text-xs text-amber-900 flex items-start gap-2.5 leading-relaxed shadow-2xs">
-          <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <strong>Lưu ý nộp bài:</strong> {e.topicPermissions.submissionBlockReason}
-          </div>
-        </div>
-      )}
-
-      {/* 5. Submission Workspace Form */}
-      {owner && !readOnly && (
-        <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-4">
-          <div className="flex items-center gap-2.5 pb-2 border-b border-black/[0.05]">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#034ea1] flex items-center justify-center shrink-0 border border-blue-100/50">
-              <UploadCloud size={18} />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">
-                Nộp / Cập nhật {project ? 'bộ bài Dự án' : 'báo cáo Thực tập'}
-              </h4>
-              <p className="text-xs text-slate-500">
-                {project ? 'Bao gồm file PDF báo cáo, đường dẫn Slide thuyết trình và Video demo sản phẩm' : 'Tải lên tệp PDF báo cáo kết quả thực tập'}
-              </p>
-            </div>
-          </div>
-
-          <form
-            className="space-y-4"
-            onSubmit={event => {
-              event.preventDefault();
-              const f = new FormData(event.currentTarget);
-              f.set('expectedRevision', String(e.revision));
-              f.set('reusePdfVersionId', current.id);
-              run(() => academicApi(token, `${base}/submission`, 'POST', f));
-            }}
-          >
-            <fieldset disabled={busy || (project && !e.topicPermissions?.canSubmit)} className="space-y-4 min-w-0">
-              {/* PDF File Upload Zone */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Báo cáo PDF (tối đa 10 MB) <span className="text-rose-500">*</span>
-                </label>
-
-                {/* Hidden native input for form binding */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  name="pdf"
-                  accept="application/pdf,.pdf"
-                  required={!current.objectKey && !selectedPdfFile}
-                  disabled={busy || !!e.lockedAt || (project && !!e.submissionLockedAt)}
-                  className="hidden"
-                  onChange={event => {
-                    const file = event.target.files?.[0] || null;
-                    if (file && file.size > 10 * 1024 * 1024) {
-                      setFileError('Kích thước file PDF không được vượt quá 10 MB.');
-                      setSelectedPdfFile(null);
-                      event.target.value = '';
-                    } else {
-                      setFileError('');
-                      setSelectedPdfFile(file);
-                    }
-                  }}
-                />
-
-                {/* Interactive dropzone card */}
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-2xl p-5 text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                    selectedPdfFile
-                      ? 'border-emerald-300 bg-emerald-50/40 hover:bg-emerald-50/60'
-                      : current.objectKey
-                      ? 'border-blue-200 bg-blue-50/30 hover:bg-blue-50/50'
-                      : 'border-slate-200/90 bg-[#f8fafc] hover:bg-slate-100/70 hover:border-blue-300'
-                  }`}
-                >
-                  {selectedPdfFile ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                        <CheckCircle2 size={20} />
-                      </div>
-                      <div className="text-left min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate max-w-xs sm:max-w-md">{selectedPdfFile.name}</p>
-                        <p className="text-[11px] text-emerald-700 mt-0.5">
-                          {(selectedPdfFile.size / 1024 / 1024).toFixed(2)} MB · Nhấp để chọn file khác
-                        </p>
-                      </div>
-                    </div>
-                  ) : current.objectKey ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#034ea1] flex items-center justify-center shrink-0">
-                        <FileText size={20} />
-                      </div>
-                      <div className="text-left min-w-0">
-                        <p className="text-xs font-bold text-slate-800 truncate max-w-xs sm:max-w-md">
-                          Đã có file: {current.filename || 'Bao_cao_du_an.pdf'}
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          {(current.size / 1024 / 1024).toFixed(2)} MB · Nhấp vào đây nếu bạn muốn tải lên file PDF mới thay thế
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-center justify-center text-[#034ea1] mb-2">
-                        <UploadCloud size={20} />
-                      </div>
-                      <p className="text-xs font-bold text-slate-800">
-                        Nhấp để chọn tệp PDF báo cáo hoặc kéo thả vào đây
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Hỗ trợ định dạng .pdf, dung lượng tối đa 10 MB
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {fileError && (
-                  <p className="text-xs text-rose-600 font-medium mt-1.5 flex items-center gap-1">
-                    <AlertCircle size={13} /> {fileError}
-                  </p>
-                )}
-              </div>
-
-              {/* Project Slide & Demo Inputs */}
-              {project && (
-                <div className="space-y-3 pt-1">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                      <Presentation size={14} className="text-amber-600" />
-                      Link Google Drive slide <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      name="slidesUrl"
-                      aria-label="Link Google Drive slide"
-                      type="url"
-                      required
-                      defaultValue={current.slidesUrl}
-                      placeholder="https://drive.google.com/file/d/... hoặc link Google Slides"
-                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-2xs text-slate-900 font-medium"
-                      disabled={!!e.submissionLockedAt}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                      <Video size={14} className="text-indigo-600" />
-                      Link Google Drive video demo <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      name="demoUrl"
-                      aria-label="Link Google Drive video demo"
-                      type="url"
-                      required
-                      defaultValue={current.demoUrl}
-                      placeholder="https://drive.google.com/file/d/..."
-                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-2xs text-slate-900 font-medium"
-                      disabled={!!e.submissionLockedAt}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-500">
-                    <Info size={14} className="text-[#034ea1] shrink-0" />
-                    <span>Cấp quyền xem slide và video cho GVHD/GVNX trước khi nộp.</span>
-                  </div>
-                </div>
-              )}
-
-              {!!e.submissionLockedAt && (
-                <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-800 flex items-center gap-2">
-                  <Lock size={15} className="shrink-0" />
-                  <span>Đợt chấm điểm đã bắt đầu và bài nộp đã được khóa. Liên hệ Khoa để xin mở lại bài nếu cần chỉnh sửa gấp.</span>
-                </div>
-              )}
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={busy || !!e.lockedAt || (project && (!e.topicPermissions?.canSubmit || !!e.submissionLockedAt))}
-                  className="px-6 py-2.5 bg-[#034ea1] hover:bg-[#023a7a] text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {busy ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
-                  {busy ? 'Đang lưu…' : 'Xác nhận nộp bài'}
-                </button>
-              </div>
-            </fieldset>
-          </form>
-        </div>
-      )}
-
-      {/* 6. Report Preview & Grading Section */}
+      {/* Report Preview & Grading Section */}
       {showReport && (
         <div className={`grid gap-6 ${!owner && e.canSeeGrades ? 'lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]' : ''}`}>
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-black/[0.05]">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <FileText size={18} className="text-[#034ea1]" />
+                <FileText size={16} className="text-[#034ea1]" />
                 <h4 className="font-bold text-sm text-slate-900">Báo cáo & Bộ bài nộp</h4>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-500">Phiên bản:</span>
+                <span className="text-xs text-slate-500">Phiên bản:</span>
                 <select
                   aria-label="Phiên bản báo cáo"
-                  className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-[#f8fafc] text-slate-800 outline-none focus:border-[#034ea1] cursor-pointer shadow-2xs"
+                  className="border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold bg-white text-slate-800 outline-none focus:border-[#034ea1]"
                   value={viewed.id}
                   onChange={ev => setViewedId(ev.target.value)}
                 >
@@ -640,26 +794,18 @@ export function EnrollmentPanel({
               </div>
             </div>
 
-            {viewed.id !== current.id && (
-              <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-800 flex items-center gap-2">
-                <AlertCircle size={14} className="shrink-0" />
-                <span>Bạn đang xem phiên bản lịch sử cũ. Chọn bản hiện hành để xem kết quả mới nhất hoặc chấm điểm.</span>
-              </div>
-            )}
-
             {/* Quick Action Resource Links */}
             {(viewed.slidesUrl || viewed.demoUrl) && (
-              <div className="flex flex-wrap gap-2.5 pt-1">
+              <div className="flex flex-wrap gap-2.5">
                 {viewed.slidesUrl && (
                   <a
                     href={viewed.slidesUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition-all shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition-all"
                   >
                     <Presentation size={14} className="text-amber-600" />
-                    Mở Slide thuyết trình
-                    <ExternalLink size={12} className="opacity-60" />
+                    Slide thuyết trình <ExternalLink size={11} className="opacity-60" />
                   </a>
                 )}
                 {viewed.demoUrl && (
@@ -667,11 +813,10 @@ export function EnrollmentPanel({
                     href={viewed.demoUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-900 text-xs font-semibold transition-all shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 text-xs font-semibold transition-all"
                   >
                     <Video size={14} className="text-indigo-600" />
-                    Mở Video demo
-                    <ExternalLink size={12} className="opacity-60" />
+                    Video demo <ExternalLink size={11} className="opacity-60" />
                   </a>
                 )}
               </div>
@@ -683,10 +828,10 @@ export function EnrollmentPanel({
           {/* Lecturer / Admin Evaluation Column */}
           {e.canSeeGrades && (
             <div className="space-y-4 lg:sticky lg:top-20 self-start">
-              <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-black/[0.05]">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <Award size={18} className="text-[#034ea1]" />
+                    <Award size={16} className="text-[#034ea1]" />
                     <h4 className="font-bold text-sm text-slate-900">
                       {project ? 'Đánh giá Dự án' : 'Điểm Thực tập'}
                     </h4>
@@ -698,26 +843,20 @@ export function EnrollmentPanel({
                   )}
                 </div>
 
-                {project && !e.topicPermissions?.canGradeSubmitted && (
-                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 leading-relaxed">
-                    Chưa có bộ bài hợp lệ theo đề tài đã duyệt. Chỉ được nhập điểm 0 kèm lý do bỏ môn/chưa có bài.
-                  </p>
-                )}
-
                 {project && (
-                  <div className="grid grid-cols-2 gap-2.5 text-xs bg-[#f8fafc] border border-slate-200/70 rounded-xl p-3.5">
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 border border-slate-100 rounded-lg p-3">
                     <div>
-                      <span className="text-slate-400 font-semibold block text-[10px] uppercase">GVHD (60%)</span>
-                      <strong className="text-base text-slate-900 mt-0.5 block">{pair.advisor?.score ?? '—'}</strong>
+                      <span className="text-slate-500 font-medium block text-[11px]">GVHD (60%)</span>
+                      <strong className="text-base text-slate-900 block">{pair.advisor?.score ?? '—'}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-semibold block text-[10px] uppercase">GVNX (40%)</span>
-                      <strong className="text-base text-slate-900 mt-0.5 block">{pair.reviewer?.score ?? '—'}</strong>
+                      <span className="text-slate-500 font-medium block text-[11px]">GVNX (40%)</span>
+                      <strong className="text-base text-slate-900 block">{pair.reviewer?.score ?? '—'}</strong>
                     </div>
                   </div>
                 )}
 
-                <div className="p-3.5 rounded-xl border border-blue-200/80 bg-blue-50/60 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/50 flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-700">Điểm tổng kết:</span>
                   <span className="text-2xl font-black text-[#034ea1]">
                     {e.finalScore == null ? 'Chưa đủ điểm' : e.finalScore.toFixed(1)}
@@ -741,7 +880,7 @@ export function EnrollmentPanel({
                         }
                       );
                     }}
-                    className="border border-slate-200 rounded-xl p-4 space-y-3 bg-[#f8fafc]/50"
+                    className="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-50/50"
                   >
                     <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                       Phần chấm {project ? role === 'reviewer' ? 'GV Nhận xét (40%)' : 'GV Hướng dẫn (60%)' : 'GV hướng dẫn · Tiến độ 20%, báo cáo 20%, đơn vị 60%'}
@@ -749,6 +888,7 @@ export function EnrollmentPanel({
                     {(project ? [['score', 'Điểm số (0–10)']] : [['progress', 'Tiến độ (20%)'], ['report', 'Báo cáo (20%)'], ['company', 'Đơn vị/GV (60%)']]).map(([key, label]) => (
                       <FormField key={key} label={label}>
                         <input
+                          aria-label={`Điểm ${role === 'reviewer' ? 'GVNX' : 'GVHD'}`}
                           className={academicInput}
                           type="number"
                           min="0"
@@ -763,6 +903,7 @@ export function EnrollmentPanel({
                     ))}
                     <FormField label="Nhận xét / lý do (bắt buộc khi điểm 0)">
                       <textarea
+                        aria-label="Nhận xét chấm điểm"
                         className={academicInput}
                         name="comment"
                         rows={3}
@@ -771,237 +912,15 @@ export function EnrollmentPanel({
                       />
                     </FormField>
                     <Button type="submit" variant="primary" disabled={busy || readOnly || !!e.lockedAt || viewed.id !== current.id}>
-                      Lưu và gửi điểm về Khoa
+                      Lưu điểm
                     </Button>
                   </form>
                 ))}
-
-                {!readOnly && (admin || e.myAssignment.some(r => r === 'primary' || r === 'reviewer')) && (
-                  <form
-                    className="space-y-2 pt-2 border-t border-slate-200/60"
-                    onSubmit={event => {
-                      event.preventDefault();
-                      post(`${base}/submission/review`, { needsRevision: true, comment: new FormData(event.currentTarget).get('comment') });
-                    }}
-                  >
-                    <textarea className={academicInput} name="comment" placeholder="Nội dung yêu cầu sinh viên sửa bài..." required rows={2} />
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={busy || !!e.lockedAt}>Yêu cầu sửa</Button>
-                      {e.needsRevision && (
-                        <Button disabled={busy || !!e.lockedAt} onClick={() => post(`${base}/submission/review`, { needsRevision: false, comment: '' })}>
-                          Hủy yêu cầu
-                        </Button>
-                      )}
-                    </div>
-                  </form>
-                )}
               </div>
             </div>
           )}
         </div>
       )}
-
-      {/* Admin Grade Lock / Reopen Controls */}
-      {admin && showReport && !readOnly && (
-        <details className="border-t border-slate-200/60 pt-4">
-          <summary className="font-semibold text-xs text-slate-700 cursor-pointer">
-            Khóa điểm / mở lại bài nộp
-          </summary>
-          <div className="grid md:grid-cols-2 gap-5 mt-4">
-            <form
-              className="space-y-3 bg-[#f8fafc] border border-slate-200 rounded-2xl p-4"
-              onSubmit={event => {
-                event.preventDefault();
-                post(`/api/admin/enrollments/${e.id}/grade-lock`, { locked: !e.lockedAt, reason: new FormData(event.currentTarget).get('reason') });
-              }}
-            >
-              <FormField label="Lý do khóa / mở khóa">
-                <input name="reason" className={academicInput} required placeholder="Nhập lý do thực hiện..." />
-              </FormField>
-              <Button type="submit" disabled={busy || (!e.lockedAt && e.finalScore == null)}>
-                {e.lockedAt ? 'Mở khóa điểm' : 'Khóa điểm'}
-              </Button>
-            </form>
-
-            <form
-              className="space-y-3 bg-[#f8fafc] border border-slate-200 rounded-2xl p-4"
-              onSubmit={event => {
-                event.preventDefault();
-                const f = new FormData(event.currentTarget);
-                post(`/api/admin/enrollments/${e.id}/submission/reopen`, { reason: f.get('reason'), submissionUntil: isoLocal(f.get('until')) }, 'POST');
-              }}
-            >
-              <FormField label="Lý do mở lại bài">
-                <input name="reason" className={academicInput} required placeholder="Nhập lý do mở lại bài..." />
-              </FormField>
-              <FormField label="Hạn nộp lại (giờ Việt Nam)">
-                <input name="until" className={academicInput} type="datetime-local" required />
-              </FormField>
-              <p className="text-[11px] text-slate-500">Tạo phiên bản mới; các phần đánh giá cần được nộp lại.</p>
-              <Button type="submit" disabled={busy || !!e.lockedAt}>Mở lại bài</Button>
-            </form>
-          </div>
-        </details>
-      )}
     </section>
-  );
-}
-
-function InternshipFlow({
-  token,
-  user,
-  c,
-  e,
-  lecturers,
-  post,
-  busy,
-  readOnly
-}: {
-  token: string;
-  user: any;
-  c: AcademicClassSummary;
-  e: EnrollmentView;
-  lecturers: LecturerInfo[];
-  post: (path: string, body: any, method?: string) => Promise<void>;
-  busy: boolean;
-  readOnly: boolean;
-}) {
-  const [companies, setCompanies] = useState<any[]>([]);
-  const owner = user.role === 'student';
-  const admin = user.role === 'admin';
-  const base = `/api/enrollments/${e.id}/internship`;
-
-  useEffect(() => {
-    const abort = new AbortController();
-    academicApi<any[]>(token, `/api/classes/${c.id}/companies`, 'GET', undefined, abort.signal)
-      .then(setCompanies)
-      .catch(() => {});
-    return () => abort.abort();
-  }, [token, c.id]);
-
-  return (
-    <div className="border border-slate-200/80 rounded-2xl p-5 space-y-4 bg-white shadow-2xs">
-      <h4 className="font-bold text-sm text-slate-900">Nguyện vọng và nơi thực tập chính thức</h4>
-      {e.finalInternship && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center gap-2">
-          <CheckCircle2 size={16} className="text-emerald-600" />
-          <span>Đã xác nhận chính thức tại: <strong>{e.finalInternship.companyName}</strong></span>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        {e.preferences.map(p => (
-          <div key={p.id} className="flex flex-wrap gap-3 items-center justify-between border border-slate-200/70 bg-[#f8fafc] rounded-xl p-3 text-xs">
-            <div>
-              <strong className="text-slate-800 text-sm">{p.companyName}</strong>
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                p.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : p.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-              }`}>
-                {p.status === 'approved' ? 'Đã duyệt' : p.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
-              </span>
-              {p.reviewComment && <p className="text-slate-500 mt-1">{p.reviewComment}</p>}
-            </div>
-            <div className="flex gap-2">
-              {owner && !readOnly && (
-                <>
-                  <Button size="sm" onClick={() => post(`${base}/preferences/remove`, { preferenceId: p.id }, 'POST')} disabled={busy}>
-                    Xóa
-                  </Button>
-                  {p.status === 'approved' && (
-                    <Button size="sm" variant="primary" onClick={() => { if (window.confirm(`Tôi cam kết đã được ${p.companyName} tiếp nhận và chịu trách nhiệm về xác nhận này.`)) post(`${base}/final/confirm`, { preferenceId: p.id, attested: true }, 'POST'); }} disabled={busy}>
-                      Xác nhận nơi thực tập
-                    </Button>
-                  )}
-                </>
-              )}
-              {admin && !readOnly && (
-                <Button size="sm" onClick={() => post(`${base}/preferences/review`, { preferenceId: p.id, status: 'approved' }, 'POST')} disabled={busy || p.status === 'approved'}>
-                  Duyệt
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {owner && !readOnly && (
-        <>
-          <form
-            className="grid sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/60"
-            onSubmit={event => {
-              event.preventDefault();
-              const f = new FormData(event.currentTarget);
-              const value = String(f.get('companyId'));
-              post(
-                `${base}/preferences`,
-                {
-                  companyId: value !== 'other' && value !== 'school' ? Number(value) : null,
-                  type: value === 'school' ? 'school' : 'company',
-                  companyName: f.get('companyName'),
-                  note: f.get('note')
-                },
-                'POST'
-              );
-            }}
-          >
-            <FormField label="Nơi thực tập">
-              <select className={academicInput} name="companyId">
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                <option value="other">Công ty tự liên hệ</option>
-                <option value="school">Trường Đại học Công nghệ</option>
-              </select>
-            </FormField>
-            <FormField label="Tên công ty tự liên hệ">
-              <input className={academicInput} name="companyName" placeholder="Tên doanh nghiệp..." />
-            </FormField>
-            <FormField label="Ghi chú">
-              <input className={academicInput} name="note" placeholder="Ghi chú thêm..." />
-            </FormField>
-            <div className="sm:col-span-2">
-              <Button type="submit" disabled={busy || e.preferences.length >= 5}>
-                Thêm nguyện vọng ({e.preferences.length}/5)
-              </Button>
-            </div>
-          </form>
-
-          <form
-            className="space-y-3 border-t border-slate-200/60 pt-3"
-            onSubmit={event => {
-              event.preventDefault();
-              const f = new FormData(event.currentTarget);
-              post(`${base}/advisor-request`, {
-                lecturerId: Number(f.get('lecturerId')),
-                agreed: f.get('agreed') === 'on',
-                note: f.get('note')
-              }, 'POST');
-            }}
-          >
-            <h5 className="font-bold text-xs text-slate-800 uppercase tracking-wider">Đề xuất GVHD đã đồng ý hướng dẫn</h5>
-            <select className={academicInput} name="lecturerId">
-              {lecturers.filter(l => !/(^|\s)CN[.\s]/i.test(l.name)).map(l => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
-            <input name="note" className={academicInput} placeholder="Ghi chú cho đề xuất..." />
-            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-              <input name="agreed" type="checkbox" required className="accent-[#034ea1]" />
-              <span>Tôi cam kết đã được giảng viên đồng ý hướng dẫn</span>
-            </label>
-            <Button type="submit" disabled={busy}>Gửi đề xuất</Button>
-          </form>
-        </>
-      )}
-
-      {e.advisorRequest && (
-        <div className="text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-          <span>Đề xuất GVHD: <strong>{lecturers.find(l => l.id === e.advisorRequest.lecturerId)?.name}</strong> · Trạng thái: {e.advisorRequest.status}</span>
-          {admin && !readOnly && e.advisorRequest.status === 'pending' && (
-            <Button size="sm" onClick={() => post(`${base}/advisor-request/review`, { status: 'approved' }, 'POST')} disabled={busy}>
-              Duyệt & phân công
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
   );
 }
