@@ -5,7 +5,7 @@ import { CampaignEditorContext } from './CampaignEditorContext';
 import { refreshRequestCache } from '../../shared/utils/requestCache';
 import { academicInput } from './form';
 import { hasLegacyPanel } from './legacyPresentation';
-import { Lock, Upload } from 'lucide-react';
+import { Lock, Upload, BookOpen } from 'lucide-react';
 import { CampaignDashboard } from './CampaignDashboard';
 import { CampaignRecords } from './CampaignRecords';
 import { EnrollmentDialog } from './EnrollmentDialog';
@@ -137,7 +137,67 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
         {projectManagement && tab==='grades' && <ProjectGrading token={token} page={rows} refresh={refresh}/>}
         {projectManagement && tab==='students' && <ProjectStudentList key={`${id}:${actor.role}`} token={token} page={rows} refresh={refresh} importAction={()=>setShowImport(value=>!value)}/>}
         {recordPages.includes(tab) && !student && !projectManagement && <CampaignRecords token={token} page={rows} tab={tab} project={project} lecturer={!admin} lecturers={data.lecturers} query={query} editQuery={editQuery} open={open} exportFile={exportFile} busy={busy} extraActions={admin && project && tab==='students' && p.status!=='archived' ? <Button size="sm" variant="primary" leadingIcon={<Upload size={14}/>} onClick={()=>setShowImport(value=>!value)}>{showImport?'Đóng import':'Import danh sách'}</Button> : null}/>}
-        {student && tab === 'students' && <section className="space-y-5">{rows && rows.items.length > 1 && <div className="bg-white border border-slate-200 rounded-xl p-5"><h2 className="font-semibold text-sm mb-3">Hồ sơ học phần của tôi</h2><div className="grid sm:grid-cols-2 gap-3">{rows.items.map(e => <button key={e.id} onClick={() => editQuery({ enrollmentId: e.id, panel: '' })} aria-pressed={selectedId === e.id} className={`text-left p-4 border rounded-xl transition-colors ${selectedId === e.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'}`}><span className="block font-semibold text-sm text-[#034ea1]">{e.courseCode} · {e.classCode}</span><span className="block text-xs text-slate-600 mt-2">{e.topic || 'Chưa khai đề tài'}</span><span className="block text-[11px] text-slate-500 mt-2">{e.topicPermissions?.requiresResubmission ? 'Cần nộp lại theo đề tài' : e.versions.at(-1)?.state === 'submitted' ? 'Đã nộp bộ bài' : 'Chưa hoàn tất bài nộp'}</span></button>)}</div></div>}{selected && selectedClass ? <EnrollmentPanel key={selected.id} token={token} user={actor} courseClass={selectedClass} enrollment={selected} lecturers={data.lecturers} refresh={refresh} /> : <div className="p-8 bg-white rounded-xl border border-slate-200 text-sm text-center text-slate-500">{!rows ? 'Đang tải hồ sơ…' : rows.items.length ? 'Chọn hồ sơ học phần để xem thông tin và nộp bài.' : 'Bạn chưa có hồ sơ học phần trong nhóm này.'}</div>}</section>}
+        {student && tab === 'students' && (
+          <section className="space-y-5">
+            {rows && rows.items.length > 1 && (
+              <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen size={16} className="text-[#034ea1]" />
+                  <h2 className="font-bold text-sm text-slate-900">Hồ sơ học phần của tôi</h2>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {rows.items.map(e => (
+                    <button
+                      key={e.id}
+                      onClick={() => editQuery({ enrollmentId: e.id, panel: '' })}
+                      aria-pressed={selectedId === e.id}
+                      className={`text-left p-4 border rounded-2xl transition-all cursor-pointer flex flex-col justify-between ${
+                        selectedId === e.id
+                          ? 'border-[#034ea1] bg-blue-50/70 shadow-xs ring-2 ring-blue-500/20'
+                          : 'border-slate-200/90 bg-white hover:border-[#034ea1]/50 hover:shadow-2xs'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-sm text-[#034ea1] font-mono">{e.courseCode} · {e.classCode}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          e.topicPermissions?.requiresResubmission
+                            ? 'bg-amber-100 text-amber-800 border-amber-200'
+                            : e.versions.at(-1)?.state === 'submitted'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
+                          {e.topicPermissions?.requiresResubmission
+                            ? 'Cần nộp lại'
+                            : e.versions.at(-1)?.state === 'submitted'
+                            ? 'Đã nộp bài'
+                            : 'Chưa hoàn tất'}
+                        </span>
+                      </div>
+                      <span className="block text-xs font-semibold text-slate-800 mt-2 line-clamp-2">
+                        {e.topic || <span className="text-slate-400 italic font-normal">Chưa khai báo đề tài</span>}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {selected && selectedClass ? (
+              <EnrollmentPanel
+                key={selected.id}
+                token={token}
+                user={actor}
+                courseClass={selectedClass}
+                enrollment={selected}
+                lecturers={data.lecturers}
+                refresh={refresh}
+              />
+            ) : (
+              <div className="p-12 bg-white rounded-2xl border border-black/[0.06] text-sm text-center text-slate-500 shadow-2xs">
+                {!rows ? 'Đang tải hồ sơ…' : rows.items.length ? 'Chọn hồ sơ học phần để xem thông tin và nộp bài.' : 'Bạn chưa có hồ sơ học phần trong nhóm môn này.'}
+              </div>
+            )}
+          </section>
+        )}
       </>}
       {!student && !projectManagement && selectedId && recordPages.includes(tab) && !legacyPanel && (() => {
         const currentIndex = rows?.items.findIndex(item => item.id === selectedId) ?? -1;
