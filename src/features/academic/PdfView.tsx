@@ -28,7 +28,7 @@ export function PdfView({ token, enrollmentId, version }: { token: string; enrol
         </div>
         <h4 className="text-sm font-bold text-slate-700">Chưa có báo cáo PDF</h4>
         <p className="text-xs text-slate-500 mt-1 max-w-sm leading-relaxed">
-          Phiên bản này chưa được đính kèm tệp PDF. Sinh viên hãy chọn tệp PDF báo cáo và nhấn "Xác nhận nộp bài" ở biểu mẫu phía trên.
+          Phiên bản này chưa có tệp PDF báo cáo.
         </p>
       </div>
     );
@@ -42,7 +42,7 @@ export function PdfView({ token, enrollmentId, version }: { token: string; enrol
             PDF
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-bold text-slate-800 truncate">{version.filename || 'Bao_cao_du_an.pdf'}</p>
+            <p className="text-xs font-bold text-slate-800 truncate">{version.filename || 'Bao_cao.pdf'}</p>
             <p className="text-[11px] text-slate-400 mt-0.5">{(version.size / 1024 / 1024).toFixed(2)} MB · Phiên bản {version.number}</p>
           </div>
         </div>

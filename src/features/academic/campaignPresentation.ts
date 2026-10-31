@@ -77,10 +77,12 @@ export function campaignQuery(current: URLSearchParams, patch: Record<string, st
 export const panelForPage = (page: string): EnrollmentPanelMode => ['assignments', 'reports', 'grades'].includes(page) ? page as EnrollmentPanelMode : 'profile';
 export const lecturerNames = (e: EnrollmentView, lecturers: LecturerInfo[], role: string) => e.assignments.filter(a => a.role === role).map(a => lecturers.find(l => l.id === a.lecturerId)?.name || 'Giảng viên').join('; ') || 'Chưa phân công';
 
-export const HEADER_ICON_MODULE_IDS = new Set(['chat', 'announcements']);
+// The bell shows the personal inbox; it does not replace Khoa's campaign
+// announcement composer. Keep that distinct management function reachable.
+export const HEADER_ICON_MODULE_IDS = new Set(['chat']);
 
-export function campaignNavigation(modules: ReturnType<typeof campaignModules>, role: string, internship: boolean, wide = true) {
-  const available = modules.filter(m => !HEADER_ICON_MODULE_IDS.has(m.id));
+export function campaignNavigation(modules: ReturnType<typeof campaignModules>, role: string, internship: boolean, wide = true, headerChatAvailable = true) {
+  const available = modules.filter(m => !HEADER_ICON_MODULE_IDS.has(m.id)||m.id==='chat'&&!headerChatAvailable);
   const labels: Record<string, string> = {
     students: role === 'student' ? 'Hồ sơ' : internship ? 'Sinh viên' : 'Danh sách sinh viên',
     reports: 'Báo cáo',

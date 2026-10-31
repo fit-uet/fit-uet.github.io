@@ -17,7 +17,7 @@ export function CampaignChrome({ token, modules, title, go, reload, busy, list }
   const [catalog, setCatalog] = useState<CampaignSummary[] | null>(null), [catalogError, setCatalogError] = useState('');
   const [semester, setSemester] = useState(p.semesterId);
   const groupsButton = useRef<HTMLButtonElement>(null), moreButton = useRef<HTMLButtonElement>(null);
-  const navigation = campaignNavigation(modules, layout.actor.role, p.group === 'internship', wide);
+  const navigation = campaignNavigation(modules, layout.actor.role, p.group === 'internship', wide, layout.actor.role!=='admin'||!!layout.actor.is_lecturer);
   const moreActive = navigation.more.some(m => m.id === layout.tab);
   useEffect(() => { setMenu(null); }, [layout.tab, p.id, wide]);
   useEffect(() => {

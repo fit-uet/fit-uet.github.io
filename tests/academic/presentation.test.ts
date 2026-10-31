@@ -70,6 +70,9 @@ test('campaign navigation displays non-icon features horizontally on desktop and
     }
   }
   const {campaignSwitchQuery} = await import('../../src/features/academic/campaignPresentation');
+  const managerModules=campaignModules(true,false,false);
+  assert.ok(campaignNavigation(managerModules,'admin',false,true,false).primary.some(m=>m.id==='chat'));
+  assert.ok(campaignNavigation(managerModules,'admin',false,true).primary.some(m=>m.id==='announcements'));
   const query = new URLSearchParams('tab=grades&view=lecturer&classId=old&q=An&page=7&topicStatus=pending&enrollmentId=other&panel=grades');
   assert.equal(campaignSwitchQuery(query,campaignModules(false,false,true),true).toString(),'tab=grades&view=lecturer');
   assert.equal(campaignSwitchQuery(query,campaignModules(false,true,false),false).toString(),'');

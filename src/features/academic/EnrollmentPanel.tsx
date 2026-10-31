@@ -110,10 +110,10 @@ export function EnrollmentPanel({
     {
       step: '4',
       title: 'Đánh giá & Hoàn tất',
-      done: Boolean(e.lockedAt || e.finalScore != null),
-      active: current.state === 'submitted' && e.finalScore == null && !requiresResubmission,
-      statusText: e.lockedAt ? 'Đã khóa điểm' : e.finalScore != null ? 'Đã có điểm' : current.state === 'submitted' ? 'Chờ chấm' : 'Chưa có',
-      sub: e.finalScore != null ? `Điểm: ${e.finalScore.toFixed(1)}` : 'Chờ GVHD & GVNX',
+      done: ['complete','locked'].includes(e.gradeStatus),
+      active: current.state === 'submitted' && !['complete','locked'].includes(e.gradeStatus) && !requiresResubmission,
+      statusText: ['complete','locked'].includes(e.gradeStatus) ? 'Đã hoàn tất đánh giá' : e.gradeStatus==='partial'?'Đang đánh giá':current.state === 'submitted' ? 'Chờ đánh giá' : 'Chưa đánh giá',
+      sub: 'Điểm chính thức tra cứu tại Cổng Đào tạo',
     },
   ];
 
@@ -178,7 +178,7 @@ export function EnrollmentPanel({
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b]">Tiến độ học phần Dự án</span>
             </div>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold border border-slate-200/60">
-              Học kỳ {c.semesterId}
+              {c.semesterName || c.semesterId}
             </span>
           </div>
 
@@ -553,10 +553,11 @@ export function EnrollmentPanel({
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
                       <Presentation size={14} className="text-amber-600" />
-                      Link Google Drive Slide thuyết trình <span className="text-rose-500">*</span>
+                      Link Google Drive slide <span className="text-rose-500">*</span>
                     </label>
                     <input
                       name="slidesUrl"
+                      aria-label="Link Google Drive slide"
                       type="url"
                       required
                       defaultValue={current.slidesUrl}
@@ -569,14 +570,15 @@ export function EnrollmentPanel({
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
                       <Video size={14} className="text-indigo-600" />
-                      Link Google Drive / Youtube Video demo sản phẩm <span className="text-rose-500">*</span>
+                      Link Google Drive video demo <span className="text-rose-500">*</span>
                     </label>
                     <input
                       name="demoUrl"
+                      aria-label="Link Google Drive video demo"
                       type="url"
                       required
                       defaultValue={current.demoUrl}
-                      placeholder="https://drive.google.com/file/d/... hoặc link Youtube/Loom"
+                      placeholder="https://drive.google.com/file/d/..."
                       className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm bg-[#f8fafc] focus:bg-white focus:border-[#034ea1] focus:ring-2 focus:ring-[#034ea1]/20 outline-none transition-all shadow-2xs text-slate-900 font-medium"
                       disabled={!!e.submissionLockedAt}
                     />
@@ -584,7 +586,7 @@ export function EnrollmentPanel({
 
                   <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-500">
                     <Info size={14} className="text-[#034ea1] shrink-0" />
-                    <span>Lưu ý: Cấp quyền xem công khai (Anyone with the link can view) cho các liên kết Google Drive trước khi nộp.</span>
+                    <span>Cấp quyền xem slide và video cho GVHD/GVNX trước khi nộp.</span>
                   </div>
                 </div>
               )}
@@ -742,7 +744,7 @@ export function EnrollmentPanel({
                     className="border border-slate-200 rounded-xl p-4 space-y-3 bg-[#f8fafc]/50"
                   >
                     <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                      Phần chấm {role === 'reviewer' ? 'GV Nhận xét (40%)' : 'GV Hướng dẫn (60%)'}
+                      Phần chấm {project ? role === 'reviewer' ? 'GV Nhận xét (40%)' : 'GV Hướng dẫn (60%)' : 'GV hướng dẫn · Tiến độ 20%, báo cáo 20%, đơn vị 60%'}
                     </h5>
                     {(project ? [['score', 'Điểm số (0–10)']] : [['progress', 'Tiến độ (20%)'], ['report', 'Báo cáo (20%)'], ['company', 'Đơn vị/GV (60%)']]).map(([key, label]) => (
                       <FormField key={key} label={label}>

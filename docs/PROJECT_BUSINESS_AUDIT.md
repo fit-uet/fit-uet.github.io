@@ -15,6 +15,10 @@ Phạm vi: giao diện Khoa, giảng viên, sinh viên, điều hướng, hồ s
 | BA-07 | API phân công GVHD của TT trả nhầm lỗi nguồn legacy khi gọi cho Dự án; preview GVNX nhận lớp TT rồi có thể cho kết quả rỗng | Báo rõ sai nghiệp vụ; SV không tự tham gia lớp Dự án, GVNX chỉ nhận các lớp Dự án trong đúng kỳ | API không phát sinh phân công hoặc lần học |
 | BA-08 | Đối soát import cho chọn CN làm GVHD chính dù backend không cho phép | Khóa lựa chọn CN ở trường GVHD chính và ghi rõ chỉ đồng hướng dẫn | Rà giao diện và hồi quy import/kiểm quyền backend |
 | BA-09 | Sửa tên hồ sơ giảng viên có thể làm mất/đổi tiền tố học vị đang dùng để kiểm điều kiện GVHD/GVNX và quota | Học vị/chức danh giữ theo danh mục Khoa; tự sửa chỉ thay họ tên. Cập nhật đúng giảng viên/tài khoản đó, kiểm thay đổi đồng thời của danh mục, bỏ đồng bộ hàng loạt người khác trong thao tác này | API: CN không tự nâng thành PGS.TS, TS không mất học vị khi nhập tên; tài khoản khác giữ nguyên |
+| BA-10 | Thiết lập lặp Word/Kế hoạch/Hướng dẫn/FAQ với các trang biên tập riêng; lưu thời hạn có thể cắt mất giây | Thiết lập chỉ sửa trạng thái, hạn và thông báo hoàn tất; mỗi nội dung có một trang biên tập, chỉ có liên kết tới đó. Không tải Markdown ở Thiết lập. Giữ chính xác hạn hiện có, kể cả 23:59:59 | UI không có textarea/file tại Thiết lập, mỗi editor có một bộ điều khiển; lưu không gửi nội dung Markdown và giữ giây |
+| BA-11 | Kế hoạch đang lưu ghi không có bước duyệt; hướng dẫn chưa cập nhật Pending và màn Chấm điểm | Hiệu chỉnh bốn nội dung Dự án bằng API kiểm revision sau sao lưu/xem trước, không đổi mốc thời gian | So sánh trường trước/sau, hash và hạn; dừng nếu nội dung bị sửa đồng thời |
+| BA-12 | Giao diện nộp bài mới gợi ý YouTube/Loom hoặc công khai Drive; tiến độ SV dựa vào trường điểm không được phép nhận | Nhãn/kiểm tra đúng link Drive; hướng dẫn cấp quyền cho GVHD/GVNX. Tiến độ lấy trạng thái đánh giá và không hiển thị số điểm. Công nhận dữ liệu trước nâng cấp không bị gọi nhầm là học kỳ trước | UI nộp bài, Pending/nộp lại, API không lộ điểm và hồi quy hai học phần |
+| BA-13 | Ẩn mục soạn Thông báo vì nhầm với biểu tượng chuông hộp thư cá nhân | Soạn thông báo nhóm của Khoa vẫn có mục riêng; chat dùng biểu tượng header khi có, tài khoản không có biểu tượng vẫn có lối vào | Điều hướng và thông báo xem trước/xác nhận trên local |
 
 ## Những phần đã đối chiếu
 
@@ -22,8 +26,8 @@ Phạm vi: giao diện Khoa, giảng viên, sinh viên, điều hướng, hồ s
 - Đề tài mới hoặc đổi tên phải Pending; chỉ GVHD chính duyệt/sửa rồi duyệt. Đồng HD/GVNX chỉ xem đề tài. Hạn, phê duyệt muộn, nộp lại và khóa sau điểm đầu tiên vẫn do backend kiểm tra.
 - Dự án cần PDF tối đa 10 MB, Drive slide và video; TT không bị bắt bổ sung slide/video. Dữ liệu điểm không đưa tới SV; đồng HD không được nhập hoặc nhận dữ liệu điểm.
 - Chấm Dự án theo GVHD 60%/GVNX 40%; TT giữ 20%/20%/60%. Điểm thiếu khác 0; ngoại lệ 0 vẫn cần lý do; mở lại tạo phiên bản cần chấm lại.
-- Trên bản sao đã kiểm chứng, nội dung kế hoạch/hướng dẫn/FAQ của Dự án không chứa quy trình Thực tập. Hạn HKI 2026–2027 đúng: đề tài 07/09–20/12, nộp bộ bài 14–20/12, chấm 14–27/12, hết ngày theo giờ Việt Nam. Không thay nội dung hoặc thời hạn đang lưu.
-- Không đổi database schema, công thức, dữ liệu, file R2 hoặc cache JSON/PDF. Giữ các tối ưu ở [PERFORMANCE.md](PERFORMANCE.md); đo trên bản sao, chỉ kiểm tra đọc có giới hạn ở production.
+- Nội dung Dự án không trộn quy trình doanh nghiệp nhưng có câu cũ không yêu cầu duyệt đề tài; cần hiệu chỉnh BA-11. Hạn HKI 2026–2027 giữ nguyên: đề tài 07/09–20/12, nộp bộ bài 14–20/12, chấm 14–27/12, hết ngày theo giờ Việt Nam.
+- Không đổi schema, công thức, hồ sơ sinh viên, điểm, file R2 hoặc cache JSON/PDF. Chỉ hiệu chỉnh bốn trường nội dung hướng dẫn có sao lưu/revision. Giữ các tối ưu ở [PERFORMANCE.md](PERFORMANCE.md); đo trên bản sao, kiểm tra production có giới hạn.
 
 ## Bộ kiểm chứng
 
