@@ -18,6 +18,7 @@ const destinations: Record<string, string> = {
   '/admin/reports': 'reports', '/admin/grades': 'grades', '/plan': 'plan',
   '/admin/plan': 'plan-editor', '/admin/registration-rules': 'rules-editor',
   '/admin/lecturer-guide': 'guide-editor', '/admin/faq': 'faq-editor',
+  '/admin/settings': 'settings', '/admin/notifications': 'announcements',
 };
 export function CampaignDashboard({ data, navigate, token, reload }: Props) {
   const route = useNavigate();
@@ -29,10 +30,7 @@ export function CampaignDashboard({ data, navigate, token, reload }: Props) {
     gradedCount: data.stats.graded ?? 0,
   }), [data.stats]);
   const extraModules = [
-    { title: 'Thời hạn nhóm môn', Icon: Clock, path: '/campaign/settings' },
-    { title: 'Thông báo nhóm môn', Icon: Mail, path: '/campaign/announcements' },
     { title: 'Hỏi đáp với Khoa', Icon: CircleHelp, path: '/campaign/questions' },
-    { title: 'Trao đổi', Icon: MessageCircle, path: '/campaign/chat' },
   ].map(({Icon,...item}) => ({ ...item, icon:<Icon size={20} className="text-[#034ea1]"/>, onClick: () => navigate(item.path.split('/').at(-1)!) }));
   return <AdminDashboard token={token} presentation={{
     stats, subtitle: `${GROUP_NAMES[p.group]} · ${p.semesterName}`,

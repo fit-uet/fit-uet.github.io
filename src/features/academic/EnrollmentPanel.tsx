@@ -153,6 +153,25 @@ export function EnrollmentPanel({
     },
   ];
 
+  const topicWindow = (() => {
+    const now = Date.now();
+    if (c.settings.topicOpenAt && new Date(c.settings.topicOpenAt).getTime() > now) return { label: 'Chưa mở', variant: 'warning' as const };
+    if (c.settings.topicCloseAt && new Date(c.settings.topicCloseAt).getTime() < now) return { label: 'Đã đóng', variant: 'neutral' as const };
+    return { label: 'Đang mở', variant: 'success' as const };
+  })();
+  const submissionWindow = (() => {
+    const now = Date.now();
+    if (c.settings.submissionOpenAt && new Date(c.settings.submissionOpenAt).getTime() > now) return { label: 'Chưa mở', variant: 'warning' as const };
+    if (c.settings.submissionCloseAt && new Date(c.settings.submissionCloseAt).getTime() < now) return { label: 'Đã đóng', variant: 'neutral' as const };
+    return { label: 'Đang mở', variant: 'success' as const };
+  })();
+  const gradingWindow = (() => {
+    const now = Date.now();
+    if (c.settings.gradingOpenAt && new Date(c.settings.gradingOpenAt).getTime() > now) return { label: 'Chưa mở', variant: 'warning' as const };
+    if (c.settings.gradingCloseAt && new Date(c.settings.gradingCloseAt).getTime() < now) return { label: 'Đã đóng', variant: 'neutral' as const };
+    return { label: 'Đang mở', variant: 'success' as const };
+  })();
+
   /* -------------------------------------------------------------
    * 1. STUDENT VIEW (Exact match to Internship Dashboard layout)
    * ------------------------------------------------------------- */
@@ -190,18 +209,6 @@ export function EnrollmentPanel({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                const nav = new URLSearchParams(window.location.search);
-                nav.set('tab', 'plan');
-                window.history.pushState({}, '', '?' + nav.toString());
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }}
-              className="text-xs font-semibold text-slate-700 hover:text-[#034ea1] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <FileText size={13} className="text-blue-600" /> Kế hoạch triển khai
-            </button>
             <a
               href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
               target="_blank"
@@ -231,8 +238,8 @@ export function EnrollmentPanel({
                 <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-xs font-semibold text-slate-800 truncate">Khai báo đề tài</span>
-                    <Badge variant={e.topic ? 'success' : 'warning'} size="sm">
-                      {e.topic ? 'Đã khai báo' : 'Chưa có'}
+                    <Badge variant={topicWindow.variant} size="sm">
+                      {topicWindow.label}
                     </Badge>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
@@ -243,28 +250,12 @@ export function EnrollmentPanel({
                   </div>
                 </div>
 
-                {/* 2. GVHD duyệt đề tài */}
-                <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-slate-800 truncate">GVHD duyệt đề tài</span>
-                    <Badge variant={e.topicReview?.status === 'approved' ? 'success' : e.topic ? 'warning' : 'neutral'} size="sm">
-                      {e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa có'}
-                    </Badge>
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                    <span>GVHD:</span>
-                    <span className="font-medium text-slate-700 truncate" title={primaryLecturerName}>
-                      {primaryLecturerName || 'Chờ phân công'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3. Nộp bộ bài Dự án */}
+                {/* 2. Nộp bộ bài Dự án */}
                 <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-xs font-semibold text-slate-800 truncate">Nộp bộ bài Dự án</span>
-                    <Badge variant={requiresResubmission ? 'warning' : current.state === 'submitted' ? 'success' : 'neutral'} size="sm">
-                      {requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã nộp đủ' : 'Chưa nộp'}
+                    <Badge variant={submissionWindow.variant} size="sm">
+                      {submissionWindow.label}
                     </Badge>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
@@ -275,16 +266,12 @@ export function EnrollmentPanel({
                   </div>
                 </div>
 
-                {/* 4. Đánh giá & Điểm */}
+                {/* 3. Chấm điểm học phần */}
                 <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-slate-800 truncate">Đánh giá & Điểm</span>
-                    <Badge variant={['complete', 'locked'].includes(e.gradeStatus) ? 'success' : 'neutral'} size="sm">
-                      {['complete', 'locked'].includes(e.gradeStatus)
-                        ? 'Đã hoàn tất'
-                        : e.gradeStatus === 'partial'
-                        ? 'Đang chấm'
-                        : 'Chờ đánh giá'}
+                    <span className="text-xs font-semibold text-slate-800 truncate">Chấm điểm học phần</span>
+                    <Badge variant={gradingWindow.variant} size="sm">
+                      {gradingWindow.label}
                     </Badge>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
@@ -370,13 +357,13 @@ export function EnrollmentPanel({
                   </div>
                   <div>
                     <Badge variant={e.topicReview?.status === 'approved' ? 'success' : e.topic ? 'warning' : 'neutral'} size="md">
-                      {e.topicReview?.status === 'approved' ? 'Đã duyệt đề tài' : e.topic ? 'Chờ GVHD duyệt' : 'Chưa khai báo'}
+                      {e.topicReview?.status === 'approved' ? 'Đã duyệt đề tài' : e.topic ? 'Chờ GVHD duyệt' : 'Chưa đăng ký'}
                     </Badge>
                   </div>
                 </div>
 
                 {/* Topic Component (contains region 'Đề tài Dự án') */}
-                <ProjectTopic enrollment={e} owner={owner} admin={admin} busy={busy} post={post} />
+                <ProjectTopic enrollment={e} owner={owner} admin={admin} busy={busy} post={post} embedded />
 
                 {e.reviewComment && (
                   <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">

@@ -9,13 +9,15 @@ export function ProjectTopic({
   owner,
   admin,
   busy,
-  post
+  post,
+  embedded = false,
 }: {
   enrollment: EnrollmentView;
   owner: boolean;
   admin: boolean;
   busy: boolean;
   post: (path: string, body: any, method?: string) => Promise<void>;
+  embedded?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const permissions = e.topicPermissions;
@@ -27,46 +29,48 @@ export function ProjectTopic({
   const isPending = status === 'pending';
 
   return (
-    <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4" aria-label="Đề tài Dự án">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#034ea1] flex items-center justify-center shrink-0 border border-blue-100">
-            <FileText size={16} />
+    <section className={embedded ? "space-y-4" : "bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4"} aria-label="Đề tài Dự án">
+      {!embedded && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#034ea1] flex items-center justify-center shrink-0 border border-blue-100">
+              <FileText size={16} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Đề tài Dự án</h4>
+              <p className="text-xs text-slate-500">Sinh viên gửi tên đề tài để GVHD chính xem xét, duyệt trước khi nộp bài</p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-900">Đề tài Dự án</h4>
-            <p className="text-xs text-slate-500">Sinh viên gửi tên đề tài để GVHD chính xem xét, duyệt trước khi nộp bài</p>
+
+          <div className="flex items-center gap-2">
+            {isApproved ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                <CheckCircle2 size={13} className="text-emerald-600" /> {TOPIC_STATUS_NAMES[status]}
+              </span>
+            ) : isPending ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                <Clock size={13} className="text-amber-600" /> {TOPIC_STATUS_NAMES[status]}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                <AlertCircle size={13} className="text-slate-500" /> {TOPIC_STATUS_NAMES[status]}
+              </span>
+            )}
+
+            {!owner && permissions?.canEdit && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setEditing(val => !val)}
+                className="inline-flex items-center gap-1 px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+              >
+                {editing ? <X size={13} /> : <Edit3 size={13} />}
+                {editing ? 'Đóng sửa' : primary ? 'Sửa & duyệt' : 'Chỉnh sửa'}
+              </button>
+            )}
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          {isApproved ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-              <CheckCircle2 size={13} className="text-emerald-600" /> {TOPIC_STATUS_NAMES[status]}
-            </span>
-          ) : isPending ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
-              <Clock size={13} className="text-amber-600" /> {TOPIC_STATUS_NAMES[status]}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-              <AlertCircle size={13} className="text-slate-500" /> {TOPIC_STATUS_NAMES[status]}
-            </span>
-          )}
-
-          {!owner && permissions?.canEdit && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setEditing(val => !val)}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-2xs"
-            >
-              {editing ? <X size={13} /> : <Edit3 size={13} />}
-              {editing ? 'Đóng sửa' : primary ? 'Sửa & duyệt' : 'Chỉnh sửa'}
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {(owner && !isApproved) || editing ? (
         <form

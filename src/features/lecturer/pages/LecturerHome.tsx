@@ -197,12 +197,6 @@ export function LecturerHome({ user, token, initialCourseCode = '' }: { user: an
   };
 
   const headerActions = (<div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => navigate('/plan')}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow active:scale-[0.98]"
-          >
-            <FileText size={14} className="text-blue-600" /> Kế hoạch triển khai
-          </button>
           {groupLecturerId && (
             <button
               onClick={() => navigate(`/chat/group/${groupLecturerId}`)}

@@ -920,12 +920,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/plan')}
-              className="text-xs font-semibold text-slate-700 hover:text-[#034ea1] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <FileText size={13} className="text-blue-600" /> Kế hoạch triển khai
-            </button>
             <a
               href="https://drive.google.com/drive/u/0/folders/14Fm4yP-2Psj_qMpzI0pBARkcww1sblA3"
               target="_blank"

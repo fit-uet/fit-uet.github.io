@@ -71,21 +71,11 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Tổng quan Quản trị</h1>
           <p className="text-xs text-slate-500 mt-0.5">{presentation?.subtitle || 'Học phần Thực tập'}</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {presentation?.actions}
-          <button
-            onClick={() => navigate('/plan')}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <FileText size={14} className="text-blue-600" /> Kế hoạch triển khai
-          </button>
-          <button
-            onClick={() => navigate('/admin/settings')}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Settings size={14} className="text-slate-500" /> Cài đặt hệ thống
-          </button>
-        </div>
+        {presentation?.actions && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {presentation.actions}
+          </div>
+        )}
       </div></CampaignStandalone>
 
       <CampaignStandalone>{presentation?.context}</CampaignStandalone>
