@@ -910,10 +910,9 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
       {user && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-xs">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="text-xs font-bold text-[#034ea1] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
-              Kỳ {campaign.year}
-            </span>
             <div className="text-xs text-slate-600 flex items-center gap-2">
+              <h2 className="text-xs font-bold text-slate-900 inline">{user.name || user.email}</h2>
+              <span className="text-slate-300">·</span>
               <span>MSSV: <strong className="text-slate-900">{user.student_id || studentIdFromEmail}</strong></span>
               <span className="text-slate-300">·</span>
               <span>Lớp: <strong className="text-slate-900">{user.class_name || 'Chưa cập nhật'}</strong></span>

@@ -186,9 +186,6 @@ export function EnrollmentPanel({
         {/* Top Academic Info & Quick Actions Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-xs">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="text-xs font-bold text-[#034ea1] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
-              Kỳ {c.semesterName || c.semesterId}
-            </span>
             <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
               <h2 className="text-xs font-bold text-slate-900 inline">{e.name}</h2>
               <span className="text-slate-300">·</span>
