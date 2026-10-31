@@ -73,14 +73,13 @@ export function EnrollmentPanel({
   const requiresResubmission = project && !!e.topicPermissions?.requiresResubmission;
   const pair = e.evaluations?.[current.id] || {};
 
-  // For students in project: select stage
+  // For students in project: select stage based on progression
   const initialStage = () => {
     if (['complete', 'locked'].includes(e.gradeStatus)) return 'grade';
-    if (current.state === 'submitted' || e.topicReview?.status === 'approved') return 'submission';
-    if (e.topic) return 'approval';
+    if (e.topicReview?.status === 'approved') return 'submission';
     return 'topic';
   };
-  const [activeStage, setActiveStage] = useState<'topic' | 'approval' | 'submission' | 'grade'>(initialStage);
+  const [activeStage, setActiveStage] = useState<'topic' | 'submission' | 'grade'>(initialStage);
 
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
@@ -111,27 +110,19 @@ export function EnrollmentPanel({
   const reviewerLecturer = e.assignments.find(a => a.role === 'reviewer');
   const reviewerLecturerName = lecturers.find(l => l.id === reviewerLecturer?.lecturerId)?.name;
 
-  // Student 4-stage stepper navigation tabs (identical layout to Internship)
+  // Student 3-stage stepper navigation tabs (aligned with Project lifecycle)
   const stageTabs = [
     {
       id: 'topic' as const,
       step: '1',
-      title: 'Khai báo đề tài',
-      isDone: Boolean(e.topic),
-      status: e.topic ? 'Đã khai báo' : 'Chưa có',
-      variant: (e.topic ? 'success' : 'warning') as any,
-    },
-    {
-      id: 'approval' as const,
-      step: '2',
-      title: 'GVHD duyệt',
+      title: 'Đề tài Dự án',
       isDone: e.topicReview?.status === 'approved',
-      status: e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa có',
+      status: e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa đăng ký',
       variant: (e.topicReview?.status === 'approved' ? 'success' : e.topic ? 'warning' : 'neutral') as any,
     },
     {
       id: 'submission' as const,
-      step: '3',
+      step: '2',
       title: 'Nộp bộ bài',
       isDone: current.state === 'submitted' && !requiresResubmission,
       status: requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã nộp đủ' : 'Chưa nộp',
@@ -139,7 +130,7 @@ export function EnrollmentPanel({
     },
     {
       id: 'grade' as const,
-      step: '4',
+      step: '3',
       title: 'Đánh giá & Điểm',
       isDone: ['complete', 'locked'].includes(e.gradeStatus),
       status: ['complete', 'locked'].includes(e.gradeStatus)
@@ -303,21 +294,17 @@ export function EnrollmentPanel({
 
           {/* Right Content Column (lg:col-span-9): Stepper & Active Stage Workspace */}
           <div className="lg:col-span-9 min-w-0 space-y-5">
-            {/* 4 Giai đoạn Dự án - Sleek Stepper Navigation Bar */}
+            {/* 3 Giai đoạn Dự án - Sleek Stepper Navigation Bar */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-1.5">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                 {stageTabs.map((tab) => {
                   const isSelected = activeStage === tab.id;
                   return (
                     <button
                       key={tab.id}
                       type="button"
-                      onClick={() => {
-                        setActiveStage(tab.id);
-                        const targetId = tab.id === 'topic' || tab.id === 'approval' ? 'step-topic' : tab.id === 'submission' ? 'step-submission' : 'step-grade';
-                        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className={`py-2.5 px-3 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
+                      onClick={() => setActiveStage(tab.id)}
+                      className={`py-2.5 px-3.5 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
                         isSelected
                           ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/80 shadow-xs'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium border border-transparent'
@@ -347,7 +334,7 @@ export function EnrollmentPanel({
             {/* Main Workspace Cards */}
             <main className="space-y-5">
               {/* CARD 1: ĐỀ TÀI DỰ ÁN */}
-              <div id="step-topic" className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5">
+              <div id="step-topic" className={`rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5 ${activeStage === 'topic' ? 'block' : 'hidden'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Khai báo & Duyệt đề tài Dự án</h3>
@@ -373,7 +360,7 @@ export function EnrollmentPanel({
               </div>
 
               {/* CARD 2: BÁO CÁO & BỘ BÀI NỘP DỰ ÁN */}
-              <section id="step-submission" aria-label="Bộ bài nộp Dự án" className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-6">
+              <section id="step-submission" aria-label="Bộ bài nộp Dự án" className={`rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-6 ${activeStage === 'submission' ? 'block' : 'hidden'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Báo cáo & Bộ bài nộp Dự án</h3>
@@ -564,7 +551,7 @@ export function EnrollmentPanel({
               </section>
 
               {/* CARD 3: ĐÁNH GIÁ & ĐIỂM SỐ */}
-              <div id="step-grade" className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5">
+              <div id="step-grade" className={`rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5 ${activeStage === 'grade' ? 'block' : 'hidden'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Đánh giá & Điểm số</h3>
