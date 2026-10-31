@@ -320,8 +320,8 @@ test('a successful save invalidates the active function in another browser tab',
   const {page,context,classes,errors}=await session(browser,'admin');const p=classes.find(c=>c.courseCode==='INT3132').campaignId;const editor=await context.newPage();
   try{
     await page.goto(`/#/campaigns/${p}?tab=plan`);await expect(page.getByRole('heading',{name:'Kế hoạch và hướng dẫn',exact:true})).toBeVisible();
-    await editor.goto(`/#/campaigns/${p}?tab=settings`);await editor.getByRole('textbox',{name:'Kế hoạch (Markdown)',exact:true}).fill('Kế hoạch đồng bộ giữa hai tab nghiệm thu');
-    await editor.getByRole('button',{name:'Lưu thiết lập nhóm môn',exact:true}).click();
+    await editor.goto(`/#/campaigns/${p}?tab=plan-editor`);await editor.locator('textarea').fill('Kế hoạch đồng bộ giữa hai tab nghiệm thu');
+    editor.on('dialog',dialog=>dialog.accept());await editor.getByRole('button',{name:'Lưu kế hoạch',exact:true}).click();
     await expect(page.getByText('Kế hoạch đồng bộ giữa hai tab nghiệm thu',{exact:true})).toBeVisible();expect(errors).toEqual([]);
   }finally{await context.close();}
 });
