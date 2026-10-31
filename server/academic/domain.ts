@@ -137,7 +137,7 @@ export function validateAssignments(s: Snapshot, c: AcademicClass, e: CourseEnro
     if (a.role === 'reviewer') {
       if (course(c).group !== 'project') fail(422, 'INVALID_ROLE', 'Thực tập không có vai trò GVNX.');
       if (input.some(x => x.lecturerId === a.lecturerId && x.role !== 'reviewer')) fail(422, 'REVIEWER_CONFLICT', 'GVNX không được trùng GVHD hoặc đồng hướng dẫn.');
-      if (!reviewerPool(s, c.semesterId).some(x => x.id === a.lecturerId)) fail(422, 'REVIEWER_NOT_ELIGIBLE', 'GVNX phải đang hướng dẫn Dự án trong học kỳ.');
+      if (!reviewerPool(s, c.semesterId).some(x => x.id === a.lecturerId)) fail(422, 'REVIEWER_NOT_ELIGIBLE', 'GVNX phải đang hướng dẫn Thực hành nghiên cứu trong học kỳ.');
       const q = s.quotas.find(q => q.semesterId === c.semesterId && q.lecturerId === a.lecturerId)?.maxReviews;
       const load = reviewerLoad(s, c.semesterId, a.lecturerId, e.id);
       if (q != null && load >= q && !e.assignments.some(x => x.role === 'reviewer' && x.lecturerId === a.lecturerId)) fail(422, 'REVIEWER_QUOTA', 'Giảng viên đã hết chỉ tiêu nhận xét.');

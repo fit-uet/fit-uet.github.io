@@ -1,10 +1,12 @@
 # Quản lý theo học kỳ và nhóm môn
 
-Đơn vị vận hành là **học kỳ → nhóm môn**, gồm Thực tập và Dự án. Trong một nhóm có nhiều học phần/lớp; mỗi sinh viên vẫn có lần học độc lập theo lớp. Dự án công nghệ và Dự án khoa học cùng thuộc nhóm Dự án trong kỳ.
+Quy ước tên: nhóm mã `project` hiển thị là **Thực hành nghiên cứu**; hai học phần vẫn là **Dự án công nghệ (INT3132)** và **Dự án khoa học (INT3131)**. Tiêu đề thao tác dùng tên chức năng (Đề tài, Nộp báo cáo, Chấm điểm), không lặp tên nhóm. Mã nhóm, URL và dữ liệu được giữ nguyên.
+
+Đơn vị vận hành là **học kỳ → nhóm môn**, gồm Thực tập và Thực hành nghiên cứu. Trong một nhóm có nhiều học phần/lớp; mỗi sinh viên vẫn có lần học độc lập theo lớp. Dự án công nghệ và Dự án khoa học cùng thuộc nhóm Thực hành nghiên cứu trong kỳ.
 
 ## Cách sử dụng
 
-1. Sau đăng nhập, chọn học kỳ và mở nhóm Thực tập hoặc Dự án. Lựa chọn nhóm/kỳ được giữ khi chuyển chức năng. Các URL lớp cũ chuyển đến nhóm với bộ lọc lớp tương ứng.
+1. Sau đăng nhập, chọn học kỳ và mở nhóm Thực tập hoặc Thực hành nghiên cứu. Lựa chọn nhóm/kỳ được giữ khi chuyển chức năng. Các URL lớp cũ chuyển đến nhóm với bộ lọc lớp tương ứng.
 2. Khoa dùng Tổng quan, Sinh viên, Phân công, Báo cáo, Bảng điểm, Thông báo và Thiết lập. Nhóm TT có thêm Đăng ký/Nơi thực tập. Danh mục người dùng, GV và DN vẫn dùng chung toàn hệ thống.
 3. Mặc định xem toàn nhóm; lọc học phần, lớp học phần, GV và trạng thái khi cần. Danh sách phân trang ở server. XLSX lấy toàn bộ kết quả được quyền xem theo bộ lọc, không chỉ trang đang mở.
 4. Thiết lập hạn, kế hoạch Markdown/import Word, quy định TT, hướng dẫn, FAQ và thông báo hoàn tất một lần cho nhóm. Kích hoạt/lưu trữ/mở lại toàn nhóm; không còn thiết lập riêng từng lớp.
@@ -64,7 +66,7 @@ npm run academic:campaign-migrate -- --database=file:/path/staging.db --apply
 
 Có thể cung cấp settings đầy đủ thay sourceClassId. Chạy lại không nhân bản nhóm/lần học, không tạo lại email hoặc hội thoại. Endpoint sửa trạng thái/cấu hình từng lớp trả `CAMPAIGN_CONTEXT_REQUIRED` và campaignId để chuyển caller sang phạm vi mới.
 
-Bản staging hiện có tại `.staging/academic-LCsr6X` đã được sao lưu và chuyển **một nhóm TT legacy**; thêm ba nhóm còn thiếu cho các học kỳ có trong bản sao. Đã đối soát và nhập danh sách Dự án trên staging: 535 lần học / 532 SV / tám lớp, 97 GV; 408 hồ sơ có GVHD, 127 chưa có GVHD. Nhóm Dự án đã kích hoạt trên staging; khai/sửa đề tài 07/09–20/12, nộp bộ bài 14–20/12, chấm 14–27/12/2026 (giờ Việt Nam). Đã gán 408 GVNX, 127 hồ sơ chưa có GVHD được giữ chưa phân công. Nghiệm thu nộp/chấm/GVNX được thực hiện trên bản sao riêng; không ghi điểm/file giả vào staging chính. Mở [Khoa local](http://127.0.0.1:4319/__local_staging/login); quy trình chạy lại ở [LOCAL_STAGING.md](LOCAL_STAGING.md). Ngày 29/10/2026 đã tiếp nhận dữ liệu vào Turso vận hành sau backup/diễn tập riêng; xem [quy trình phát hành](PRODUCTION_RELEASE.md).
+Bản staging hiện có tại `.staging/academic-LCsr6X` đã được sao lưu và chuyển **một nhóm TT legacy**; thêm ba nhóm còn thiếu cho các học kỳ có trong bản sao. Đã đối soát và nhập danh sách Dự án trên staging: 535 lần học / 532 SV / tám lớp, 97 GV; 408 hồ sơ có GVHD, 127 chưa có GVHD. Nhóm Thực hành nghiên cứu đã kích hoạt trên staging; khai/sửa đề tài 07/09–20/12, nộp bộ bài 14–20/12, chấm 14–27/12/2026 (giờ Việt Nam). Đã gán 408 GVNX, 127 hồ sơ chưa có GVHD được giữ chưa phân công. Nghiệm thu nộp/chấm/GVNX được thực hiện trên bản sao riêng; không ghi điểm/file giả vào staging chính. Mở [Khoa local](http://127.0.0.1:4319/__local_staging/login); quy trình chạy lại ở [LOCAL_STAGING.md](LOCAL_STAGING.md). Ngày 29/10/2026 đã tiếp nhận dữ liệu vào Turso vận hành sau backup/diễn tập riêng; xem [quy trình phát hành](PRODUCTION_RELEASE.md).
 
 ## Nghiệm thu
 

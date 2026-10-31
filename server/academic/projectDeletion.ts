@@ -8,7 +8,7 @@ import {drainProjectCleanup} from './projectCleanup';
 
 export async function previewProjectDeletion(actor:AuthenticatedUser,campaignId:string,input:any){
   requireAdmin(actor);const s=await snapshot(),p=requireCampaign(s,campaignId,actor,true);
-  if(p.group!=='project')fail(422,'PROJECT_REQUIRED','Chỉ xóa lần học Dự án.');
+  if(p.group!=='project')fail(422,'PROJECT_REQUIRED','Chỉ xóa lần học Thực hành nghiên cứu.');
   if(!Array.isArray(input.enrollmentIds)||!input.enrollmentIds.length||input.enrollmentIds.length>100||new Set(input.enrollmentIds).size!==input.enrollmentIds.length)fail(422,'INVALID_ROWS','Chọn từ 1 đến 100 lần học khác nhau.');
   const ids=input.enrollmentIds as string[];const rows=[];
   for(const id of ids){const e=getEnrollment(s,id),c=getClass(s,e.classId);if(c.campaignId!==campaignId)fail(403,'CAMPAIGN_ACCESS_DENIED','Hồ sơ ngoài phạm vi nhóm môn.');const messages=(await db.execute({sql:'SELECT attachment_key FROM academic_messages WHERE enrollment_id=?',args:[id]})).rows;rows.push({enrollmentId:id,revision:e.revision,studentId:e.studentId,name:e.name,classCode:c.code,versions:e.versions.length,evaluations:Object.values(e.evaluations).reduce((n,p)=>n+Object.values(p).filter(Boolean).length,0),files:new Set([...e.versions.map(v=>v.objectKey),...messages.map(m=>m.attachment_key)].filter(Boolean)).size,privateMessages:messages.length});}
@@ -27,7 +27,7 @@ export async function applyProjectDeletion(actor:AuthenticatedUser,campaignId:st
   const prior=(await db.execute({sql:'SELECT id FROM academic_deletions WHERE id=? AND campaign_id=? AND actor_id=?',args:[previewId,campaignId,actor.id]})).rows[0];
   if(prior)return projectDeletionStatus(actor,campaignId,previewId);
   const p=await readPreview(actor.id,previewId,'project-deletion');if(p.payload.campaignId!==campaignId)fail(403,'CAMPAIGN_ACCESS_DENIED','Bản xem trước thuộc nhóm khác.');
-  const s=await snapshot(),campaign=requireCampaign(s,campaignId,actor,true);if(campaign.group!=='project')fail(422,'PROJECT_REQUIRED','Chỉ xóa lần học Dự án.');
+  const s=await snapshot(),campaign=requireCampaign(s,campaignId,actor,true);if(campaign.group!=='project')fail(422,'PROJECT_REQUIRED','Chỉ xóa lần học Thực hành nghiên cứu.');
   if(s.revision!==p.revision)fail(409,'STALE_PREVIEW','Dữ liệu thay đổi; xem trước lại trước khi xóa.');
   const ids=new Set<string>(p.payload.rows.map(r=>r.enrollmentId)),keys=new Set<string>(),codes=new Set<string>(),files=new Map<string,string>();
   for(const row of p.payload.rows){const e=getEnrollment(s,row.enrollmentId),c=getClass(s,e.classId);requireRevision(e.revision,row.revision);if(c.campaignId!==campaignId)fail(403,'CAMPAIGN_ACCESS_DENIED','Hồ sơ ngoài phạm vi.');keys.add(`${e.studentId}|${e.classId}`);codes.add(`${e.studentId}|${c.code}`);for(const v of e.versions)if(v.objectKey)files.set(v.objectKey,'report');}

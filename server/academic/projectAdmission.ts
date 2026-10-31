@@ -17,7 +17,7 @@ async function accountFor(studentId:string){
 }
 async function admissionContext(actor:AuthenticatedUser,id:string){
   requireAdmin(actor);const ctx=await readContext(actor,id,'base');const p=ctx.campaigns.find(p=>p.id===id)!;
-  if(p.group!=='project')fail(422,'PROJECT_REQUIRED','Chỉ thêm lần học tại nhóm Dự án.');
+  if(p.group!=='project')fail(422,'PROJECT_REQUIRED','Chỉ thêm lần học tại nhóm Thực hành nghiên cứu.');
   if(p.pendingMigration||!['draft','active'].includes(p.status))fail(409,'CAMPAIGN_READ_ONLY','Cần mở lại hoặc hoàn tất chuyển đổi nhóm môn trước khi thêm sinh viên.');
   return {...ctx,p};
 }
@@ -30,7 +30,7 @@ export async function addProjectStudent(actor:AuthenticatedUser,id:string,input:
   requireAdmin(actor);const studentId=validId(input?.studentId),ctx=await admissionContext(actor,id);
   requireRevision(ctx.s.revision,input.expectedRevision);
   const c=getClass(ctx.s,text(input.classId));
-  if(c.campaignId!==id||c.legacy||course(c).group!=='project')fail(422,'INVALID_CAMPAIGN_FILTER','Lớp học phần không thuộc nhóm Dự án đang chọn.');
+  if(c.campaignId!==id||c.legacy||course(c).group!=='project')fail(422,'INVALID_CAMPAIGN_FILTER','Lớp học phần không thuộc nhóm Thực hành nghiên cứu đang chọn.');
   const account=await accountFor(studentId);
   const existing=(await db.execute({sql:'SELECT id FROM academic_enrollments WHERE class_id=? AND student_id=?',args:[c.id,studentId]})).rows[0];
   if(existing)fail(409,'DUPLICATE_ENROLLMENT','Sinh viên đã có trong lớp học phần này.',{enrollmentId:existing.id});
@@ -41,6 +41,6 @@ export async function addProjectStudent(actor:AuthenticatedUser,id:string,input:
   await commit(ctx.s,actor.id,'admin.project.add',{
     enrollments:[e],users:account?[]:[{studentId,email:e.email,name,dob,className}],
     projectAdmission:{campaignId:id,campaignRevision:ctx.p.revision,classId:c.id,studentId,email:e.email,account:account||null},
-  },'Khoa thêm sinh viên vào lớp Dự án.');
+  },'Khoa thêm sinh viên vào lớp Thực hành nghiên cứu.');
   return {enrollment:enrollmentView({...ctx.s,enrollments:[e]},c,e,actor),createdAccount:!account};
 }

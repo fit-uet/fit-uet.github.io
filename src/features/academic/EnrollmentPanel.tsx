@@ -115,7 +115,7 @@ export function EnrollmentPanel({
     {
       id: 'topic' as const,
       step: '1',
-      title: 'Đề tài Dự án',
+      title: 'Đề tài',
       isDone: e.topicReview?.status === 'approved',
       status: e.topicReview?.status === 'approved' ? 'Đã duyệt' : e.topic ? 'Chờ duyệt' : 'Chưa đăng ký',
       variant: (e.topicReview?.status === 'approved' ? 'success' : e.topic ? 'warning' : 'neutral') as any,
@@ -123,7 +123,7 @@ export function EnrollmentPanel({
     {
       id: 'submission' as const,
       step: '2',
-      title: 'Nộp bộ bài',
+      title: 'Nộp báo cáo',
       isDone: current.state === 'submitted' && !requiresResubmission,
       status: requiresResubmission ? 'Cần nộp lại' : current.state === 'submitted' ? 'Đã nộp đủ' : 'Chưa nộp',
       variant: (requiresResubmission ? 'warning' : current.state === 'submitted' ? 'success' : 'neutral') as any,
@@ -238,10 +238,10 @@ export function EnrollmentPanel({
                   </div>
                 </div>
 
-                {/* 2. Nộp bộ bài Dự án */}
+                {/* 2. Nộp báo cáo */}
                 <div className="p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-slate-800 truncate">Nộp bộ bài Dự án</span>
+                    <span className="text-xs font-semibold text-slate-800 truncate">Nộp báo cáo</span>
                     <Badge variant={submissionWindow.variant} size="sm">
                       {submissionWindow.label}
                     </Badge>
@@ -272,12 +272,12 @@ export function EnrollmentPanel({
               </div>
             </div>
 
-            {/* Card 2: Quy định Dự án */}
+            {/* Card 2: Quy định học phần */}
             <details open className="group bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
               <summary className="flex items-center justify-between font-bold text-slate-800 cursor-pointer select-none text-xs uppercase tracking-wider">
                 <span className="flex items-center gap-1.5">
                   <BookOpen size={15} className="text-blue-600" />
-                  Quy định Dự án
+                  Quy định học phần
                 </span>
                 <ChevronDown size={14} className="text-slate-400 group-open:rotate-180 transition-transform" />
               </summary>
@@ -291,7 +291,7 @@ export function EnrollmentPanel({
 
           {/* Right Content Column (lg:col-span-9): Stepper & Active Stage Workspace */}
           <div className="lg:col-span-9 min-w-0 space-y-5">
-            {/* 3 Giai đoạn Dự án - Sleek Stepper Navigation Bar */}
+            {/* Three-stage navigation for the current enrollment. */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-1.5">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                 {stageTabs.map((tab) => {
@@ -330,11 +330,11 @@ export function EnrollmentPanel({
 
             {/* Main Workspace Cards */}
             <main className="space-y-5">
-              {/* CARD 1: ĐỀ TÀI DỰ ÁN */}
+              {/* Topic declaration and approval. */}
               <div id="step-topic" className={`rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5 ${activeStage === 'topic' ? 'block' : 'hidden'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Khai báo & Duyệt đề tài Dự án</h3>
+                    <h3 className="text-base font-bold text-slate-900">Khai báo và duyệt đề tài</h3>
                     <p className="text-xs text-slate-500 mt-1">
                       Giảng viên hướng dẫn: <strong className="text-slate-700">{primaryLecturerName || 'Chờ phân công'}</strong>
                     </p>
@@ -346,7 +346,7 @@ export function EnrollmentPanel({
                   </div>
                 </div>
 
-                {/* Topic Component (contains region 'Đề tài Dự án') */}
+                {/* Topic Component (contains region 'Đề tài') */}
                 <ProjectTopic enrollment={e} owner={owner} admin={admin} busy={busy} post={post} embedded />
 
                 {e.reviewComment && (
@@ -356,11 +356,11 @@ export function EnrollmentPanel({
                 )}
               </div>
 
-              {/* CARD 2: BÁO CÁO & BỘ BÀI NỘP DỰ ÁN */}
-              <section id="step-submission" aria-label="Bộ bài nộp Dự án" className={`rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-6 ${activeStage === 'submission' ? 'block' : 'hidden'}`}>
+              {/* PDF report and supporting links. */}
+              <section id="step-submission" aria-label="Báo cáo, slide và video" className={`rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-6 ${activeStage === 'submission' ? 'block' : 'hidden'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Báo cáo & Bộ bài nộp Dự án</h3>
+                    <h3 className="text-base font-bold text-slate-900">Báo cáo, slide và video</h3>
                   </div>
                   <div>
                     <Badge variant={requiresResubmission ? 'warning' : current.state === 'submitted' ? 'success' : 'neutral'} size="md">
@@ -458,7 +458,7 @@ export function EnrollmentPanel({
                         </div>
                       ) : (
                         <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl space-y-2.5 bg-slate-50/40">
-                          <p className="text-xs text-slate-500">Bạn chưa nộp file báo cáo dự án.</p>
+                          <p className="text-xs text-slate-500">Bạn chưa nộp báo cáo PDF.</p>
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
@@ -807,7 +807,7 @@ export function EnrollmentPanel({
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <FileText size={16} className="text-[#034ea1]" />
-                <h4 className="font-bold text-sm text-slate-900">Báo cáo & Bộ bài nộp</h4>
+                <h4 className="font-bold text-sm text-slate-900">Báo cáo và tài liệu</h4>
               </div>
 
               <div className="flex items-center gap-2">
@@ -866,7 +866,7 @@ export function EnrollmentPanel({
                   <div className="flex items-center gap-2">
                     <Award size={16} className="text-[#034ea1]" />
                     <h4 className="font-bold text-sm text-slate-900">
-                      {project ? 'Đánh giá Dự án' : 'Điểm Thực tập'}
+                      {project ? 'Đánh giá' : 'Điểm Thực tập'}
                     </h4>
                   </div>
                   {e.lockedAt && (

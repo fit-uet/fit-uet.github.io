@@ -44,7 +44,7 @@ export function AdminDashboard({ token, presentation }: { token: string; user?: 
     { title: 'Quản lý Giảng viên', path: '/admin/lecturers', icon: <GraduationCap size={20} className="text-[#034ea1]" /> },
     ...(!isProject ? [{ title: 'Quản lý Doanh nghiệp', path: '/admin/companies', icon: <Building2 size={20} className="text-[#034ea1]" /> }] : []),
     { title: isProject ? 'Phân công GVHD / GVNX' : 'Phân công GVHD', path: '/admin/advisors', icon: <UserCheck size={20} className="text-[#034ea1]" /> },
-    { title: isProject ? 'Báo cáo Dự án' : 'Báo cáo thực tập', path: '/admin/reports', icon: <FileText size={20} className="text-[#034ea1]" /> },
+    { title: isProject ? 'Báo cáo' : 'Báo cáo thực tập', path: '/admin/reports', icon: <FileText size={20} className="text-[#034ea1]" /> },
     { title: isProject ? 'Chấm điểm' : 'Bảng điểm thực tập', path: '/admin/grades', icon: <CheckCircle2 size={20} className="text-[#1b7f37]" /> },
     ...(!isProject ? [{ title: 'CSDL Thẩm định', path: '/admin/approved-companies', icon: <Shield size={20} className="text-[#034ea1]" /> }] : []),
     { title: 'Thông báo & Email', path: '/admin/notifications', icon: <Mail size={20} className="text-[#b25e00]" /> },

@@ -6,7 +6,7 @@ import { commit, fail, snapshot, type Snapshot } from './store';
 function resetPlan(s: Snapshot, actor: AuthenticatedUser, campaignId: string) {
   requireAdmin(actor);
   const campaign = requireCampaign(s, campaignId, actor, true);
-  if (campaign.group !== 'project' || campaign.legacy) fail(422, 'PROJECT_REQUIRED', 'Chỉ gỡ GVNX trong nhóm Dự án.');
+  if (campaign.group !== 'project' || campaign.legacy) fail(422, 'PROJECT_REQUIRED', 'Chỉ gỡ GVNX trong nhóm Thực hành nghiên cứu.');
   const classes = campaignClasses(s, campaignId);
   const targets = s.enrollments.filter(e => classes.some(c => c.id === e.classId) && e.assignments.some(a => a.role === 'reviewer'));
   return { targets, summary: {

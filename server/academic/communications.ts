@@ -1,3 +1,4 @@
+import { GROUP_NAMES } from '../../src/shared/academic';
 import { randomUUID, createHash } from 'node:crypto';
 import { db } from '../db';
 import type { AuthenticatedUser } from '../types';
@@ -57,7 +58,7 @@ function announcementPlan(s: Snapshot, actor: AuthenticatedUser, target: string,
     const emails = [e.email, ...(input.includeLecturers ? e.assignments.map(a => s.lecturers.find(l => l.id === a.lecturerId)?.email).filter(Boolean) : [])];
     for (const email of emails) {
       if (seen.has(email)) continue; seen.add(email);
-      events.push({ id: `${operation}:${email}`, email, userId: null, classId: e.classId, campaignId: p.id, audienceClassIds: allowedIds, type: 'course_announcement', subject: `[${p.group === 'project' ? 'Dự án' : 'Thực tập'}] ${subject}`, body: `${s.semesters.find(x => x.id === p.semesterId)?.name}\n\n${body}`, deliveryMode: input.deliveryMode, forceImmediate: input.deliveryMode === 'website_and_email' });
+      events.push({ id: `${operation}:${email}`, email, userId: null, classId: e.classId, campaignId: p.id, audienceClassIds: allowedIds, type: 'course_announcement', subject: `[${GROUP_NAMES[p.group]}] ${subject}`, body: `${s.semesters.find(x => x.id === p.semesterId)?.name}\n\n${body}`, deliveryMode: input.deliveryMode, forceImmediate: input.deliveryMode === 'website_and_email' });
     }
   }
   return events;

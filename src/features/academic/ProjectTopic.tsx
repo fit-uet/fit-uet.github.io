@@ -29,7 +29,7 @@ export function ProjectTopic({
   const isPending = status === 'pending';
 
   return (
-    <section className={embedded ? "space-y-4" : "bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4"} aria-label="Đề tài Dự án">
+    <section className={embedded ? "space-y-4" : "bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4"} aria-label="Đề tài">
       {!embedded && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -37,7 +37,7 @@ export function ProjectTopic({
               <FileText size={16} />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Đề tài Dự án</h4>
+              <h4 className="text-sm font-bold text-slate-900">Đề tài</h4>
               <p className="text-xs text-slate-500">Sinh viên gửi tên đề tài để GVHD chính xem xét, duyệt trước khi nộp bài</p>
             </div>
           </div>
@@ -88,11 +88,11 @@ export function ProjectTopic({
         >
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              {owner ? 'Nhập tên đề tài đăng ký' : 'Tên đề tài Dự án'} <span className="text-rose-500">*</span>
+              {owner ? 'Nhập tên đề tài đăng ký' : 'Tên đề tài'} <span className="text-rose-500">*</span>
             </label>
             <div className="flex flex-col sm:flex-row gap-2.5">
               <input
-                aria-label="Tên đề tài Dự án"
+                aria-label="Tên đề tài"
                 name="title"
                 defaultValue={e.topic}
                 placeholder="Ví dụ: Xây dựng hệ thống phát hiện gian lận giao dịch tài chính bằng học máy..."

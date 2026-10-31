@@ -63,12 +63,12 @@ test('project topic approval works on a prepared private copy without changing t
     const gv=await login(primary.email);
     const path=`/#/campaigns/${campaign}?tab=students&enrollmentId=${e.id}`;
     await sv.page.goto(origin.origin+path);
-    await sv.page.getByRole('textbox',{name:'Tên đề tài Dự án',exact:true}).fill(`Đề tài nghiệm thu riêng trên bản sao local ${Date.now()}`);
+    await sv.page.getByRole('textbox',{name:'Tên đề tài',exact:true}).fill(`Đề tài nghiệm thu riêng trên bản sao local ${Date.now()}`);
     await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();
-    await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Pending');
+    await expect(sv.page.getByRole('region',{name:'Đề tài'})).toContainText('Pending');
     await gv.page.goto(origin.origin+path);
     const row=gv.page.locator('#project-row-'+e.id);await row.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đã duyệt',{exact:true})).toBeVisible();
-    await sv.page.reload(); await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Đã duyệt');
+    await sv.page.reload(); await expect(sv.page.getByRole('region',{name:'Đề tài'})).toContainText('Đã duyệt');
     const after=await (await sv.context.request.get(`${origin.origin}/api/campaigns/${campaign}/enrollments`,{headers:sv.headers})).json();
     expect(after.items.find(x=>x.courseCode==='INT3132').topic).toBe(list.items.find(x=>x.courseCode==='INT3132').topic);
     expect(after.items.find(x=>x.id===e.id)).not.toHaveProperty('evaluations');

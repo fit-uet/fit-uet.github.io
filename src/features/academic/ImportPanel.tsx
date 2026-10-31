@@ -28,7 +28,7 @@ export function ImportPanel({ token, semesterId, onImported }: { token: string; 
   };
   const rows = preview?.rows.filter(r => !onlyErrors || r.issues.length && !r.excluded) || [];
   return <section className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-    <div><h3 className="font-semibold text-slate-900">Import danh sách Dự án</h3><p className="text-sm text-slate-500 mt-1">Chỉ lấy dòng có STT trong hai sheet DACN/DAKH; lớp lấy từ Mã LMH. Kiểm tra danh sách trước khi tiếp nhận sinh viên.</p></div>
+    <div><h3 className="font-semibold text-slate-900">Import danh sách sinh viên</h3><p className="text-sm text-slate-500 mt-1">Chỉ lấy dòng có STT trong hai sheet DACN/DAKH; lớp lấy từ Mã LMH. Kiểm tra danh sách trước khi tiếp nhận sinh viên.</p></div>
     <div className="flex flex-wrap gap-3 items-end"><FormField label="File danh sách (.xlsx)"><input type="file" accept=".xlsx" disabled={busy} onChange={e => { setFile(e.target.files?.[0] || null); setPreview(null); setResolutions({}); setMessage(''); }} /></FormField>
       <Button disabled={!file || !semesterId || busy} onClick={inspect}>{busy ? 'Đang xử lý…' : dirty ? 'Kiểm tra lại thay đổi' : 'Xem trước'}</Button></div>
     {message && <p role="status" className="text-sm p-3 bg-blue-50 rounded-lg text-blue-900">{message}</p>}

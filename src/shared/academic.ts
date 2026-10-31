@@ -13,7 +13,8 @@ export const COURSE_CATALOG = [
 export const TERM_NAMES: Record<Term, string> = { '1': 'Học kỳ I', '2': 'Học kỳ II', summer: 'Học kỳ Hè' };
 
 export interface AcademicSemester { id: string; year: number; term: Term; name: string }
-export const GROUP_NAMES: Record<CourseGroup, string> = { internship: 'Thực tập', project: 'Dự án' };
+// Keep stable group codes and the specific course names in COURSE_CATALOG.
+export const GROUP_NAMES: Record<CourseGroup, string> = { internship: 'Thực tập', project: 'Thực hành nghiên cứu' };
 export const campaignKey = (semesterId: string, group: CourseGroup) => `${semesterId}:${group}`;
 export interface CourseCampaign {
   id: string; semesterId: string; group: CourseGroup; status: ClassStatus;

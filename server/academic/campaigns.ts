@@ -31,7 +31,7 @@ export async function campaignDetail(actor: AuthenticatedUser, id: string) {
 }
 export async function campaignEnrollments(actor: AuthenticatedUser, id: string, query: Record<string, any> = {}, all = false) {
   const s = await snapshot(); requireCampaign(s, id, actor); const classes = campaignClasses(s, id);
-  if (query.topicStatus && (!['unregistered', 'pending', 'approved'].includes(query.topicStatus) || getCampaign(s, id).group !== 'project')) fail(422, 'INVALID_TOPIC_FILTER', 'Trạng thái đề tài chỉ áp dụng cho Dự án.');
+  if (query.topicStatus && (!['unregistered', 'pending', 'approved'].includes(query.topicStatus) || getCampaign(s, id).group !== 'project')) fail(422, 'INVALID_TOPIC_FILTER', 'Trạng thái đề tài chỉ áp dụng cho Thực hành nghiên cứu.');
   if (query.classId && !classes.some(c => c.id === query.classId) || query.courseCode && !classes.some(c => c.courseCode === query.courseCode)) fail(422, 'INVALID_CAMPAIGN_FILTER', 'Lớp/học phần không thuộc nhóm môn và học kỳ đã chọn.');
   const page = Math.max(1, Number(query.page) || 1), limit = Math.min(100, Math.max(1, Number(query.limit) || 25));
   const items = s.enrollments.filter(e => {

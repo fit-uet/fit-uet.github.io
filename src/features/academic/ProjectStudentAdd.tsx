@@ -19,7 +19,7 @@ export function ProjectStudentAdd({token,close,onAdded}:{token:string;close:()=>
   return()=>{clearTimeout(timer);controller.abort();};
  },[studentId,token,meta.campaign.id,retry]);
  const duplicate=lookup?.enrollments.some(e=>e.classId===classId),ready=!!lookup&&lookupId===studentId&&!loading;
- return <EnrollmentDialog title="Thêm sinh viên vào lớp Dự án" close={()=>{if(!busy)close();}}><form className="space-y-4" onSubmit={async ev=>{
+ return <EnrollmentDialog title="Thêm sinh viên vào lớp" close={()=>{if(!busy)close();}}><form className="space-y-4" onSubmit={async ev=>{
   ev.preventDefault();if(!ready||duplicate)return;setBusy(true);setError('');
   try{await academicApi(token,`/api/admin/campaigns/${meta.campaign.id}/enrollments`,'POST',{expectedRevision:lookup.revision,classId,studentId,name,dob,className});await onAdded();}
   catch(e){setError(e.message);if(['REVISION_CONFLICT','STALE_PREVIEW'].includes(e.data?.error?.code))setRetry(r=>r+1);}

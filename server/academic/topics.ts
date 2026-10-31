@@ -30,7 +30,7 @@ export function approveTopic(s: Snapshot, c: AcademicClass, e: CourseEnrollment,
   if (Number.isFinite(close) && Date.now() > close && Number.isFinite(gradingClose) && Date.now() <= gradingClose) e.topicSubmissionUntil = c.settings.gradingCloseAt;
 }
 export function editTopic(s: Snapshot, c: AcademicClass, e: CourseEnrollment, actor: AuthenticatedUser, input: any, approveOnly = false) {
-  if (course(c).group !== 'project') fail(422, 'WRONG_COURSE', 'Đề tài thuộc học phần Dự án.');
+  if (course(c).group !== 'project') fail(422, 'WRONG_COURSE', 'Đề tài thuộc nhóm Thực hành nghiên cứu.');
   if (hasGrade(e) || e.lockedAt || e.submissionLockedAt) fail(409, 'SUBMISSION_LOCKED', 'Đã bắt đầu chấm; cần Khoa mở lại bài.');
   if (approveOnly) { approveTopic(s, c, e, actor); return; }
   const primary = isPrimaryAdvisor(s, e, actor);

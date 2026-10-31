@@ -25,7 +25,7 @@ export function ProjectGrading({token,page,refresh}:{token:string;page:CampaignR
   const row=direction>0?rows.items[0]:rows.items.at(-1);if(row)select(row.id,target);
  };
  const index=page?.items.findIndex(e=>e.id===selected)??-1;
- return <section aria-label="Chấm điểm Dự án" className="space-y-4">
+ return <section aria-label="Chấm điểm" className="space-y-4">
   <CampaignToolbarActions><Button size="sm" onClick={exportFile}>Xuất bảng điểm XLSX</Button></CampaignToolbarActions>
   {error&&<p role="alert" className="text-sm text-rose-700">{error}</p>}
   {selected?<ProjectGradingEditor key={`${meta.campaign.id}:${actor.role}:${selected}`} token={token} id={selected} rowRevision={page?.items.find(e=>e.id===selected)?.revision} refresh={refresh}
@@ -100,7 +100,7 @@ function ProjectGradingEditor({token,id,rowRevision,refresh,previous,next,move,c
      <p className="text-sm">{v.title||'Chưa có tên trong phiên bản bài'}</p><div className="flex gap-4 text-sm">{v.slidesUrl&&<a className="text-[#034ea1] underline" href={v.slidesUrl} target="_blank" rel="noreferrer">Mở slide ↗</a>}{v.demoUrl&&<a className="text-[#034ea1] underline" href={v.demoUrl} target="_blank" rel="noreferrer">Mở video demo ↗</a>}</div>
      {(mobile==='report'||desktop)&&<PdfView token={token} enrollmentId={e.id} version={v}/>}
     </section>
-    <section aria-label="Đánh giá Dự án" className={`${mobile==='grade'?'':'hidden lg:block'} min-w-0 rounded-xl border border-slate-200 bg-white p-4 space-y-4 self-start`}>
+    <section aria-label="Đánh giá" className={`${mobile==='grade'?'':'hidden lg:block'} min-w-0 rounded-xl border border-slate-200 bg-white p-4 space-y-4 self-start`}>
      {e.canSeeGrades?<><div className="grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3 text-sm"><p>GVHD — 60%<strong className="block">{shown.pair.advisor?.score?.toFixed(1)??'—'}</strong></p><p>GVNX — 40%<strong className="block">{shown.pair.reviewer?.score?.toFixed(1)??'—'}</strong></p></div><p className="text-sm">Tổng kết: <strong>{shown.total?.toFixed(1)??'Chưa đủ điểm'}</strong> · {historical?'Lịch sử đánh giá · Chỉ xem':gradeNames[e.gradeStatus]}</p></>:<p className="text-sm text-slate-500">Đồng hướng dẫn chỉ xem bài nộp, không xem hoặc nhập điểm.</p>}
      {e.topicPermissions?.requiresResubmission&&<p className="text-sm text-amber-800">Bài nộp thuộc đề tài cũ; cần nộp lại trước khi chấm điểm khác 0.</p>}
      {role?<form className="space-y-3" onSubmit={ev=>{ev.preventDefault();save();}}>

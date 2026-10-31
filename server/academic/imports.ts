@@ -47,7 +47,7 @@ export function dateOfBirth(v: unknown, date1904: boolean) {
 export function planImport(s: Snapshot, semesterId: string, bytes: Buffer, resolutions: Record<string, ImportResolution> = {}): ImportPlan {
   if (!s.semesters.some(x => x.id === semesterId)) fail(404, 'SEMESTER_NOT_FOUND', 'Chưa tạo học kỳ cần nhập.');
   const parent = s.campaigns?.find(p => p.id === campaignKey(semesterId, 'project'));
-  if (parent?.pendingMigration || parent?.status === 'archived') fail(409, 'CAMPAIGN_READ_ONLY', 'Cần chuyển đổi hoặc mở lại nhóm Dự án trước khi nhập danh sách.');
+  if (parent?.pendingMigration || parent?.status === 'archived') fail(409, 'CAMPAIGN_READ_ONLY', 'Cần chuyển đổi hoặc mở lại nhóm Thực hành nghiên cứu trước khi nhập danh sách.');
   let workbook: XLSX.WorkBook;
   try { workbook = XLSX.read(bytes, { type: 'buffer', cellDates: false, cellFormula: true }); }
   catch { return fail(422, 'INVALID_WORKBOOK', 'Không đọc được file Excel.'); }

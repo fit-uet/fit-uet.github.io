@@ -37,7 +37,7 @@ export async function saveProjectRows(actor:AuthenticatedUser,campaignId:string,
   for(const row of rows)if(!row||Object.keys(row).some(k=>!['enrollmentId','expectedRevision','assignments','topic','grades','review','gradeLock','reopen'].includes(k)))fail(422,'INVALID_PATCH','Trường cập nhật không hợp lệ.');
   for(let attempt=0;attempt<3;attempt++){
     const original=await snapshot(),p=requireCampaign(original,campaignId,actor,true);
-    if(p.group!=='project')fail(422,'PROJECT_REQUIRED','Chức năng thuộc nhóm Dự án.');
+    if(p.group!=='project')fail(422,'PROJECT_REQUIRED','Chức năng thuộc nhóm Thực hành nghiên cứu.');
     const errors=new Map<string,{code:string;message:string;field?:string}>();
     for(const row of rows){try{
       const e=getEnrollment(original,row.enrollmentId),c=getClass(original,e.classId);requireRead(original,c,actor,e);

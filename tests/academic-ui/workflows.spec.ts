@@ -119,7 +119,18 @@ test('visual references and restored role pages fit desktop and mobile', async (
         await page.evaluate(data => { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); }, data);
         await page.goto(`/#/campaigns/${p}`);
         await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
+        if (role === 'student') {
+          await page.getByRole('button', { name: /^INT3132 ·/ }).click();
+          await expect(page.getByRole('button', { name: /Đề tài/ })).toBeVisible();
+        }
         await page.screenshot({ animations: 'disabled', path: `${screenshots}/restored-${role}-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
+        if (role === 'student') {
+          await page.getByRole('button', { name: /Đề tài/ }).click();
+          await expect(page.getByRole('heading', { name: 'Khai báo và duyệt đề tài', exact: true })).toBeVisible();
+          await page.screenshot({ animations: 'disabled', path: `${screenshots}/restored-student-topic-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
+          await page.getByRole('button', { name: /Nộp báo cáo/ }).click();
+          await expect(page.getByRole('region', { name: 'Báo cáo, slide và video', exact: true })).toBeVisible();
+        }
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         if(role==='lecturer'&&mobile){await expect(page.getByRole('columnheader',{name:'Đề tài',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Nhập điểm',exact:true})).toHaveCount(0);}
       }
@@ -263,13 +274,13 @@ test('switching campaigns revokes PDF cache and checks permission again on retur
 test('student topics stay pending until primary adviser saves approval inline; resubmission remains required',async({browser})=>{
  const sv=await session(browser,'student'),gv=await session(browser,'lecturer'),c=sv.classes.find(c=>c.courseCode==='INT3131');
  try{
-  await sv.page.goto(`/#/classes/${c.id}`);await sv.page.getByRole('button',{name:/Đề tài Dự án/}).click();await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toBeVisible();if(await sv.page.getByRole('button',{name:'Đổi tên đề tài',exact:true}).count())await sv.page.getByRole('button',{name:'Đổi tên đề tài',exact:true}).click();await sv.page.getByRole('textbox',{name:'Tên đề tài Dự án',exact:true}).fill('Đề tài chờ duyệt');await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();await sv.page.getByRole('button',{name:/Nộp bộ bài/}).click();await expect(sv.page.locator('input[name=pdf]')).toBeDisabled();
+  await sv.page.goto(`/#/classes/${c.id}`);await sv.page.getByRole('button',{name:/Đề tài/}).click();await expect(sv.page.getByRole('region',{name:'Đề tài'})).toBeVisible();if(await sv.page.getByRole('button',{name:'Đổi tên đề tài',exact:true}).count())await sv.page.getByRole('button',{name:'Đổi tên đề tài',exact:true}).click();await sv.page.getByRole('textbox',{name:'Tên đề tài',exact:true}).fill('Đề tài chờ duyệt');await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();await sv.page.getByRole('button',{name:/Nộp báo cáo/}).click();await expect(sv.page.locator('input[name=pdf]')).toBeDisabled();
   await gv.page.goto(`/#/classes/${c.id}`);const row=gv.page.getByRole('row').filter({hasText:'24020001'});await row.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();await expect(row.getByText(/Pending · Chờ GVHD duyệt/)).toBeVisible();await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đã duyệt',{exact:true})).toBeVisible();
   await row.getByRole('button',{name:'Sửa và duyệt',exact:true}).click();await row.getByRole('textbox',{name:'Đề tài 24020001',exact:true}).fill('Đề tài GVHD sửa');await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đề tài GVHD sửa',{exact:true})).toBeVisible();
   await gv.page.setViewportSize({width:390,height:844});expect(await gv.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await sv.page.reload();await expect(sv.page.locator('input[name=pdf]')).toBeEnabled();await sv.page.locator('input[name=pdf]').setInputFiles({name:'topic.pdf',mimeType:'application/pdf',buffer:pdf()});await sv.page.getByRole('textbox',{name:'Link Google Drive slide',exact:true}).fill('https://docs.google.com/presentation/d/topic-slide/edit');await sv.page.getByRole('textbox',{name:'Link Google Drive video demo',exact:true}).fill('https://drive.google.com/file/d/topic-demo/view');await sv.page.getByRole('button',{name:'Xác nhận nộp bài',exact:true}).click();
-  await sv.page.getByRole('button',{name:/Đề tài Dự án/}).click();await sv.page.getByRole('button',{name:'Đổi tên đề tài',exact:true}).click();await sv.page.getByRole('textbox',{name:'Tên đề tài Dự án',exact:true}).fill('Đề tài sau nộp');await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).toContainText('Cần nộp lại theo đề tài mới');
-  await gv.page.reload();await row.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đã duyệt',{exact:true})).toBeVisible();await sv.page.reload();await sv.page.getByRole('button',{name:'Xác nhận nộp bài',exact:true}).click();await sv.page.getByRole('button',{name:/Đề tài Dự án/}).click();await expect(sv.page.getByRole('region',{name:'Đề tài Dự án'})).not.toContainText('Cần nộp lại');expect(sv.errors).toEqual([]);expect(gv.errors).toEqual([]);
+  await sv.page.getByRole('button',{name:/Đề tài/}).click();await sv.page.getByRole('button',{name:'Đổi tên đề tài',exact:true}).click();await sv.page.getByRole('textbox',{name:'Tên đề tài',exact:true}).fill('Đề tài sau nộp');await sv.page.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();await expect(sv.page.getByRole('region',{name:'Đề tài'})).toContainText('Cần nộp lại theo đề tài mới');
+  await gv.page.reload();await row.getByRole('button',{name:'Duyệt đề tài',exact:true}).click();await gv.page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true}).click();await expect(row.getByText('Đã duyệt',{exact:true})).toBeVisible();await sv.page.reload();await sv.page.getByRole('button',{name:'Xác nhận nộp bài',exact:true}).click();await sv.page.getByRole('button',{name:/Đề tài/}).click();await expect(sv.page.getByRole('region',{name:'Đề tài'})).not.toContainText('Cần nộp lại');expect(sv.errors).toEqual([]);expect(gv.errors).toEqual([]);
  }finally{await sv.context.close();await gv.context.close();}
 });
 
@@ -455,7 +466,7 @@ test('Khoa previews and deletes exactly one project enrollment while its sibling
  const {page,context,classes,token,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');const headers={Authorization:`Bearer ${token}`};
  try{
   const before=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json();const target=before.items.find(e=>e.studentId==='24020003'&&e.classId===c.id),sibling=before.items.find(e=>e.studentId==='24020003'&&e.id!==target.id);expect(sibling).toBeTruthy();
-  await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);await page.getByRole('checkbox',{name:`Chọn 24020003 ${c.code}`,exact:true}).check();await page.getByRole('button',{name:'Xóa khỏi danh sách (1)',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Xóa khỏi danh sách Dự án'});await expect(dialog).toContainText('24020003');
+  await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);await page.getByRole('checkbox',{name:`Chọn 24020003 ${c.code}`,exact:true}).check();await page.getByRole('button',{name:'Xóa khỏi danh sách (1)',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Xóa khỏi danh sách'});await expect(dialog).toContainText('24020003');
   await dialog.getByRole('button',{name:'Hủy',exact:true}).click();expect((await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json()).total).toBe(before.total);
   await page.getByRole('button',{name:'Xóa khỏi danh sách (1)',exact:true}).click();await dialog.getByRole('textbox',{name:'Lý do xóa',exact:true}).fill('Xóa đúng học phần cần bỏ');await dialog.getByRole('button',{name:'Xác nhận xóa vĩnh viễn',exact:true}).click();await expect(page.getByText('Đã xóa hoàn tất dữ liệu và tệp của lần học.',{exact:true})).toBeVisible();
   const after=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers})).json();expect(after.total).toBe(before.total-1);expect(after.items.some(e=>e.id===target.id)).toBe(false);expect(after.items.find(e=>e.id===sibling.id)).toEqual(sibling);expect(errors).toEqual([]);
@@ -465,7 +476,7 @@ test('Khoa previews and deletes exactly one project enrollment while its sibling
 test('project drafts block browser back and can save before changing the applied filter',async({browser})=>{
  const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');
  try{
-  await page.goto('/#/classes');await page.getByRole('link',{name:/Mở quản lý Dự án/}).click();await feature(page,'students');await applyFilters(page,{'Lớp học phần':c.id});
+  await page.goto('/#/classes');await page.getByRole('link',{name:/Mở quản lý Thực hành nghiên cứu/}).click();await feature(page,'students');await applyFilters(page,{'Lớp học phần':c.id});
   const row=page.getByRole('row').filter({hasText:'24020002'});await expect(row).toHaveCount(1);await row.getByRole('button',{name:'Sửa đề tài',exact:true}).click();await row.getByRole('textbox',{name:'Đề tài 24020002',exact:true}).fill('Đề tài lưu khi chuyển bộ lọc');await row.getByRole('textbox',{name:'Lý do đề tài 24020002',exact:true}).fill('Đối soát Khoa');
   await page.goBack();const guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu'});await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Ở lại',exact:true}).click();await expect(page).toHaveURL(/tab=students/);await expect(row.getByRole('textbox',{name:'Đề tài 24020002',exact:true})).toHaveValue('Đề tài lưu khi chuyển bộ lọc');
   await page.getByRole('button',{name:/^Bộ lọc/}).click();const filters=page.getByRole('dialog',{name:'Bộ lọc danh sách',exact:true});await filters.getByLabel('Trạng thái đề tài',{exact:true}).selectOption('pending');await filters.getByRole('button',{name:'Áp dụng',exact:true}).click();await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Lưu và tiếp tục',exact:true}).click();await expect(page).toHaveURL(/topicStatus=pending/);await expect(page.getByRole('button',{name:'Lưu thay đổi (0)',exact:true})).toBeVisible();await expect(page.getByText('Đề tài lưu khi chuyển bộ lọc',{exact:true})).toBeVisible();expect(errors).toEqual([]);
@@ -497,7 +508,7 @@ test('old project links use the unified list for Khoa and lecturers without memb
     await expect(page.getByRole('button',{name:/^(Mở|Xem) hồ sơ$/})).toHaveCount(0);
     await expect(page.getByRole('dialog',{name:'Hồ sơ sinh viên',exact:true})).toHaveCount(0);
    }
-   expect(detailRequests).toEqual([]);await page.goto(`/#/campaigns/${c.campaignId}?tab=students&panel=grades&enrollmentId=${enrollment.id}`);await expect(page.locator('main h1')).toHaveText('Chấm điểm');await expect(page.getByRole('region',{name:'Đánh giá Dự án',exact:true})).toBeVisible();expect(detailRequests.length).toBeGreaterThan(0);expect(errors).toEqual([]);
+   expect(detailRequests).toEqual([]);await page.goto(`/#/campaigns/${c.campaignId}?tab=students&panel=grades&enrollmentId=${enrollment.id}`);await expect(page.locator('main h1')).toHaveText('Chấm điểm');await expect(page.getByRole('region',{name:'Đánh giá',exact:true})).toBeVisible();expect(detailRequests.length).toBeGreaterThan(0);expect(errors).toEqual([]);
   }finally{await context.close();}
  }
 });
@@ -507,7 +518,7 @@ test('Khoa adds a new student and a second course without overwriting the shared
  const lookups:string[]=[];page.on('request',r=>{if(r.url().includes('/student-lookup'))lookups.push(r.url());});
  try{
   await page.goto(`/#/campaigns/${a.campaignId}?tab=students&classId=${a.id}`);await page.getByRole('button',{name:'Thêm sinh viên',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Thêm sinh viên vào lớp Dự án'});
+  const dialog=page.getByRole('dialog',{name:'Thêm sinh viên vào lớp'});
   await dialog.getByRole('textbox',{name:'MSSV',exact:true}).fill('249999');await page.waitForTimeout(350);expect(lookups).toEqual([]);
   await dialog.getByRole('textbox',{name:'MSSV',exact:true}).fill('24999901');await expect(dialog.getByRole('textbox',{name:'Họ tên',exact:true})).toBeVisible();expect(lookups).toHaveLength(1);
   await dialog.getByRole('textbox',{name:'Họ tên',exact:true}).fill('Sinh viên thêm thủ công');await dialog.getByLabel('Ngày sinh',{exact:true}).fill('2006-02-03');await dialog.getByLabel('Lớp khóa học',{exact:true}).fill('CS1');

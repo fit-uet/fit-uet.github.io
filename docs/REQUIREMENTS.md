@@ -1,5 +1,7 @@
 # Đặc tả yêu cầu quản lý Thực tập và Dự án theo học kỳ
 
+Quy ước tên: nhóm mã `project` hiển thị là **Thực hành nghiên cứu**; hai học phần vẫn là **Dự án công nghệ (INT3132)** và **Dự án khoa học (INT3131)**. Tiêu đề thao tác dùng tên chức năng (Đề tài, Nộp báo cáo, Chấm điểm), không lặp tên nhóm. Mã nhóm, URL và dữ liệu được giữ nguyên.
+
 Ngày cập nhật: **29/10/2026**. Trạng thái: **đã chốt nghiệp vụ; đã cài đặt quản lý học kỳ/nhóm môn và Dự án trên backend Express**. Phạm vi mã, kết quả kiểm thử và các bước đưa dữ liệu thật vào hệ thống nằm tại [hướng dẫn triển khai](IMPLEMENTATION_STATUS.md).
 
 Tài liệu này là nguồn yêu cầu nghiệp vụ chính. [Thiết kế kiến trúc](ARCHITECTURE.md) phân biệt mô hình nghiệp vụ, thiết kế chuẩn hóa và cách lưu trữ thực tế; [README](../README.md) hướng dẫn chạy và vận hành. Dữ liệu đã triển khai trước đây được giữ nguyên; tình trạng phát hành từng đợt xem tài liệu vận hành.
@@ -172,7 +174,7 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 | REQ-COM-01 / HC+MR | SV/GV trao đổi | Chat riêng theo lần học/GVHD, nhóm theo nhóm môn/học kỳ/GVHD; phân công quyết định thành viên; giữ đính kèm và dấu đọc, không gộp các kỳ | TC-33: rút lớp/đổi GV thu hồi quyền; GVNX nhận xét qua panel, chưa bổ sung chat GVNX riêng |
 | REQ-COM-02 / HC+MR | Khoa/sự kiện nghiệp vụ gửi thông báo | Nhắm toàn nhóm hoặc các lớp được chọn, sự kiện riêng theo lần học; xem trước người nhận và kiểm lại trước gửi; thông báo web độc lập email; quota dùng chung, FIFO, tự xử lý hàng đợi; giới hạn tần suất nhắc theo lớp/vai trò | TC-34: không gửi lẫn lớp hoặc quá quota; lỗi gửi không làm mất nghiệp vụ chính |
 | REQ-COM-03 / HC+MR | Hoàn tất đánh giá | Tùy cấu hình nhóm/kỳ, SV nhận thông báo hoàn tất không chứa điểm; Dự án chỉ phát khi đủ hai phần hiện hành; không phát web/email từng lượt nộp điểm cho Admin | TC-34: một người nộp chưa thông báo hoàn tất; Admin theo dõi dashboard; nhắc GVHD/GVNX theo phần còn thiếu |
-| REQ-COM-04 / HC+MR | Khoa quản lý hướng dẫn/FAQ | Giữ kế hoạch Markdown/import Word, hướng dẫn GV, FAQ theo vai trò và câu hỏi; nội dung hướng dẫn/FAQ chung có phạm vi nhóm môn/kỳ | TC-03: nhóm Dự án không nhận kế hoạch/nội dung mặc định Thực tập |
+| REQ-COM-04 / HC+MR | Khoa quản lý hướng dẫn/FAQ | Giữ kế hoạch Markdown/import Word, hướng dẫn GV, FAQ theo vai trò và câu hỏi; nội dung hướng dẫn/FAQ chung có phạm vi nhóm môn/kỳ | TC-03: nhóm Thực hành nghiên cứu không nhận kế hoạch/nội dung mặc định Thực tập |
 | REQ-MIG-01 / CĐ | Chuyển Thực tập hiện tại | Gắn vào Hè 2025–2026 theo mã học phần; giữ tài khoản, nguyện vọng, nơi TT, phân công, file, điểm, chat, thông báo, lịch sử | TC-35: đối soát số lượng/giá trị/quyền; mã không rõ đưa danh sách xử lý, không đoán hoặc bỏ mất |
 | REQ-MIG-02 / CĐ | Tạo dữ liệu Dự án mới | HKI 2026–2027 có tám lớp; chỉ tiếp nhận qua preview SRC-03 đã đối soát; DS chưa có GVHD vẫn được nhận | TC-16: không nhập sheet ẩn/điểm V1/V2, không nhân bản người dùng khi SV đã có tài khoản TT |
 | REQ-MIG-03 / CĐ | Triển khai schema/API mới | Migration có phiên bản, sao lưu DB/file và ánh xạ cũ→mới, có chạy lại và phương án rollback; API cũ chỉ trỏ lớp TT cũ xác định tường minh | TC-36: không chọn lớp đầu tiên khi nhiều lần học; chỉ áp dụng migration có sao lưu trên staging cục bộ trong đợt này |
@@ -260,7 +262,7 @@ Các tiêu chí TC ở trên là bộ nghiệm thu nghiệp vụ, không đồng
 
 ## 6. Danh sách sinh viên Dự án và xóa lần học
 
-[PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) bổ sung REQ-LST-01–05, REQ-DEL-01–04 và REQ-LST-MIG, thay thế nghiệp vụ tiếp nhận/rút trong nhóm Dự án: có lần học là có tên trong danh sách; xóa là không còn học phần đó. Khoa/GV dùng một bảng cho sinh viên, phân công, báo cáo và điểm. Thực tập giữ trạng thái cũ; trang SV giữ hồ sơ riêng từng lần học.
+[PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) bổ sung REQ-LST-01–05, REQ-DEL-01–04 và REQ-LST-MIG, thay thế nghiệp vụ tiếp nhận/rút trong nhóm Thực hành nghiên cứu: có lần học là có tên trong danh sách; xóa là không còn học phần đó. Khoa/GV dùng một bảng cho sinh viên, phân công, báo cáo và điểm. Thực tập giữ trạng thái cũ; trang SV giữ hồ sơ riêng từng lần học.
 
 ## Đính chính danh sách Dự án theo STT
 

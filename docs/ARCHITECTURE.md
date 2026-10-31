@@ -1,5 +1,7 @@
 # Thiết kế hệ thống Thực tập và Dự án theo học kỳ
 
+Quy ước tên: nhóm mã `project` hiển thị là **Thực hành nghiên cứu**; hai học phần vẫn là **Dự án công nghệ (INT3132)** và **Dự án khoa học (INT3131)**. Tiêu đề thao tác dùng tên chức năng (Đề tài, Nộp báo cáo, Chấm điểm), không lặp tên nhóm. Mã nhóm, URL và dữ liệu được giữ nguyên.
+
 Ngày cập nhật: **29/10/2026**. Cơ sở nghiệp vụ: [REQUIREMENTS.md](REQUIREMENTS.md). Hướng dẫn vận hành bản hiện có: [README](../README.md).
 
 **Đã cài đặt phần mở rộng trên backend Express và giao diện React.** Mục 2 là mô hình nghiệp vụ và phương án chuẩn hóa; [mục 12](#12-cai-dat-thuc-te-trong-repository) mô tả lưu trữ/API hiện đã có và khác biệt với thiết kế đích. [Hướng dẫn triển khai](IMPLEMENTATION_STATUS.md) ghi lệnh chạy, kết quả kiểm thử và ranh giới nghiệm thu. Ngày 29/10/2026 đã chuyển dữ liệu vào Turso vận hành sau sao lưu/diễn tập; [quy trình phát hành](PRODUCTION_RELEASE.md) mô tả kiểm tra đúng phiên bản Render/Pages.
@@ -111,7 +113,7 @@ Ràng buộc bắt buộc:
 
 Settings toàn cục giữ tích hợp/vận hành chung như Sheets/email. Campaign native là nguồn hạn/nội dung/trạng thái cho các lớp trực thuộc; nhóm/kỳ khác độc lập. Campaign TT legacy dùng adapter các key nguồn cũ, không tạo nguồn ghi thứ hai.
 
-Quota HD Thực tập thuộc học kỳ, tính gộp primary/co trên các lớp TT, giữ mức mặc định GS/PGS 5, TS 8, ThS/khác 10 và ghi đè từng GV. Các mức mặc định lưu ở internship_advisor_settings theo semester_id; không nhân quota khi chia đợt cũ thành nhiều lớp và không cộng sinh viên Dự án vào tải TT. Đây là cấu hình theo nhóm TT trong kỳ, độc lập thời hạn/nội dung của nhóm Dự án.
+Quota HD Thực tập thuộc học kỳ, tính gộp primary/co trên các lớp TT, giữ mức mặc định GS/PGS 5, TS 8, ThS/khác 10 và ghi đè từng GV. Các mức mặc định lưu ở internship_advisor_settings theo semester_id; không nhân quota khi chia đợt cũ thành nhiều lớp và không cộng sinh viên Dự án vào tải TT. Đây là cấu hình theo nhóm TT trong kỳ, độc lập thời hạn/nội dung của nhóm Thực hành nghiên cứu.
 
 Input thời gian là ISO 8601 có offset, lưu UTC, hiển thị `Asia/Ho_Chi_Minh`. Điều kiện ghi: campaign/enrollment active, đúng quyền, `open <= now <= close`, đầu/cuối null là không giới hạn. Draft/archived vẫn chặn ghi. submission_reopen_until cấp hạn sửa riêng cho enrollment; mở khóa điểm không tự gia hạn chấm. Mốc mở sau đóng là lỗi validation.
 
