@@ -32,12 +32,14 @@ export interface ClassSettings {
   plan: string; lecturerGuide: string; studentFaq: string; lecturerFaq: string;
   registrationRules: string;
   allowedCohorts: string; notifyOnCompletion: boolean;
+  publishGradesToStudents: boolean;
 }
 export const EMPTY_CLASS_SETTINGS: ClassSettings = {
   topicOpenAt: '', topicCloseAt: '', submissionOpenAt: '', submissionCloseAt: '',
   gradingOpenAt: '', gradingCloseAt: '', registrationOpenAt: '', registrationCloseAt: '',
   confirmationOpenAt: '', confirmationCloseAt: '', advisorRequestOpenAt: '', advisorRequestCloseAt: '', plan: '', lecturerGuide: '',
   studentFaq: '', lecturerFaq: '', registrationRules: '', allowedCohorts: 'K66,K67,K68', notifyOnCompletion: true,
+  publishGradesToStudents: false,
 };
 export interface AcademicClass {
   campaignId: string;

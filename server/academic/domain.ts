@@ -62,8 +62,8 @@ export function validateSettings(input: unknown, existing = EMPTY_CLASS_SETTINGS
   const settings = { ...existing };
   for (const key of Object.keys(EMPTY_CLASS_SETTINGS) as (keyof ClassSettings)[]) {
     if (!(key in (input as object))) continue;
-    if (key === 'notifyOnCompletion') {
-      if (typeof input[key] !== 'boolean') fail(422, 'INVALID_SETTINGS', 'Giá trị bật thông báo phải là boolean.');
+    if (key === 'notifyOnCompletion' || key === 'publishGradesToStudents') {
+      if (typeof input[key] !== 'boolean') fail(422, 'INVALID_SETTINGS', `Giá trị ${key} phải là boolean.`);
       settings[key] = input[key];
     } else {
       const value = text(input[key]);

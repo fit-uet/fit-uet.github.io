@@ -178,6 +178,24 @@ test('students cannot read other students or any numerical grade payload', async
   assert.ok(!/"(?:score|finalScore|progress|company)"\s*:/.test(JSON.stringify(detail.enrollments)));
   assert.equal((await classDetail(c.id, admin)).enrollments.find(x => x.id === e.id)!.finalScore, 8.2);
 });
+test('students can read their own numerical grade only when publishGradesToStudents is enabled', async () => {
+  const c = await activeClass(); const e = await admit(c); await admit(c, '24020002', 2); await withReviewer(c, e); await submitted(e); await record(e, alpha, 'advisor', 8); await record(e, beta, 'reviewer', 8.5);
+  let detail = await classDetail(c.id, student(e.studentId));
+  assert.equal(detail.enrollments[0].finalScore, undefined);
+  assert.equal(detail.enrollments[0].canSeeGrades, false);
+  const s1 = await snapshot(); const p1 = s1.campaigns!.find(p => p.id === c.campaignId)!;
+  await updateCampaign(admin, p1.id, { expectedRevision: p1.revision, settings: { publishGradesToStudents: true } });
+  detail = await classDetail(c.id, student(e.studentId));
+  assert.equal(detail.enrollments[0].finalScore, 8.2);
+  assert.equal(detail.enrollments[0].canSeeGrades, true);
+  assert.equal(detail.enrollments.length, 1);
+  assert.equal(detail.enrollments[0].studentId, e.studentId);
+  const s2 = await snapshot(); const p2 = s2.campaigns!.find(p => p.id === c.campaignId)!;
+  await updateCampaign(admin, p2.id, { expectedRevision: p2.revision, settings: { publishGradesToStudents: false } });
+  detail = await classDetail(c.id, student(e.studentId));
+  assert.equal(detail.enrollments[0].finalScore, undefined);
+  assert.equal(detail.enrollments[0].canSeeGrades, false);
+});
 test('role ownership, score bounds and incomplete/zero scores are enforced', async () => {
   const c = await activeClass(); const e = await admit(c); await admit(c, '24020002', 2); await withReviewer(c, e);
   await assert.rejects(record(e, beta, 'advisor', 8), rejects('GRADING_DENIED'));

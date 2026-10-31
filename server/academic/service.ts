@@ -31,7 +31,10 @@ export function classSummaries(s: Snapshot, actor: AuthenticatedUser) {
 export function enrollmentView(s: Snapshot, c: AcademicClass, e: CourseEnrollment, actor: AuthenticatedUser): EnrollmentView {
   const lecturer = lecturerFor(s, actor);
   const myAssignment = e.assignments.filter(a => a.lecturerId === lecturer?.id).map(a => a.role);
-  const canSeeGrades = actor.role === 'admin' || myAssignment.some(r => r === 'primary' || r === 'reviewer');
+  const isStaff = actor.role === 'admin' || myAssignment.some(r => r === 'primary' || r === 'reviewer');
+  const isOwnerStudent = Boolean(actor.email && e.email && actor.email.trim().toLowerCase() === e.email.trim().toLowerCase());
+  const studentCanSeeGrades = isOwnerStudent && Boolean(c.settings.publishGradesToStudents);
+  const canSeeGrades = isStaff || studentCanSeeGrades;
   const copy = structuredClone(e);
   if (course(c).group === 'project') delete copy.status;
   const finalScore = totalScore(c, e);

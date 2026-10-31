@@ -2706,7 +2706,7 @@ adminRouter.put('/api/admin/registrations/comments', requireAuth, requireAdmin, 
 adminRouter.get('/api/settings/campaign', async (req: any, res: any) => {
     const settings = rowsToSettings((await db.execute(`
       SELECT key, value FROM settings
-      WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'faq_student_md', 'faq_lecturer_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'grading_open_at', 'grading_close_at', 'advisor_request_open_at', 'advisor_request_close_at', 'advisor_quota_pgs', 'advisor_quota_ts', 'advisor_quota_ths', 'notify_on_grade_submission')
+      WHERE key IN ('campaign_year', 'campaign_start', 'campaign_end', 'classes_list', 'allowed_registration_cohorts', 'registration_rules_md', 'faq_student_md', 'faq_lecturer_md', 'registration_open_at', 'registration_close_at', 'confirmation_open_at', 'confirmation_close_at', 'final_report_open_at', 'final_report_close_at', 'grading_open_at', 'grading_close_at', 'advisor_request_open_at', 'advisor_request_close_at', 'advisor_quota_pgs', 'advisor_quota_ts', 'advisor_quota_ths', 'notify_on_grade_submission', 'publish_grades_to_students')
     `)).rows);
 
     res.json({
@@ -2731,12 +2731,13 @@ adminRouter.get('/api/settings/campaign', async (req: any, res: any) => {
       advisor_quota_pgs: settings.advisor_quota_pgs || '5',
       advisor_quota_ts: settings.advisor_quota_ts || '8',
       advisor_quota_ths: settings.advisor_quota_ths || '10',
-      notify_on_grade_submission: settings.notify_on_grade_submission ?? '1'
+      notify_on_grade_submission: settings.notify_on_grade_submission ?? '1',
+      publish_grades_to_students: settings.publish_grades_to_students ?? '0'
     });
   });
 adminRouter.put('/api/settings/campaign', requireAuth, requireAdmin, async (req: any, res: any) => {
     try {
-      const { year, start, end, classes_list, allowed_registration_cohorts, registration_open_at, registration_close_at, confirmation_open_at, confirmation_close_at, final_report_open_at, final_report_close_at, grading_open_at, grading_close_at, advisor_request_open_at, advisor_request_close_at, advisor_quota_pgs, advisor_quota_ts, advisor_quota_ths, notify_on_grade_submission } = req.body;
+      const { year, start, end, classes_list, allowed_registration_cohorts, registration_open_at, registration_close_at, confirmation_open_at, confirmation_close_at, final_report_open_at, final_report_close_at, grading_open_at, grading_close_at, advisor_request_open_at, advisor_request_close_at, advisor_quota_pgs, advisor_quota_ts, advisor_quota_ths, notify_on_grade_submission, publish_grades_to_students } = req.body;
       const currentAdvisorCloseAt = (((await db.execute("SELECT value FROM settings WHERE key = 'advisor_request_close_at'")).rows as any[])[0]?.value || '').toString();
       const statements: any[] = [
         { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('campaign_year', ?)", args: [year || null] },
@@ -2756,7 +2757,8 @@ adminRouter.put('/api/settings/campaign', requireAuth, requireAdmin, async (req:
         { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('advisor_quota_pgs', ?)", args: [String(advisor_quota_pgs || '5')] },
         { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('advisor_quota_ts', ?)", args: [String(advisor_quota_ts || '8')] },
         { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('advisor_quota_ths', ?)", args: [String(advisor_quota_ths || '10')] },
-        { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('notify_on_grade_submission', ?)", args: [notify_on_grade_submission === '0' ? '0' : '1'] }
+        { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('notify_on_grade_submission', ?)", args: [notify_on_grade_submission === '0' ? '0' : '1'] },
+        { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('publish_grades_to_students', ?)", args: [publish_grades_to_students === '1' ? '1' : '0'] }
       ];
       if (currentAdvisorCloseAt !== String(advisor_request_close_at || '')) {
         statements.push({ sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('advisor_auto_assigned_at', '')", args: [] });

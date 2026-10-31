@@ -8,7 +8,7 @@ import { AdminSettingsSubNav } from '../components/AdminSettingsSubNav';
 export function AdminSettings({ token }: { token: string }) {
   const [sheetUrl, setSheetUrl] = useState('');
   const [exportSheetUrl, setExportSheetUrl] = useState('');
-  const [campaign, setCampaign] = useState({ year: '', registration_open_at: '', registration_close_at: '', classes_list: '', notify_on_grade_submission: '1' } as any);
+  const [campaign, setCampaign] = useState({ year: '', registration_open_at: '', registration_close_at: '', classes_list: '', notify_on_grade_submission: '1', publish_grades_to_students: '0' } as any);
   const [savingUrl, setSavingUrl] = useState(false);
   const [savingCampaign, setSavingCampaign] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -350,6 +350,36 @@ export function AdminSettings({ token }: { token: string }) {
                 type="checkbox"
                 checked={(campaign as any).notify_on_grade_submission !== '0'}
                 onChange={e => setCampaign({ ...campaign, notify_on_grade_submission: e.target.checked ? '1' : '0' } as any)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#034ea1]"></div>
+            </label>
+          </div>
+
+          {/* Cho phép sinh viên xem điểm số */}
+          <div className="md:col-span-2 flex items-center justify-between p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-800">
+                  Cho phép sinh viên xem điểm số
+                </span>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                  (campaign as any).publish_grades_to_students === '1'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}>
+                  {(campaign as any).publish_grades_to_students === '1' ? 'Đang bật' : 'Đang tắt (mặc định)'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Mặc định tắt: sinh viên chỉ theo dõi tiến độ và nhận xét, không xem điểm số trên hệ thống. Khi bật, sinh viên sẽ xem được điểm số và nhận xét chi tiết.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={(campaign as any).publish_grades_to_students === '1'}
+                onChange={e => setCampaign({ ...campaign, publish_grades_to_students: e.target.checked ? '1' : '0' } as any)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#034ea1]"></div>

@@ -145,6 +145,7 @@ function applyReadSettings(s: Snapshot, rows: any[]) {
     }
     for (const [field,key] of Object.entries({ plan:'implementation_plan_md',registrationRules:'registration_rules_md',lecturerGuide:'lecturer_guide_md',studentFaq:'faq_student_md',lecturerFaq:'faq_lecturer_md',allowedCohorts:'allowed_registration_cohorts' })) if (settings[key] !== undefined) p.settings[field] = settings[key];
     p.settings.notifyOnCompletion = settings.notify_on_grade_submission !== '0';
+    p.settings.publishGradesToStudents = settings.publish_grades_to_students === '1';
     for (const c of s.classes.filter(c=>c.campaignId===p.id)) c.settings={...p.settings};
   }
 }

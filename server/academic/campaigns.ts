@@ -48,7 +48,8 @@ export function legacySettingRows(settings: CourseCampaign['settings']) {
     const value = settings[`${field}${suffix}`]; rows.push({ key: `${old}_${key}`, value: value ? new Date(value).toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(' ', 'T').slice(0, 16) : '' });
   }
   for (const [field, key] of Object.entries({ plan: 'implementation_plan_md', registrationRules: 'registration_rules_md', lecturerGuide: 'lecturer_guide_md', studentFaq: 'faq_student_md', lecturerFaq: 'faq_lecturer_md', allowedCohorts: 'allowed_registration_cohorts' })) rows.push({ key, value: String(settings[field] || '') });
-  rows.push({ key: 'notify_on_grade_submission', value: settings.notifyOnCompletion ? '1' : '0' }); return rows;
+  rows.push({ key: 'notify_on_grade_submission', value: settings.notifyOnCompletion ? '1' : '0' });
+  rows.push({ key: 'publish_grades_to_students', value: settings.publishGradesToStudents ? '1' : '0' }); return rows;
 }
 export async function updateCampaign(actor: AuthenticatedUser, id: string, input: any) {
   requireAdmin(actor); const s = await snapshot(); const old = getCampaign(s, id); const p = structuredClone(old);

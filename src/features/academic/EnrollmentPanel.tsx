@@ -9,7 +9,7 @@ import { Button, FormField } from '../../shared/ui';
 import { Badge } from '../../shared/ui/Badge';
 import type { AcademicClassSummary, EnrollmentView, LecturerInfo, SubmissionVersion } from '../../shared/academic';
 import { academicApi, academicPdf, academicDownload } from './client';
-import type { EnrollmentPanelMode } from './campaignPresentation';
+import { projectVersionResult, toLetterGrade, type EnrollmentPanelMode } from './campaignPresentation';
 import { ProjectTopic } from './ProjectTopic';
 import { academicInput, isoLocal } from './form';
 
@@ -618,9 +618,77 @@ export function EnrollmentPanel({
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
-                    Điểm chính thức của học phần được quản lý theo quy chế đào tạo và tra cứu tại Cổng Đào tạo.
-                  </div>
+                  {/* Nếu hệ thống cho phép sinh viên xem điểm số và đã có kết quả điểm */}
+                  {c.settings.publishGradesToStudents && e.canSeeGrades ? (
+                    <div className="space-y-3">
+                      {e.finalScore != null ? (
+                        <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-xs font-semibold text-emerald-900 block">Điểm tổng kết học phần</span>
+                              <span className="text-[11px] text-emerald-700">Thang điểm 10 (GVHD 60% + GVNX 40%)</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-black text-emerald-800">{e.finalScore.toFixed(1)}</span>
+                              {toLetterGrade(e.finalScore) && (
+                                <span className="text-sm font-bold px-2 py-0.5 rounded-md bg-emerald-200/80 text-emerald-900">
+                                  {toLetterGrade(e.finalScore)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Chi tiết thành phần điểm */}
+                          {(() => {
+                            const res = projectVersionResult(e, current.id);
+                            return (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-emerald-200/60 text-xs">
+                                <div className="p-2.5 rounded-lg bg-white/80 border border-emerald-100 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-slate-600">Điểm GVHD (60%):</span>
+                                    <strong className="text-slate-900 text-sm">
+                                      {res.pair.advisor?.score != null ? res.pair.advisor.score.toFixed(1) : '—'}
+                                    </strong>
+                                  </div>
+                                  {res.pair.advisor?.comment && (
+                                    <p className="text-[11px] text-slate-500 italic mt-0.5 pt-1 border-t border-slate-100">
+                                      "{res.pair.advisor.comment}"
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="p-2.5 rounded-lg bg-white/80 border border-emerald-100 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-slate-600">Điểm GVNX (40%):</span>
+                                    <strong className="text-slate-900 text-sm">
+                                      {res.pair.reviewer?.score != null ? res.pair.reviewer.score.toFixed(1) : '—'}
+                                    </strong>
+                                  </div>
+                                  {res.pair.reviewer?.comment && (
+                                    <p className="text-[11px] text-slate-500 italic mt-0.5 pt-1 border-t border-slate-100">
+                                      "{res.pair.reviewer.comment}"
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      ) : e.gradeStatus === 'partial' ? (
+                        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                          <strong>Đang chấm điểm:</strong> Giảng viên đang tiến hành đánh giá bài nộp của bạn. Điểm số chi tiết sẽ hiển thị khi cả GVHD và GVNX hoàn tất chấm điểm.
+                        </div>
+                      ) : (
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                          Chưa có kết quả điểm số. Điểm sẽ hiển thị tại đây sau khi hội đồng giảng viên hoàn tất đánh giá.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                      Điểm chính thức của học phần được quản lý theo quy chế đào tạo và tra cứu tại Cổng Đào tạo.
+                    </div>
+                  )}
                 </div>
               </div>
             </main>
