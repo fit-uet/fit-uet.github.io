@@ -397,9 +397,6 @@ export function NotificationAdmin({ token }: { token: string }) {
                 Lịch sử thông báo & Email
                 <PageDescriptionTooltip description="Quản trị hàng đợi email, phát thông báo tự động và soạn thông báo thủ công tới sinh viên/giảng viên." />
               </h1>
-              <p className="text-xs text-[#64748b] mt-0.5 font-medium">
-                Theo dõi nhật ký email, hàng đợi thông báo hệ thống và quota gửi
-              </p>
             </div>
           </div>
         </div>

@@ -92,9 +92,6 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
                 Cài đặt Quy định đăng ký
                 <PageDescriptionTooltip description="Chỉnh sửa nội dung quy định học phần hiển thị cho sinh viên trên hệ thống bằng định dạng Markdown." />
               </h1>
-              <p className="text-xs text-[#64748b] mt-0.5 font-medium">
-                Quy chế, điều kiện tín chỉ & hướng dẫn đăng ký thực tập
-              </p>
             </div>
           </div>
         </div>

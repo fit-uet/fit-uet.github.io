@@ -103,7 +103,6 @@ export function AdminRegistry({ token }: { token: string }) {
             <Shield className="text-[#034ea1]" size={24} /> Quản lý Quản trị viên
             <PageDescriptionTooltip description="Danh sách các tài khoản có quyền Admin. Admin có thể đồng thời là Giảng viên." />
           </h2>
-          <p className="text-xs text-slate-500 mt-1">Quản lý quyền truy cập quản trị và vai trò giảng viên đi kèm.</p>
         </div>
       </div>
 

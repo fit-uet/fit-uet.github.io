@@ -180,7 +180,6 @@ export function AdminSettings({ token }: { token: string }) {
           </div>
           Cài đặt hệ thống
         </h2>
-        <p className="text-xs text-slate-500 mt-1">Quản lý campaign, phạm vi sinh viên và các kết nối dữ liệu của hệ thống.</p>
       </div>
 
       {/* Sub Navigation Bar for Settings */}

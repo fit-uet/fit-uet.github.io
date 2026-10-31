@@ -319,9 +319,6 @@ export function LecturerGradeView({ token, user, initialCourseCode = '' }: { tok
                     }
                   />
                 </h1>
-                <p className="text-xs text-[#64748b] mt-0.5 font-medium">
-                  Bấm «Xem & Chấm» để mở khung xem PDF và nhập điểm đồng thời trên màn hình
-                </p>
               </div>
             </div>
           </div>

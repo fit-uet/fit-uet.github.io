@@ -131,9 +131,6 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
                 Cài đặt FAQ
                 <PageDescriptionTooltip description="Chọn nhóm người dùng và chỉnh nội dung FAQ hiển thị cho sinh viên hoặc giảng viên bằng Markdown." />
               </h1>
-              <p className="text-xs text-[#64748b] mt-0.5 font-medium">
-                Biên soạn câu hỏi thường gặp cho Sinh viên & Giảng viên
-              </p>
             </div>
           </div>
         </div>
