@@ -336,7 +336,7 @@ export function EnrollmentPanel({
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Khai báo & Duyệt đề tài Dự án</h3>
                     <p className="text-xs text-slate-500 mt-1">
-                      Hạn duyệt đề tài: {c.settings.topicCloseAt ? formatGMT7(c.settings.topicCloseAt) : 'Theo kế hoạch'} (GMT+7) · GVHD: <strong className="text-slate-700">{primaryLecturerName || 'Chờ phân công'}</strong>
+                      Giảng viên hướng dẫn: <strong className="text-slate-700">{primaryLecturerName || 'Chờ phân công'}</strong>
                     </p>
                   </div>
                   <div>
@@ -361,9 +361,6 @@ export function EnrollmentPanel({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Báo cáo & Bộ bài nộp Dự án</h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Hạn nộp: {c.settings.submissionCloseAt ? formatGMT7(c.settings.submissionCloseAt) : 'Theo kế hoạch'} (GMT+7)
-                    </p>
                   </div>
                   <div>
                     <Badge variant={requiresResubmission ? 'warning' : current.state === 'submitted' ? 'success' : 'neutral'} size="md">
@@ -552,9 +549,6 @@ export function EnrollmentPanel({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Đánh giá & Điểm số</h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Hạn chấm: {c.settings.gradingCloseAt ? formatGMT7(c.settings.gradingCloseAt) : 'Theo kế hoạch'} (GMT+7)
-                    </p>
                   </div>
                   <div>
                     <Badge variant={['complete', 'locked'].includes(e.gradeStatus) ? 'success' : 'neutral'} size="md">

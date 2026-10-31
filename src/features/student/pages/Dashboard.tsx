@@ -1056,9 +1056,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Báo cáo thực tập</h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Hạn nộp: {campaign.final_report_close_at ? formatGMT7(campaign.final_report_close_at) : 'Chưa thiết lập'} (GMT+7)
-                  </p>
                 </div>
                 <div>
                   {finalReport?.status === 'accepted' ? (
@@ -1364,9 +1361,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Xác nhận nơi thực tập</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Hạn xác nhận: {campaign.confirmation_close_at ? formatGMT7(campaign.confirmation_close_at) : 'Chưa thiết lập'} (GMT+7)
-                </p>
               </div>
               {finalInternship && (
                 <Badge variant="success" size="md">
@@ -1453,9 +1447,6 @@ export function Dashboard({ user, setUser, token, onAuthExpired }: { user: any, 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Giảng viên hướng dẫn</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Hạn đăng ký GVHD: {campaign.advisor_request_close_at ? formatGMT7(campaign.advisor_request_close_at) : 'Chưa thiết lập'} (GMT+7)
-                </p>
               </div>
               <div className="flex items-center gap-2">
                 {myAdvisors.length > 0 ? (
