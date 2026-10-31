@@ -68,16 +68,24 @@ export function campaignQuery(current: URLSearchParams, patch: Record<string, st
 export const panelForPage = (page: string): EnrollmentPanelMode => ['assignments', 'reports', 'grades'].includes(page) ? page as EnrollmentPanelMode : 'profile';
 export const lecturerNames = (e: EnrollmentView, lecturers: LecturerInfo[], role: string) => e.assignments.filter(a => a.role === role).map(a => lecturers.find(l => l.id === a.lecturerId)?.name || 'Giảng viên').join('; ') || 'Chưa phân công';
 
+export const HEADER_ICON_MODULE_IDS = new Set(['chat', 'announcements']);
+
 export function campaignNavigation(modules: ReturnType<typeof campaignModules>, role: string, internship: boolean, wide = true) {
-  const primaryIds = role === 'admin'
-    ? ['overview', 'students', ...(internship ? ['registrations', 'final-internships'] : []), 'assignments', 'reports', 'grades']
-    : role === 'student' ? ['students', 'chat', ...(internship ? ['reports'] : [])] : ['students', 'reports', 'grades', 'chat'];
-  const visible = primaryIds.filter(id => modules.some(m => m.id === id)).slice(0, wide ? undefined : 2);
-  const labels: Record<string, string> = { students: role === 'student' ? 'Hồ sơ' : internship ? 'Sinh viên' : 'Danh sách sinh viên', reports: 'Báo cáo' };
-  return {
-    primary: visible.map(id => ({ ...modules.find(m => m.id === id)!, label: labels[id] || modules.find(m => m.id === id)!.title })),
-    more: modules.filter(m => !visible.includes(m.id)),
+  const available = modules.filter(m => !HEADER_ICON_MODULE_IDS.has(m.id));
+  const labels: Record<string, string> = {
+    students: role === 'student' ? 'Hồ sơ' : internship ? 'Sinh viên' : 'Danh sách sinh viên',
+    reports: 'Báo cáo',
+    grades: internship ? 'Bảng điểm' : 'Chấm điểm',
   };
+  const primary = (wide ? available : available.slice(0, 2)).map(m => ({
+    ...m,
+    label: labels[m.id] || m.title,
+  }));
+  const more = (wide ? [] : available.slice(2)).map(m => ({
+    ...m,
+    label: labels[m.id] || m.title,
+  }));
+  return { primary, more };
 }
 
 export function campaignSwitchQuery(current: URLSearchParams, modules: ReturnType<typeof campaignModules>, preserveTeaching: boolean) {

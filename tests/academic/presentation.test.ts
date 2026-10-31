@@ -32,16 +32,23 @@ test('legacy course filters match canonical codes against stored full names with
   assert.equal(matchesCourseCode(null, ''), true);
 });
 
-test('compact navigation keeps every permitted function reachable on desktop and mobile', async () => {
-  const {campaignNavigation} = await import('../../src/features/academic/campaignPresentation');
+test('campaign navigation displays non-icon features horizontally on desktop and compacts on mobile', async () => {
+  const {campaignNavigation, HEADER_ICON_MODULE_IDS} = await import('../../src/features/academic/campaignPresentation');
   for (const role of ['admin','lecturer','student']) for (const internship of [false,true]) {
     const modules = campaignModules(role==='admin', role==='student', internship);
+    const nonIconModules = modules.filter(m => !HEADER_ICON_MODULE_IDS.has(m.id));
     for (const wide of [true,false]) {
       const nav = campaignNavigation(modules, role, internship, wide);
       const ids = [...nav.primary,...nav.more].map(m=>m.id);
-      assert.equal(new Set(ids).size, modules.length);
-      assert.deepEqual([...ids].sort(), modules.map(m=>m.id).sort());
-      if (!wide) assert.equal(nav.primary.length, 2);
+      assert.equal(new Set(ids).size, nonIconModules.length);
+      assert.deepEqual([...ids].sort(), nonIconModules.map(m=>m.id).sort());
+      if (wide) {
+        assert.equal(nav.primary.length, nonIconModules.length);
+        assert.equal(nav.more.length, 0);
+      } else {
+        assert.equal(nav.primary.length, 2);
+        assert.equal(nav.more.length, nonIconModules.length - 2);
+      }
       if (role==='student') assert.equal(nav.primary[0].label, 'Hồ sơ');
     }
   }
