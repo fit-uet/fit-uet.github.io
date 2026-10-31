@@ -40,6 +40,27 @@ export async function initAcademicSchema(client: DatabaseClient) {
     `CREATE UNIQUE INDEX IF NOT EXISTS academic_notification_event ON notifications(academic_event_id) WHERE academic_event_id IS NOT NULL`,
     `CREATE TABLE IF NOT EXISTS academic_file_cleanup(id TEXT PRIMARY KEY,job_id TEXT NOT NULL,kind TEXT NOT NULL,object_key TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,last_error TEXT)`,
     `CREATE TABLE IF NOT EXISTS academic_deletions(id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL,actor_id INTEGER NOT NULL,enrollment_ids TEXT NOT NULL,reason TEXT NOT NULL,created_at TEXT NOT NULL)`,
+    `CREATE TRIGGER IF NOT EXISTS academic_project_admission_guard BEFORE INSERT ON academic_commands
+    WHEN NEW.action='admin.project.add' BEGIN
+      SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM users WHERE id=NEW.actor_id AND role='admin') THEN RAISE(ABORT,'ACADEMIC_ADMIN_REQUIRED') END;
+      SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM academic_campaigns p JOIN academic_classes c
+        ON COALESCE(json_extract(c.data,'$.campaignId'),c.semester_id||':project')=p.id
+        WHERE p.id=json_extract(NEW.payload,'$.projectAdmission.campaignId') AND p.course_group='project'
+          AND c.id=json_extract(NEW.payload,'$.projectAdmission.classId') AND json_extract(c.data,'$.courseCode') IN ('INT3131','INT3132')
+          AND json_extract(p.data,'$.revision')=json_extract(NEW.payload,'$.projectAdmission.campaignRevision')
+          AND json_extract(p.data,'$.status') IN ('draft','active') AND COALESCE(json_extract(p.data,'$.pendingMigration'),0)!=1
+      ) THEN RAISE(ABORT,'ACADEMIC_STALE') END;
+      SELECT CASE WHEN json_type(NEW.payload,'$.projectAdmission.account')='null' AND EXISTS(SELECT 1 FROM users
+        WHERE student_id=json_extract(NEW.payload,'$.projectAdmission.studentId') OR lower(email)=json_extract(NEW.payload,'$.projectAdmission.email'))
+        THEN RAISE(ABORT,'ACADEMIC_STALE') END;
+      SELECT CASE WHEN json_type(NEW.payload,'$.projectAdmission.account')!='null' AND NOT EXISTS(SELECT 1 FROM users u
+        WHERE u.id=json_extract(NEW.payload,'$.projectAdmission.account.id') AND u.role='student'
+          AND u.email=json_extract(NEW.payload,'$.projectAdmission.account.email') AND u.student_id=json_extract(NEW.payload,'$.projectAdmission.studentId')
+          AND u.name=json_extract(NEW.payload,'$.projectAdmission.account.name')
+          AND COALESCE(u.dob,'')=json_extract(NEW.payload,'$.projectAdmission.account.dob')
+          AND COALESCE(u.class_name,'')=json_extract(NEW.payload,'$.projectAdmission.account.className'))
+        THEN RAISE(ABORT,'ACADEMIC_STALE') END;
+    END`,
     `CREATE TRIGGER IF NOT EXISTS academic_command_apply_v4 AFTER INSERT ON academic_commands BEGIN
       SELECT CASE WHEN (SELECT revision FROM academic_meta WHERE id=1) != NEW.expected_revision THEN RAISE(ABORT,'ACADEMIC_STALE') END;
       SELECT CASE WHEN json_extract(NEW.payload,'$.membershipMigration')=1 AND EXISTS(SELECT 1 FROM academic_enrollments e JOIN academic_classes c ON c.id=e.class_id WHERE json_extract(c.data,'$.courseCode') IN ('INT3131','INT3132') AND json_extract(e.data,'$.status')='withdrawn') THEN RAISE(ABORT,'PROJECT_MEMBERSHIP_CONFLICT') END;

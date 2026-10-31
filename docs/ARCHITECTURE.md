@@ -551,3 +551,8 @@ Cài đặt thực tế vẫn dùng JSON enrollment: `topicReview`, `topicSubmis
 ### Danh sách Dự án và xóa lần học (schema v4)
 
 [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md) mô tả projection `student-list`, bulk PATCH có kiểm quota/trạng thái cuối, xóa hai bước, hàng đợi R2 và audit tối thiểu. JSON Dự án không còn `status`; TT giữ trường cũ. Khởi động dừng khi phát hiện Dự án withdrawn, migration dùng snapshot revision nhất quán và guard trong trigger. Readiness yêu cầu schema 4; cache metadata kiểm revision để quyền bị thu hồi ngay sau xóa. Không có chuyển đổi file hay điểm.
+
+
+### Tách Chấm điểm và tiếp nhận thủ công Dự án
+
+Projection `students` loại điểm/đánh giá, `grades` trả điểm được phép xem và `gradingSummary` toàn bộ kết quả lọc. Màn chấm lấy chi tiết theo enrollment khi chọn, PDF cache có kiểm quyền, giữ draft/revision khi cập nhật nền. Các URL chấm dùng `tab=grades`, không alias về students. Tiếp nhận thủ công thêm GET lookup/POST enrollment theo campaign, command/CAS cùng một statement và BEFORE INSERT guard campaign/class/identity, không dùng upsert danh mục. Không cần data migration, readiness schema 4 được giữ. Chi tiết API, quyền và nghiệm thu tại [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md).

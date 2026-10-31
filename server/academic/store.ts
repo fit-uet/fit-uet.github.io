@@ -44,6 +44,7 @@ export async function snapshot(): Promise<Snapshot> {
   return result;
 }
 export interface ChangeSet {
+  projectAdmission?:{campaignId:string;campaignRevision:number;classId:string;studentId:string;email:string;account:{id:number;email:string;studentId:string;name:string;dob:string;className:string;role:string}|null};
   membershipMigration?:boolean;
   deletedEnrollmentIds?:string[]; purgeCommands?:{id:unknown;paths:string[]}[]; deletePreviewIds?:string[];
   cleanupFiles?:{id:string;jobId:string;kind:string;objectKey:string}[];

@@ -70,6 +70,12 @@ test('read projections only return a page, omit history and never expose student
  const details=await readEnrollment(sv,own.items[0].id);assert.equal(details.view.id,own.items[0].id);
  await assert.rejects(readEnrollment(sv,page.items.find(e=>e.email!==sv.email)!.id),(e:any)=>e.code==='CLASS_ACCESS_DENIED');
 });
+test('separate roster omits numerical grades and grading progress aggregates all filtered pages',async()=>{
+ const roster=await readCampaignEnrollments(admin,campaignId,{projection:'students'});
+ for(const e of roster.items)for(const field of ['evaluations','internshipGrade','finalScore'])assert.ok(!(field in e));
+ const grades=await readCampaignEnrollments(admin,campaignId,{projection:'grades',limit:1,classId:firstClass});
+ assert.equal(grades.items.length,1);assert.deepEqual((grades as any).gradingSummary,{advisorSubmitted:40,reviewerSubmitted:20,completed:20,locked:1});
+});
 test('light campaign sections omit content and summary counts match the old model',async()=>{
  const old=await campaignDetail(admin,campaignId);const light=await readCampaignDetail(admin,campaignId,'base'),overview=await readCampaignDetail(admin,campaignId,'overview');
  assert.equal(light.campaign.enrollmentCount,old.campaign.enrollmentCount);assert.equal(light.campaign.studentCount,old.campaign.studentCount);assert.deepEqual(light.stats,{});assert.equal(light.campaign.settings.plan,'');

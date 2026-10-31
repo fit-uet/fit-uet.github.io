@@ -62,7 +62,7 @@ async function main(){
     for(const[version,readers]of versions){
       if(version==='current')await local.prepare("CREATE INDEX IF NOT EXISTS academic_enrollment_email ON academic_enrollments(lower(json_extract(data,'$.email')))").all();
       for(const[role,actor]of actors){
-        const operations:Array<[string,()=>Promise<any>]>=[['catalog',()=>readers.readCampaignCatalog(actor,'base')],['base',()=>readers.readCampaignDetail(actor,campaignId,'base')],['overview',()=>readers.readCampaignDetail(actor,campaignId,'overview')],['list25',()=>readers.readCampaignEnrollments(actor,campaignId,{projection:'student-list',limit:25},false,undefined,false)]];
+        const operations:Array<[string,()=>Promise<any>]>=[['catalog',()=>readers.readCampaignCatalog(actor,'base')],['base',()=>readers.readCampaignDetail(actor,campaignId,'base')],['overview',()=>readers.readCampaignDetail(actor,campaignId,'overview')],['roster25',()=>readers.readCampaignEnrollments(actor,campaignId,{projection:'students',limit:25},false,undefined,false)],['grades25',()=>readers.readCampaignEnrollments(actor,campaignId,{projection:'grades',limit:25},false,undefined,false)],['list25',()=>readers.readCampaignEnrollments(actor,campaignId,{projection:'student-list',limit:25},false,undefined,false)]];
         if(role!=='lecturer')operations.push(['detail',()=>readers.readEnrollment(actor,ownId)]);
         for(const[operation,run]of operations){
           readers.invalidateReadCache();metrics=[];const value=await run();results.set(`${version}:${role}:${operation}`,value);

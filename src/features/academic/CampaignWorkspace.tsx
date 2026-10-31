@@ -16,6 +16,7 @@ import { Button, FormField } from '../../shared/ui';
 import { GROUP_NAMES, type AcademicClassSummary, type EnrollmentView } from '../../shared/academic';
 import { academicApi, academicDownload, clearAcademicPdfCache } from './client';
 import { clearReportReviewCache } from '../lecturer/pages/ReportReviewPanel';
+const ProjectGrading = lazy(()=>import('./ProjectGrading').then(m=>({default:m.ProjectGrading})));
 const ProjectStudentList = lazy(()=>import('./ProjectStudentList').then(m=>({default:m.ProjectStudentList})));
 const PlanSettingsAdmin = lazy(() => import('../admin/pages/PlanSettingsAdmin').then(module => ({default:module.PlanSettingsAdmin})));
 const LecturerGuideSettingsAdmin = lazy(() => import('../admin/pages/LecturerGuideSettingsAdmin').then(module => ({default:module.LecturerGuideSettingsAdmin})));
@@ -52,12 +53,12 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
   const [data, setData] = useState<Meta | null>(null), [rows, setRows] = useState<Page | null>(null), [selected, setSelected] = useState<EnrollmentView | null>(null);
   const modules = campaignModules(actor.role === 'admin', actor.role === 'student', data?.campaign.group === 'internship');
   const projectManagement = data?.campaign.group==='project' && actor.role!=='student';
-  const tab = projectManagement && ['students','assignments','reports','grades'].includes(requestedTab) ? 'students' : modules.some(item => item.id === requestedTab) ? requestedTab : defaultTab;
+  const tab = projectManagement && ['students','assignments','reports'].includes(requestedTab) ? 'students' : modules.some(item => item.id === requestedTab) ? requestedTab : defaultTab;
   useEffect(()=>{if(!projectManagement)return;const next=projectListQuery(query);if(next.toString()!==query.toString())setQuery(next,{replace:true});},[projectManagement,query.toString()]);
   useEffect(()=>{const reset=()=>{appliedQuery.current=query;};window.addEventListener('project-navigation-blocked',reset);return()=>window.removeEventListener('project-navigation-blocked',reset);},[query]);
   const [chat, setChat] = useState<any>(null), [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
   const filters = Object.fromEntries(['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'assignmentStatus', 'submissionStatus', 'gradeStatus', 'q', 'page'].map(k => [k, query.get(k) || '']).filter(([, v]) => v));
-  if(projectManagement&&query.get('enrollmentId'))filters.focusEnrollmentId=query.get('enrollmentId')!;
+  if(projectManagement&&query.get('enrollmentId')&&!query.get('page'))filters.focusEnrollmentId=query.get('enrollmentId')!;
   if (teachingView) filters.lecturerId = String(data?.lecturers.find(l => l.email.toLowerCase() === user.email.toLowerCase())?.id ?? -1);
   const [search, setSearch] = useState(query.get('q') || '');
   useEffect(() => { const timer = window.setTimeout(() => setSearch(query.get('q') || ''), 300); return () => window.clearTimeout(timer); }, [query.get('q')]);
@@ -79,7 +80,7 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
     const result = await academicApi<Meta>(token, `/api/campaigns/${id}?section=${section}`, 'GET', undefined, signal, {scope:cacheScope}); if (signal?.aborted || active.current.metaKey !== metaKey) return; setData(result);setDataKey(metaKey); sessionStorage.setItem('academic:campaign', id); sessionStorage.setItem('academic:semester', result.campaign.semesterId);
   }, [token, id, section, cacheScope, metaKey]);
   const loadRows = useCallback(async (signal?: AbortSignal) => {
-    const result = await academicApi<Page>(token, `/api/campaigns/${id}/enrollments?${filterKey}${projectManagement ? '&projection=student-list' : ['students','assignments','reports','grades'].includes(tab) ? '&projection=' + tab : ''}`, 'GET', undefined, signal, {scope:cacheScope});
+    const result = await academicApi<Page>(token, `/api/campaigns/${id}/enrollments?${filterKey}${projectManagement ? '&projection='+ (tab==='grades'?'grades':'students') : ['students','assignments','reports','grades'].includes(tab) ? '&projection=' + tab : ''}`, 'GET', undefined, signal, {scope:cacheScope});
     if (!signal?.aborted && active.current.rowsKey === rowsKey) setRows(result);
   }, [token, id, filterKey, tab, cacheScope, rowsKey, projectManagement]);
   const needsRows = Boolean(data && recordPages.includes(tab) && !(data.campaign.legacy && data.campaign.status === 'active' && hasLegacyPanel(actor, tab)));
@@ -133,6 +134,7 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
       {tab === 'overview' && admin && <CampaignDashboard data={data} modules={modules} navigate={go} token={token} reload={() => runOnly(async()=>{refreshRequestCache();await refresh();})} />}
       {showImport && tab === 'students' && admin && project && <ImportPanel token={token} semesterId={p.semesterId} onImported={refresh} />}
       {legacyPanel ? (!currentMeta ? <p role="status">Đang tải chức năng…</p> : <LegacyCampaignPanels key={`${tab}:${chosenClass?.courseCode || query.get('courseCode') || ''}`} token={token} user={actor} tab={tab} courseCode={chosenClass?.courseCode || query.get('courseCode') || ''} />) : <>
+        {projectManagement && tab==='grades' && <ProjectGrading token={token} page={rows} refresh={refresh}/>}
         {projectManagement && tab==='students' && <ProjectStudentList key={`${id}:${actor.role}`} token={token} page={rows} refresh={refresh} importAction={()=>setShowImport(value=>!value)}/>}
         {recordPages.includes(tab) && !student && !projectManagement && <CampaignRecords token={token} page={rows} tab={tab} project={project} lecturer={!admin} lecturers={data.lecturers} query={query} editQuery={editQuery} open={open} exportFile={exportFile} busy={busy} extraActions={admin && project && tab==='students' && p.status!=='archived' ? <Button size="sm" variant="primary" leadingIcon={<Upload size={14}/>} onClick={()=>setShowImport(value=>!value)}>{showImport?'Đóng import':'Import danh sách'}</Button> : null}/>}
         {student && tab === 'students' && <section className="space-y-5">{rows && rows.items.length > 1 && <div className="bg-white border border-slate-200 rounded-xl p-5"><h2 className="font-semibold text-sm mb-3">Hồ sơ học phần của tôi</h2><div className="grid sm:grid-cols-2 gap-3">{rows.items.map(e => <button key={e.id} onClick={() => editQuery({ enrollmentId: e.id, panel: '' })} aria-pressed={selectedId === e.id} className={`text-left p-4 border rounded-xl transition-colors ${selectedId === e.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'}`}><span className="block font-semibold text-sm text-[#034ea1]">{e.courseCode} · {e.classCode}</span><span className="block text-xs text-slate-600 mt-2">{e.topic || 'Chưa khai đề tài'}</span><span className="block text-[11px] text-slate-500 mt-2">{e.topicPermissions?.requiresResubmission ? 'Cần nộp lại theo đề tài' : e.versions.at(-1)?.state === 'submitted' ? 'Đã nộp bộ bài' : 'Chưa hoàn tất bài nộp'}</span></button>)}</div></div>}{selected && selectedClass ? <EnrollmentPanel key={selected.id} token={token} user={actor} courseClass={selectedClass} enrollment={selected} lecturers={data.lecturers} refresh={refresh} /> : <div className="p-8 bg-white rounded-xl border border-slate-200 text-sm text-center text-slate-500">{!rows ? 'Đang tải hồ sơ…' : rows.items.length ? 'Chọn hồ sơ học phần để xem thông tin và nộp bài.' : 'Bạn chưa có hồ sơ học phần trong nhóm này.'}</div>}</section>}
@@ -150,7 +152,7 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
         ) : null;
         return <EnrollmentDialog title={panel === 'assignments' ? 'Phân công giảng viên' : panel === 'reports' || panel === 'grades' ? 'Báo cáo và đánh giá' : 'Hồ sơ sinh viên'} close={() => editQuery({ enrollmentId: '', panel: '' })} actions={navActions}>{selected && selectedClass ? <EnrollmentPanel key={`${selected.id}:${panel}`} mode={panel} token={token} user={actor} courseClass={selectedClass} enrollment={selected} lecturers={data.lecturers} refresh={refresh} /> : <p className="p-10 text-center text-sm text-slate-500">{error || 'Đang tải hồ sơ…'}</p>}</EnrollmentDialog>;
       })()}
-      {admin && !projectManagement && !legacyPanel && p.status === 'active' && tab === 'grades' && (
+      {admin && !legacyPanel && p.status === 'active' && tab === 'grades' && (!projectManagement||!selectedId) && (
         <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5">

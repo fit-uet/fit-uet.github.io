@@ -12,6 +12,7 @@ import { createClass, createSemester, updateClass } from '../server/academic/ser
 import { commit, snapshot } from '../server/academic/store';
 import { updateCampaign } from '../server/academic/campaigns';
 import { newEnrollment, newSemester } from '../server/academic/domain';
+import {addProjectStudent,lookupProjectStudent} from '../server/academic/projectAdmission';
 
 const directory = await mkdtemp(join(tmpdir(), 'academic-d1-'));
 const client = await createAcademicFixture();
@@ -36,6 +37,9 @@ try {
   const e = newEnrollment(c, { studentId: '24020001', name: 'D1 fixture' });
   await commit(await snapshot(), admin.id, 'admin.fixture', { enrollments: [e], users: [{ studentId: e.studentId, email: e.email, name: e.name, dob: '', className: '' }] });
   const commands = (await db.execute('SELECT * FROM academic_commands ORDER BY rowid')).rows;
+  const lookup=await lookupProjectStudent(admin,c.campaignId,'24020003');
+  await addProjectStudent(admin,c.campaignId,{expectedRevision:lookup.revision,classId:c.id,studentId:'24020003',name:'D1 manual admission'});
+  const admission=(await db.execute("SELECT * FROM academic_commands WHERE action='admin.project.add' ORDER BY rowid DESC LIMIT 1")).rows[0];
   sql.push(...commands.map(row => insert('academic_commands', row)));
   await writeFile(config, 'name="academic-local-check"\ncompatibility_date="2026-10-01"\n[[d1_databases]]\nbinding="ACADEMIC_DB"\ndatabase_name="academic-local-check"\ndatabase_id="00000000-0000-0000-0000-000000000000"\n');
   const setup = join(directory, 'setup.sql'); await writeFile(setup, sql.join('\n')); await run(['--file', setup]);
@@ -52,5 +56,15 @@ try {
   assert.deepEqual(removed,{enrollments:0,private:0,groups:1,reads:0,files:1,jobs:1});
   const audit=(await run(['--command',`SELECT payload FROM academic_commands WHERE id=${literal(commands.at(-1)!.id)}`]))[0].results[0];assert.equal(JSON.parse(audit.payload).enrollments.length,0);
   const minimal=(await run(['--command',"SELECT payload FROM academic_commands WHERE id='delete-check'"]))[0].results[0];assert.deepEqual(JSON.parse(minimal.payload),{deletedEnrollmentIds:[e.id],jobId:'delete-check'});
+  await run(['--command',insert('academic_commands',{...admission,expected_revision:5})]);
+  const admitted=(await run(['--command',"SELECT (SELECT count(*) FROM academic_enrollments WHERE student_id='24020003') enrollments,(SELECT legacy_internship_access FROM users WHERE student_id='24020003') legacy"]))[0].results[0];
+  assert.deepEqual(admitted,{enrollments:1,legacy:0});
+  await assert.rejects(run(['--command',insert('academic_commands',{...admission,id:'admission-race',expected_revision:6})]),e=>/ACADEMIC_STALE/.test(String(e)));
+  await run(['--command',"CREATE TRIGGER reject_test_admission BEFORE INSERT ON academic_enrollments WHEN NEW.student_id='24020004' BEGIN SELECT RAISE(ABORT,'TEST_ADMISSION_ROLLBACK'); END"]);
+  const failed=JSON.parse(String(admission.payload));
+  failed.projectAdmission.studentId='24020004';failed.projectAdmission.email='24020004@vnu.edu.vn';
+  Object.assign(failed.users[0],{studentId:'24020004',email:'24020004@vnu.edu.vn'});Object.assign(failed.enrollments[0],{id:'failed-admission',studentId:'24020004',email:'24020004@vnu.edu.vn'});
+  await assert.rejects(run(['--command',insert('academic_commands',{...admission,id:'failed-admission',expected_revision:6,payload:JSON.stringify(failed)})]),e=>/TEST_ADMISSION_ROLLBACK/.test(String(e)));
+  const rollback=(await run(['--command',"SELECT (SELECT count(*) FROM users WHERE student_id='24020004') users,(SELECT count(*) FROM academic_enrollments WHERE student_id='24020004') enrollments,(SELECT count(*) FROM academic_commands WHERE id='failed-admission') commands"]))[0].results[0];assert.deepEqual(rollback,{users:0,enrollments:0,commands:0});
   console.log('D1 local: schema, admissions, stale-command rejection, full rollback, scoped deletion and durable cleanup passed.');
 } finally { client.close(); await rm(directory, { recursive: true, force: true }); }
