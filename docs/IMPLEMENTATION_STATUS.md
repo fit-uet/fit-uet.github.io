@@ -1,5 +1,7 @@
 # Bản cài đặt học kỳ, nhóm môn và Dự án
 
+**Cập nhật 01/11/2026:** đã chuyển dữ liệu D1 mới nhất về Turso, schema 4; D1 giữ chỉ đọc. Bảo toàn 1.100 lần học, gồm 409 Thực hành nghiên cứu và 691 Thực tập, cùng 208 hồ sơ legacy chưa ánh xạ, 675 điểm và 644 báo cáo. Quy trình/bản sao: [D1_FAILOVER.md](D1_FAILOVER.md). Các số liệu và cấu hình D1 ngày 30/10 bên dưới là lịch sử đợt failover.
+
 Ngày cập nhật: **30/10/2026**. Bản mở rộng dùng backend **Express** và frontend React, production hiện dùng **D1 tạm thời** theo [D1_FAILOVER.md](D1_FAILOVER.md). Bản ứng dụng `68d9548` đã phát hành trên Render/Pages, readiness schema **4**; quy trình phát hành Render/Pages và xác nhận đúng phiên bản tại [PRODUCTION_RELEASE.md](PRODUCTION_RELEASE.md). Yêu cầu nghiệp vụ: [REQUIREMENTS.md](REQUIREMENTS.md); thiết kế và schema thực tế: [ARCHITECTURE.md](ARCHITECTURE.md#12-cai-dat-thuc-te-trong-repository).
 
 **Dữ liệu production:** **408 lần học / 405 SV / 8 lớp Dự án**, gồm 215 DACN và 193 DAKH. Chỉ nhận dòng có STT; đã loại 127 hồ sơ trống ngoài danh sách sau backup, preview và kiểm tra dữ liệu bảo vệ. GVNX hiện bằng 0, Khoa chủ động mở nút Phân công và xác nhận phương án. Danh mục có 98 GV và 1.157 tài khoản. Giữ nguyên 691 hồ sơ TT đã ánh xạ, 208 hồ sơ thiếu học phần ở nguồn cũ, 675 điểm và 644 báo cáo. Tổng hiện có 1.099 lần học. Không sửa/xóa tệp R2 hoặc gửi email nghiệm thu trong lần phát hành này. Backup D1 ngày 30/10 đã phục hồi thử và đối soát; báo cáo nằm trong thư mục vận hành riêng.

@@ -1,5 +1,20 @@
 # D1 tạm thời khi Turso hết quota
 
+**Nguồn đang vận hành: Turso, từ ngày 01/11/2026.** D1 tạm thời được giữ chỉ đọc. Các phần bên dưới ghi lịch sử phục hồi; không dùng lại snapshot 29/10 khi triển khai mới.
+
+## Quay lại Turso ngày 01/11/2026
+
+- Bản chuyển có 35 bảng: 1.100 lần học (691 Thực tập và 409 Thực hành nghiên cứu), 1.157 tài khoản, 98 giảng viên, 675 điểm và 644 báo cáo; 208 hồ sơ Thực tập chưa ánh xạ vẫn được giữ trong nguồn legacy.
+- Lấy snapshot cả D1 và Turso; đối chiếu với mốc 17:32 ngày 29/10. D1 là nguồn dữ liệu đang dùng, bao gồm 127 hồ sơ đã loại và lần học được bổ sung sau đó.
+- Giữ kế hoạch hiện hành trên D1 vì các thay đổi có lịch sử ngày 31/10 mới hơn kế hoạch Turso ngày 29/10. Bổ sung command lịch sử chỉ có ở Turso vào bản chuyển, không phát lại payload hoặc trigger; ghi một command cutover thật và tăng revision để preview cũ không còn hiệu lực.
+- [tursoRestore.ts](../scripts/deployment/tursoRestore.ts) nạp bản sao vào các bảng staging riêng rồi thay schema/dữ liệu trong **một batch transaction ngắn**. Trong giao dịch kiểm lại toàn bộ dữ liệu cũ, schema và sequence, kể cả số lần xuất hiện của các dòng trùng. Lỗi hoặc xung đột rollback toàn bộ; lịch sử không phát lại thông báo/email.
+- Dừng API Render và đặt trigger cutover_readonly_* trên các bảng nghiệp vụ D1 trước snapshot cuối. Các trigger này không được mang sang Turso. D1 giữ đóng ghi sau cutover để tiến trình cũ không tạo hai nguồn ghi.
+- Đối soát đủ bảng, SHA-256 từng bảng, khóa ngoại, sequence; diễn tập thay database và khởi động ứng dụng trên bản sao trước khi mở hệ thống. Giữ 208 hồ sơ Thực tập chưa ánh xạ, mọi tham chiếu PDF/R2 và dữ liệu người dùng; không tạo điểm hoặc gửi email thử.
+- Chỉ đổi DB_PROVIDER trên Render về turso, giữ credentials, OAuth, JWT, email và R2. render.yaml cũng dùng turso. Kiểm tra đúng SHA, schema 4 và provider bằng production:check với tham số --provider=turso.
+- Snapshot/đối soát chứa dữ liệu thật được giữ riêng trong .staging/turso-return-20261101-*, không commit. Giữ D1 và backup Turso cũ; không tự dùng chúng để hoàn tác dữ liệu mới.
+
+Nếu cần quay lại D1, trước hết dừng ghi Turso, sao lưu và đối soát dữ liệu phát sinh sau cutover. Chỉ gỡ các trigger cutover_readonly_* khi D1 đã nhận đủ dữ liệu mới và trước khi cho phép đúng một nguồn ghi.
+
 **Cập nhật sự cố 30/10:** D1 đã chạm hạn mức đọc hằng ngày và chặn truy vấn bằng mã `7500`. Kết quả kiểm chứng phát hành bên dưới là tại thời điểm 08:30; không đồng nghĩa database đang truy cập được trong sự cố. Xử lý cảnh báo, giữ phiên và tối ưu truy vấn tại [DATABASE_AVAILABILITY.md](DATABASE_AVAILABILITY.md). Giữ gói miễn phí theo quyết định của chủ hệ thống.
 
 Nguồn phục hồi được chủ hệ thống chấp nhận: bản sao production lúc **17:32 ngày 29/10/2026, UTC+7**. Thay đổi sau mốc này có thể chưa có trong bản sao; giữ nguyên Turso để đối soát khi khôi phục. Đợt phục hồi ban đầu dùng bản production sau khi xóa GVNX, schema 3; không dùng dữ liệu thử. Ngày 30/10 đã phát hành Danh sách sinh viên/schema 4 và hiệu chỉnh STT như ghi ở cuối tài liệu.

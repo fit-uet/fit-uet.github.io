@@ -4,7 +4,7 @@ export function apiOrigin(value: string) {
   if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('API phải là HTTPS origin, không có đường dẫn, query hoặc thông tin đăng nhập.');
   return url.origin;
 }
-export async function verifyRelease(input: { base: string; release: string; fetcher?: typeof fetch }) {
+export async function verifyRelease(input: { base: string; release: string; provider?: 'd1' | 'turso'; fetcher?: typeof fetch }) {
   const base = apiOrigin(input.base);
   if (!/^[a-f0-9]{40}$/.test(input.release)) throw new Error('Cần SHA đầy đủ của commit triển khai.');
   const fetcher = input.fetcher || fetch;
@@ -18,7 +18,7 @@ export async function verifyRelease(input: { base: string; release: string; fetc
       const body = await response.json();
       const ok = expectedStatus === 401
         ? !!body.error && !body.data && !body.enrollments
-        : body.environment === 'production' && body.release === input.release && (path === '/api/ready' ? body.status === 'ready' && body.database === 'ok' && body.academicSchema === 4 : body.status === 'up');
+        : body.environment === 'production' && body.release === input.release && (path === '/api/ready' ? body.status === 'ready' && body.database === 'ok' && body.academicSchema === 4 && (!input.provider || body.databaseProvider === input.provider) : body.status === 'up');
       checks.push({ name: path, ok, detail: ok ? 'Đạt.' : 'Chưa có đúng phiên bản production/schema hoặc API chưa bảo vệ quyền.' });
     } catch { checks.push({ name: path, ok: false, detail: 'Không nhận được JSON hợp lệ qua HTTPS.' }); }
   }

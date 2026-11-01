@@ -1,6 +1,6 @@
 # Hệ thống quản lý Thực tập và Dự án — FIT UET
 
-Vận hành hiện tại: **D1 tạm thời**, phục hồi từ bản sao 17:32 ngày 29/10/2026; xem [quy trình chuyển lại Turso](docs/D1_FAILOVER.md).
+Vận hành hiện tại: **Turso**, chuyển lại từ dữ liệu D1 mới nhất ngày 01/11/2026. D1 được giữ chỉ đọc để đối soát; xem [báo cáo chuyển nguồn](docs/D1_FAILOVER.md).
 
 Website: **https://fit-uet.github.io/** · Repository: [fit-uet/fit-uet.github.io](https://github.com/fit-uet/fit-uet.github.io).
 Ứng dụng hỗ trợ Khoa CNTT quản lý đăng ký và triển khai học phần, sinh viên nộp báo cáo, giảng viên đánh giá và Khoa tổng hợp kết quả.

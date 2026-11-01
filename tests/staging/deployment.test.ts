@@ -52,3 +52,8 @@ test('release checks require the deployed SHA, production schema and protected A
   assert.equal((await verifyRelease({ base: 'https://api.example.org', release: sha, fetcher: html })).ok, false);
   for (const url of ['http://api.example.org', 'https://user:secret@api.example.org', 'https://api.example.org/path', 'https://api.example.org?token=secret']) assert.throws(() => apiOrigin(url));
 });
+
+test('database cutover checks require the intended provider, including rejecting missing provider metadata', async () => {
+  assert.equal((await verifyRelease({base:'https://api.example.org', release:sha, provider:'turso', fetcher:fixture({databaseProvider:'turso'})})).ok,true);
+  for (const metadata of [{databaseProvider:'d1'}, {}]) assert.equal((await verifyRelease({base:'https://api.example.org', release:sha, provider:'turso', fetcher:fixture(metadata)})).ok,false);
+});
