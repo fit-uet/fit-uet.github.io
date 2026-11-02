@@ -15,18 +15,33 @@ export function AdminSettingsSubNav() {
   const location = useLocation();
   const editor = useCampaignEditor();
   const layout = useCampaignLayout();
-  const tabs:Record<string,string>={'/admin/settings':'settings','/admin/plan':'plan-editor','/admin/registration-rules':'rules-editor','/admin/lecturer-guide':'guide-editor','/admin/faq':'faq-editor'};
+  const tabs: Record<string, string> = {
+    '/admin/settings': 'settings',
+    '/admin/plan': 'plan-editor',
+    '/admin/registration-rules': 'rules-editor',
+    '/admin/lecturer-guide': 'guide-editor',
+    '/admin/faq': 'faq-editor',
+  };
 
-  if (layout) return null;
+  const isCampaign = Boolean(layout || editor);
+  const isInternship = layout
+    ? layout.meta.campaign.group === 'internship'
+    : (!editor || editor.campaign.group === 'internship');
+  const currentTab = layout?.tab || (editor ? new URLSearchParams(location.search).get('tab') : null);
+
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 mb-6 border-b border-slate-200">
-      {SETTINGS_TABS.filter(tab=>!editor || editor.campaign.group==='internship' || tab.path!=='/admin/registration-rules').map((tab) => {
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 mb-6 border-b border-slate-200" aria-label="Cài đặt học phần và nội dung">
+      {SETTINGS_TABS.filter(tab => isInternship || tab.path !== '/admin/registration-rules').map((tab) => {
         const Icon = tab.icon;
-        const isActive = editor ? new URLSearchParams(location.search).get('tab')===tabs[tab.path] : location.pathname === tab.path;
+        const tabId = tabs[tab.path];
+        const isActive = isCampaign
+          ? currentTab === tabId
+          : location.pathname === tab.path;
         return (
           <Link
             key={tab.path}
-            to={editor ? `${location.pathname}?tab=${tabs[tab.path]}` : tab.path}
+            to={isCampaign ? `${location.pathname}?tab=${tabId}` : tab.path}
+            data-settings-tab={tabId}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
               isActive
                 ? 'bg-[#034ea1] text-white shadow-xs'

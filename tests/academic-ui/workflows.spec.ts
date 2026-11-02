@@ -595,7 +595,20 @@ test('grading workbench preserves drafts on navigation, saves one record and sho
  const calls:{method:string;url:string}[]=[];page.on('request',r=>{if(r.url().includes('/api/'))calls.push({method:r.method(),url:r.url()});});
  try{
   const sv=await(await context.request.get(`${previewOrigin}/__academic_preview/session?role=student`)).json(),svHeaders={Authorization:'Bearer '+sv.token};
-  const own=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers:svHeaders})).json(),report=own.items.find(e=>e.classId===c.id),v=report.versions.at(-1);
+  const own=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments`,{headers:svHeaders})).json();
+  let report=own.items.find(e=>e.classId===c.id);
+  if (report.lockedAt || report.submissionLockedAt || report.topicReview?.status !== 'approved') {
+    const adminSession=await(await context.request.get(`${previewOrigin}/__academic_preview/session?role=admin`)).json(),adminHeaders={Authorization:'Bearer '+adminSession.token};
+    if (report.lockedAt) {
+      const unlocked=await context.request.put(`${previewOrigin}/api/admin/enrollments/${report.id}/grade-lock`,{headers:adminHeaders,data:{expectedRevision:report.revision,locked:false,reason:'Chuẩn bị fixture kiểm thử'}});
+      if (unlocked.status()===200) report=await unlocked.json();
+    }
+    if (report.topicReview?.status!=='approved') {
+      const appr=await context.request.put(`${previewOrigin}/api/admin/enrollments/${report.id}/topic`,{headers:adminHeaders,data:{expectedRevision:report.revision,title:report.topic||'Xây dựng hệ thống học máy',reason:'Chuẩn bị fixture kiểm thử'}});
+      if (appr.status()===200) report=await appr.json();
+    }
+  }
+  const v=report.versions.at(-1);
   const submitted=await context.request.post(`${previewOrigin}/api/enrollments/${report.id}/submission`,{headers:svHeaders,multipart:{expectedRevision:String(report.revision),reusePdfVersionId:v.id,slidesUrl:v.slidesUrl,demoUrl:v.demoUrl}});expect(submitted.status()).toBe(200);
   await page.goto(`/#/campaigns/${c.campaignId}?tab=students`);await expect(page.getByRole('columnheader',{name:'Đề tài',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Thêm sinh viên',exact:true})).toHaveCount(0);expect(calls.some(r=>/\/submissions\/.*\/view/.test(r.url))).toBe(false);
   await feature(page,'grades');await expect(page.getByRole('columnheader',{name:'Điểm GVHD — 60%',exact:true})).toBeVisible();expect(calls.some(r=>/\/submissions\/.*\/view/.test(r.url))).toBe(false);

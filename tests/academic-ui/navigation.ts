@@ -7,7 +7,16 @@ export async function feature(page: Page, tab: string) {
   const primary = nav.locator(`[data-campaign-tab="${tab}"]`);
   if (await primary.count()) await primary.click();
   else if(tab==='chat'&&await page.locator('header a[href="#/chat"]').count())await page.locator('header a[href="#/chat"]').click();
-  else {
+  else if(['settings','plan-editor','rules-editor','guide-editor','faq-editor'].includes(tab)) {
+    const subLink = page.locator(`[data-settings-tab="${tab}"]`);
+    if (await subLink.count()) {
+      await subLink.click();
+    } else {
+      const settingsTab = nav.locator('[data-campaign-tab="settings"]');
+      if (await settingsTab.count()) await settingsTab.click();
+      await page.locator(`[data-settings-tab="${tab}"]`).click();
+    }
+  } else {
   await nav.getByRole('button', {name:'Thêm chức năng', exact:true}).click();
   await page.getByRole('dialog', {name:'Chức năng', exact:true}).locator(`[data-campaign-tab="${tab}"]`).click();
   }

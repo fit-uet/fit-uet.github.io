@@ -5,7 +5,8 @@ import { CampaignEditorContext } from './CampaignEditorContext';
 import { refreshRequestCache } from '../../shared/utils/requestCache';
 import { academicInput } from './form';
 import { hasLegacyPanel } from './legacyPresentation';
-import { Lock, Upload, BookOpen } from 'lucide-react';
+import { Lock, Upload, BookOpen, Users, GraduationCap, Building2, ShieldCheck, ShieldAlert, FileSpreadsheet, Bell } from 'lucide-react';
+import { AdminSettingsSubNav } from '../admin/components/AdminSettingsSubNav';
 import { CampaignDashboard } from './CampaignDashboard';
 import { CampaignRecords } from './CampaignRecords';
 import { EnrollmentDialog } from './EnrollmentDialog';
@@ -59,7 +60,12 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
   const [data, setData] = useState<Meta | null>(null), [rowResult, setRowResult] = useState<{key:string;page:Page} | null>(null), [selected, setSelected] = useState<EnrollmentView | null>(null);
   const modules = campaignModules(actor.role === 'admin', actor.role === 'student', data?.campaign.group === 'internship');
   const projectManagement = data?.campaign.group==='project' && actor.role!=='student';
-  const tab = projectManagement && ['students','assignments','reports'].includes(requestedTab) ? 'students' : modules.some(item => item.id === requestedTab) ? requestedTab : defaultTab;
+  const isEditorTab = actor.role === 'admin' && ['plan-editor', 'guide-editor', 'faq-editor', 'rules-editor'].includes(requestedTab);
+  const tab = projectManagement && ['students','assignments','reports'].includes(requestedTab)
+    ? 'students'
+    : (modules.some(item => item.id === requestedTab) || isEditorTab)
+    ? requestedTab
+    : defaultTab;
   useEffect(()=>{if(!projectManagement)return;const next=projectListQuery(query);if(next.toString()!==query.toString())setQuery(next,{replace:true});},[projectManagement,query.toString()]);
   useEffect(()=>{const reset=()=>{appliedQuery.current=query;writtenQuery.current=null;changeSearch(query.get('q')||'');composeSearch(false);};window.addEventListener('project-navigation-blocked',reset);return()=>window.removeEventListener('project-navigation-blocked',reset);},[query]);
   const [chat, setChat] = useState<any>(null), [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
@@ -145,7 +151,18 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
   const selectedClass = selected && data.classes.find(c => c.id === selected.classId);
   const legacyPanel = p.legacy && p.status === 'active' && hasLegacyPanel(actor, tab);
   const synthetic = { ...data.classes[0], ...p, code: GROUP_NAMES[p.group], courseName: GROUP_NAMES[p.group], canJoin: false } as AcademicClassSummary;
-  const currentModule = modules.find(item => item.id === tab)!;
+  const editorTitles: Record<string, string> = {
+    'plan-editor': 'Cài đặt Kế hoạch',
+    'guide-editor': 'Cài đặt Hướng dẫn GV',
+    'faq-editor': 'Cài đặt FAQ',
+    'rules-editor': 'Cài đặt Quy định thực tập',
+  };
+  const currentModule = modules.find(item => item.id === tab) || {
+    id: tab,
+    title: editorTitles[tab] || 'Thiết lập',
+    description: '',
+    icon: 'settings',
+  };
   const panel = ['profile', 'assignments', 'reports', 'grades'].includes(query.get('panel') || '') ? query.get('panel') as EnrollmentPanelMode : panelForPage(tab);
   const open = (e: CampaignRecord, mode: EnrollmentPanelMode = panelForPage(tab)) => editQuery({ enrollmentId: e.id, panel: mode });
   const exportFile = () => runOnly(() => academicDownload(token, `/api/campaigns/${id}/exports/${tab}.xlsx?${filterKey}`, `${tab}-${chosenClass?.code || p.group}-${p.semesterId}.xlsx`));
@@ -270,7 +287,60 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
       {admin && currentMeta && tab.endsWith('-editor') && <CampaignEditorContext campaign={p} token={token} refresh={refresh}>{tab === 'plan-editor' ? <PlanSettingsAdmin token={token}/> : tab === 'guide-editor' ? <LecturerGuideSettingsAdmin token={token}/> : tab === 'faq-editor' ? <FAQSettingsAdmin token={token}/> : <RegistrationRulesSettingsAdmin token={token}/>}</CampaignEditorContext>}
       {tab === 'plan' && !legacyPanel && currentMeta && <PlanView user={actor}/>}
       {tab === 'guide' && currentMeta && <LecturerGuideView token={token} user={actor}/>}
-      {tab === 'settings' && admin && <><CampaignSettingsPanel key={p.revision} token={token} c={p} run={run} busy={busy} /><div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5"><h3 className="font-semibold mb-3">Danh mục dùng chung</h3><div className="flex flex-wrap gap-4 text-sm text-[#034ea1]">{[['students', 'Sinh viên'], ['lecturers', 'Giảng viên'], ['companies', 'Doanh nghiệp'], ['approved-companies', 'CSDL thẩm định'], ['admins', 'Quản trị viên']].map(([key, name]) => <Link key={key} to={`/admin/${key}`}>{name}</Link>)}</div><div className="flex flex-wrap gap-4 text-sm text-[#034ea1] mt-3"><Link to="/system/settings">Tích hợp hệ thống / Sheets</Link><Link to="/system/notifications">Thông báo hệ thống</Link></div></div></>}
+      {tab === 'settings' && admin && (
+        <div className="space-y-6">
+          <AdminSettingsSubNav />
+          <CampaignSettingsPanel key={p.revision} token={token} c={p} run={run} busy={busy} />
+          <section className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-4" aria-label="Danh mục dùng chung">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-sm text-slate-900">Danh mục & Liên kết quản trị dùng chung</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Truy cập nhanh danh bạ hồ sơ và cấu hình hệ thống toàn Khoa.</p>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Hồ sơ & Danh bạ</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                  {[
+                    { key: 'students', name: 'Sinh viên', icon: Users },
+                    { key: 'lecturers', name: 'Giảng viên', icon: GraduationCap },
+                    { key: 'companies', name: 'Doanh nghiệp', icon: Building2 },
+                    { key: 'approved-companies', name: 'CSDL thẩm định', icon: ShieldCheck },
+                    { key: 'admins', name: 'Quản trị viên', icon: ShieldAlert },
+                  ].map(({ key, name, icon: Icon }) => (
+                    <Link
+                      key={key}
+                      to={`/admin/${key}`}
+                      className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white hover:border-[#034ea1]/40 hover:shadow-xs transition-all text-xs font-semibold text-slate-700 hover:text-[#034ea1]"
+                    >
+                      <Icon size={14} className="text-slate-500 shrink-0" />
+                      <span className="truncate">{name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-3 border-t border-slate-100">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Hệ thống & Tích hợp</span>
+                <div className="flex flex-wrap gap-2.5">
+                  <Link
+                    to="/system/settings"
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white hover:border-[#034ea1]/40 hover:shadow-xs transition-all text-xs font-semibold text-slate-700 hover:text-[#034ea1]"
+                  >
+                    <FileSpreadsheet size={14} className="text-slate-500 shrink-0" />
+                    <span>Tích hợp hệ thống / Google Sheets</span>
+                  </Link>
+                  <Link
+                    to="/system/notifications"
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white hover:border-[#034ea1]/40 hover:shadow-xs transition-all text-xs font-semibold text-slate-700 hover:text-[#034ea1]"
+                  >
+                    <Bell size={14} className="text-slate-500 shrink-0" />
+                    <span>Thông báo hệ thống</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
       {tab === 'questions' && !legacyPanel && currentMeta && (
         <div className="max-w-5xl mx-auto space-y-6">
           <CampaignFAQ

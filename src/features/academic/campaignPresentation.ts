@@ -54,10 +54,6 @@ export function campaignModules(admin: boolean, student: boolean, internship: bo
     { id: 'questions', title: 'Hỏi đáp', description: 'Câu hỏi thường gặp và hỗ trợ', icon: 'questions' },
     ...(admin ? [
       { id: 'announcements', title: 'Thông báo', description: 'Thông báo theo nhóm hoặc lớp đã chọn', icon: 'announcements' },
-      { id: 'plan-editor', title: 'Cài đặt Kế hoạch', description: 'Soạn kế hoạch, import Word và xem trước', icon: 'plan' },
-      { id: 'guide-editor', title: 'Cài đặt Hướng dẫn GV', description: 'Soạn hướng dẫn giảng viên', icon: 'plan' },
-      { id: 'faq-editor', title: 'Cài đặt FAQ', description: 'FAQ riêng cho sinh viên và giảng viên', icon: 'questions' },
-      ...(internship ? [{ id: 'rules-editor', title: 'Cài đặt Quy định thực tập', description: 'Quy định đăng ký', icon: 'plan' }] : []),
       { id: 'settings', title: 'Thiết lập', description: 'Thời hạn, hướng dẫn và trạng thái nhóm môn', icon: 'settings' },
     ] : []),
   ];

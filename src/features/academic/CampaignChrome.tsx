@@ -52,7 +52,24 @@ export function CampaignChrome({ token, modules, title, go, reload, busy, list }
       </div>
     </header>
     {!p.pendingMigration && <nav aria-label="Chức năng nhóm môn" className="flex h-9 items-center gap-1 border-b border-slate-200 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
-      {navigation.primary.map(item => <button key={item.id} data-campaign-tab={item.id} type="button" aria-current={layout.tab === item.id ? 'page' : undefined} onClick={() => go(item.id)} className={`h-9 shrink-0 whitespace-nowrap border-b-2 px-2.5 text-xs font-semibold transition-colors ${layout.tab === item.id ? 'border-[#034ea1] text-[#034ea1]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}>{item.label}</button>)}
+      {navigation.primary.map(item => {
+        const isSettingsActive = item.id === 'settings' && (layout.tab === 'settings' || layout.tab.endsWith('-editor'));
+        const isTabActive = layout.tab === item.id || isSettingsActive;
+        return (
+          <button
+            key={item.id}
+            data-campaign-tab={item.id}
+            type="button"
+            aria-current={isTabActive ? 'page' : undefined}
+            onClick={() => go(item.id)}
+            className={`h-9 shrink-0 whitespace-nowrap border-b-2 px-2.5 text-xs font-semibold transition-colors ${
+              isTabActive ? 'border-[#034ea1] text-[#034ea1]' : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            {item.label}
+          </button>
+        );
+      })}
       {!!navigation.more.length && <button ref={moreButton} type="button" aria-haspopup="dialog" aria-label="Thêm chức năng" aria-expanded={menu === 'more'} aria-current={moreActive ? 'page' : undefined} onClick={() => setMenu(menu === 'more' ? null : 'more')} className={`inline-flex h-9 shrink-0 items-center gap-1 border-b-2 px-2.5 text-xs font-semibold ${moreActive ? 'border-[#034ea1] text-[#034ea1]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}>Thêm<ChevronDown size={13}/>{moreActive && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#034ea1]"/>}</button>}
     </nav>}
     {menu === 'more' && <CampaignPopover title="Chức năng" trigger={moreButton} close={() => setMenu(null)} width={300}><div className="space-y-1">{navigation.more.map(item => <button key={item.id} data-campaign-tab={item.id} type="button" aria-current={layout.tab === item.id ? 'page' : undefined} onClick={() => { setMenu(null); go(item.id); }} className={`block w-full rounded-lg px-3 py-2.5 text-left text-sm ${layout.tab === item.id ? 'bg-blue-50 font-semibold text-[#034ea1]' : 'text-slate-700 hover:bg-slate-50'}`}>{item.label || item.title}</button>)}</div></CampaignPopover>}
