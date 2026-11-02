@@ -6,9 +6,12 @@ import { requestJson } from '../../shared/utils/requestCache';
 type Page = {items:any[];total:number;studentCount:number;page:number;limit:number;totalPages:number;summary?:Record<string,any>;lecturers?:any[]};
 export function useLegacyPager(token:string,endpoint:string,options:Record<string,any>={}) {
   const location=useLocation();const [outer]=useSearchParams();const enabled=location.pathname.startsWith('/campaigns/');
-  const [search,setSearch]=useState(options.q??outer.get('q')??'');
   const requestedSearch=options.q??outer.get('q')??'';
-  useEffect(()=>{const timer=window.setTimeout(()=>setSearch(requestedSearch),300);return()=>window.clearTimeout(timer);},[requestedSearch]);
+  const [standaloneSearch,setStandaloneSearch]=useState(requestedSearch);
+  // Embedded lists receive the toolbar's already committed search. Debounce only
+  // standalone inputs, avoiding a second 300 ms wait in campaign pages.
+  const search=enabled?requestedSearch:standaloneSearch;
+  useEffect(()=>{if(enabled)return;const timer=window.setTimeout(()=>setStandaloneSearch(requestedSearch),300);return()=>window.clearTimeout(timer);},[requestedSearch,enabled]);
   const query=new URLSearchParams();
   for(const name of ['courseCode','classId','lecturerId'])if(outer.get(name))query.set(name,outer.get(name)!);
   for(const [name,value] of Object.entries(options))if(value!==''&&value!==undefined&&value!==null)query.set(name,String(value));

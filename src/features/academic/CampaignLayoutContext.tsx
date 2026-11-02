@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
+import type { NavigateOptions } from 'react-router-dom';
 import type { CampaignMeta } from './campaignPresentation';
 
 export type CampaignFilter = { key: string; label: string; options: { value: string; label: string }[] };
@@ -9,7 +10,10 @@ export type CampaignLayout = {
   tab: string;
   legacy: boolean;
   query: URLSearchParams;
-  editQuery: (patch: Record<string, string>) => void;
+  editQuery: (patch: Record<string, string>, options?: NavigateOptions) => void;
+  searchInput: string;
+  changeSearch: (value: string) => void;
+  composeSearch: (composing: boolean) => void;
   actionsHost: HTMLElement | null;
   setActionsHost: Dispatch<SetStateAction<HTMLElement | null>>;
   extraFilters: CampaignFilter[];

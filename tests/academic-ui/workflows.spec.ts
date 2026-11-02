@@ -284,6 +284,59 @@ test('student topics stay pending until primary adviser saves approval inline; r
  }finally{await sv.context.close();await gv.context.close();}
 });
 
+test('Vietnamese search waits for composition, keeps the caret and applies once in project and legacy lists', async ({browser}) => {
+  for (const legacy of [false,true]) {
+    const {page,context,classes,errors}=await session(browser,'admin');
+    const c=classes.find(c=>legacy?c.legacy:c.courseCode==='INT3132');const calls:URL[]=[];
+    if(legacy) await context.route(/\/api\/admin\/advisor-assignments(?:\?.*)?$/,route=>{
+      const q=new URL(route.request().url()).searchParams;calls.push(new URL(route.request().url()));
+      return route.fulfill({json:{items:[{user_id:300,student_id:'23029901',student_name:'Nguyễn Thị Ánh',course_code:'INT4002',internship_place:'Trường Đại học Công nghệ'}],lecturers:[],total:1,studentCount:1,page:Number(q.get('page')||1),limit:25,totalPages:1}});
+    });
+    else page.on('request',r=>{if(r.url().includes('/enrollments?'))calls.push(new URL(r.url()));});
+    try {
+      await page.goto(`/#/campaigns/${c.campaignId}?tab=${legacy?'assignments':'students'}&page=2`);
+      await expect(page.getByRole('columnheader',{name:legacy?'Phân công':'Đề tài',exact:true})).toBeVisible();
+      const input=page.getByLabel('Tìm sinh viên',{exact:true});await input.evaluate(el=>el.setAttribute('data-search-node','original'));
+      const initial=calls.length,oldUrl=page.url(),history=await page.evaluate(()=>window.history.length);
+      await input.focus();await input.dispatchEvent('compositionstart');await input.fill(legacy?'Nguye':'Bi');
+      await page.waitForTimeout(400);expect(calls).toHaveLength(initial);expect(page.url()).toBe(oldUrl);await expect(input).toBeFocused();
+      const value=legacy?'Nguyễn Thị Ánh':'Bình';await input.fill(value);await input.dispatchEvent('compositionend',{data:value});
+      await expect.poll(()=>calls.length).toBe(initial+1);await expect(input).toHaveValue(value);await expect(input).toBeFocused();await expect(input).toHaveAttribute('data-search-node','original');
+      expect(calls.at(-1)!.searchParams.get('q')).toBe(value);expect(calls.at(-1)!.searchParams.get('page')||'1').toBe('1');expect(await page.evaluate(()=>window.history.length)).toBe(history);
+      await expect(page.getByRole('cell').filter({hasText:legacy?'Nguyễn Thị Ánh':'Sinh viên Bình'})).not.toHaveCount(0);
+      // Edit the middle of accented text after the request has finished; the same
+      // focused input and selection must survive URL acknowledgement and rendering.
+      await input.evaluate((el:HTMLInputElement)=>el.setSelectionRange(1,1));await page.keyboard.insertText('Đ');
+      await expect(input).toHaveValue(value.slice(0,1)+'Đ'+value.slice(1));await expect(input).toBeFocused();
+      await page.waitForTimeout(400);await expect(input).toBeFocused();expect(await input.evaluate((el:HTMLInputElement)=>el.selectionStart)).toBe(2);expect(errors).toEqual([]);
+    } finally {await context.close();}
+  }
+});
+
+test('list navigation retains its search node while a lazy screen loads and merges pending text with filters',async({browser})=>{
+  const {page,context,classes,errors}=await session(browser,'admin');const c=classes.find(c=>c.legacy),calls:URL[]=[];
+  let release:()=>void=()=>{},started:()=>void=()=>{};const gate=new Promise<void>(resolve=>release=resolve),loading=new Promise<void>(resolve=>started=resolve);
+  await context.route(/\/src\/features\/admin\/pages\/FinalReportAdmin\.tsx(?:\?.*)?$/,async route=>{started();await gate;await route.continue();});
+  for(const endpoint of ['advisor-assignments','reports/final'])await context.route(new RegExp('/api/admin/'+endpoint+'(?:\\?.*)?$'),route=>{
+    const q=new URL(route.request().url()).searchParams;calls.push(new URL(route.request().url()));
+    return route.fulfill({json:{items:[{user_id:300,student_id:'23029901',student_name:'Nguyễn Thị Ánh',course_code:'INT4002',report_status:'missing'}],lecturers:[],total:1,studentCount:1,page:1,limit:25,totalPages:1,summary:{report_missing:1}}});
+  });
+  try {
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=assignments`);await expect(page.getByRole('columnheader',{name:'Phân công',exact:true})).toBeVisible();
+    const input=page.getByLabel('Tìm sinh viên',{exact:true});await input.evaluate(el=>el.setAttribute('data-search-node','original'));
+    await input.fill('Nguyễn');await feature(page,'reports');await loading;
+    await expect(page.getByTestId('campaign-chrome')).toBeVisible();await expect(input).toBeVisible();await expect(input).toHaveAttribute('data-search-node','original');await expect(input).toHaveValue('Nguyễn');
+    release();await expect(page.getByRole('columnheader',{name:'Báo cáo PDF',exact:true})).toBeVisible();
+    expect(calls.filter(u=>u.pathname.endsWith('/reports/final'))).toHaveLength(1);expect(calls.at(-1)!.searchParams.get('q')).toBe('Nguyễn');
+    const before=calls.length;await page.getByRole('button',{name:/^Bộ lọc/}).click();const filters=page.getByRole('dialog',{name:'Bộ lọc danh sách'});await filters.getByLabel('Học phần',{exact:true}).selectOption('INT4002');
+    await input.fill('Nguyễn Thị Ánh');await filters.getByRole('button',{name:'Áp dụng',exact:true}).click();
+    await expect.poll(()=>calls.length).toBe(before+1);expect(calls.at(-1)!.searchParams.get('q')).toBe('Nguyễn Thị Ánh');expect(calls.at(-1)!.searchParams.get('courseCode')).toBe('INT4002');
+    await page.goBack();await expect(page).toHaveURL(/tab=reports/);await expect(input).toHaveValue('Nguyễn');
+    await page.goBack();await expect(page).toHaveURL(/tab=assignments/);await expect(input).toHaveValue('');await expect(input).toHaveAttribute('data-search-node','original');
+    await page.goForward();await expect(page).toHaveURL(/tab=reports/);await expect(input).toHaveValue('Nguyễn');expect(errors).toEqual([]);
+  } finally {release();await context.close();}
+});
+
 test('functions load on demand, revisit with ETag, debounce searches and export without refreshing the group', async ({ browser }) => {
   const {page,context,classes,errors}=await session(browser,'admin'); const c=classes.find(c=>c.courseCode==='INT3132');
   const calls:{url:string;tag?:string;control?:string;status?:number}[]=[];
@@ -455,12 +508,13 @@ test('project table retains invalid drafts, saves valid rows, blocks navigation 
  try{
   await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);const rowB=page.getByRole('row').filter({hasText:'24020002'}),rowC=page.getByRole('row').filter({hasText:'24020003'});
   for(const [row,id,title,reason]of [[rowB,'24020002','Đề tài B lưu hàng loạt','Khoa điều chỉnh'],[rowC,'24020003','Đề tài C chưa có lý do','']] as const){await row.getByRole('button',{name:'Sửa đề tài',exact:true}).click();await row.getByRole('textbox',{name:'Đề tài '+id,exact:true}).fill(title);if(reason)await row.getByRole('textbox',{name:'Lý do đề tài '+id,exact:true}).fill(reason);}
-  const rowA=page.getByRole('row').filter({hasText:'24020001'});
-  await rowA.getByRole('button',{name:'Sửa đề tài',exact:true}).click();await rowA.getByRole('textbox',{name:'Đề tài 24020001',exact:true}).fill('Đề tài A lưu tại dòng');await rowA.getByRole('textbox',{name:'Lý do đề tài 24020001',exact:true}).fill('Khoa điều chỉnh riêng');
-  expect(calls).toHaveLength(0);await expect(page.getByRole('button',{name:'Lưu thay đổi (3)',exact:true})).toBeVisible();
+  expect(calls).toHaveLength(0);await expect(page.getByRole('button',{name:'Lưu thay đổi (2)',exact:true})).toBeVisible();
   const inlineRequest=page.waitForRequest(r=>r.method()==='PATCH'&&r.url().includes('/enrollments/bulk'));
-  await rowA.getByRole('button',{name:'Lưu',exact:true}).click();const submitted=(await inlineRequest).postDataJSON().rows;expect(submitted).toHaveLength(1);expect(submitted[0].topic.title).toBe('Đề tài A lưu tại dòng');
-  await expect(rowA.getByRole('button',{name:'Lưu',exact:true})).toBeDisabled();await expect(rowB.getByRole('textbox',{name:'Đề tài 24020002',exact:true})).toHaveValue('Đề tài B lưu hàng loạt');await expect(rowC.getByRole('textbox',{name:'Đề tài 24020003',exact:true})).toHaveValue('Đề tài C chưa có lý do');
+  await rowB.getByRole('button',{name:'Lưu',exact:true}).click();const submitted=(await inlineRequest).postDataJSON().rows;expect(submitted).toHaveLength(1);expect(submitted[0].topic.title).toBe('Đề tài B lưu hàng loạt');
+  await expect(page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true})).toBeVisible();await expect(rowB.getByRole('button',{name:'Lưu',exact:true})).toBeDisabled();await expect(rowC.getByRole('textbox',{name:'Đề tài 24020003',exact:true})).toHaveValue('Đề tài C chưa có lý do');
+  // Re-edit the saved row for the partial bulk case, without altering the
+  // submission and topic used by the later grading acceptance case.
+  await rowB.getByRole('textbox',{name:'Đề tài 24020002',exact:true}).fill('Đề tài B tiếp tục điều chỉnh');await rowB.getByRole('textbox',{name:'Lý do đề tài 24020002',exact:true}).fill('Khoa điều chỉnh tiếp');
   expect(calls).toHaveLength(1);await expect(page.getByRole('button',{name:'Lưu thay đổi (2)',exact:true})).toBeVisible();await page.getByRole('button',{name:'Lưu thay đổi (2)',exact:true}).click();await expect(page.getByText('Đã lưu 1 sinh viên; 1 dòng cần xử lý.',{exact:true})).toBeVisible();expect(calls).toHaveLength(2);await expect(page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true})).toBeVisible();await expect(rowC.getByRole('alert')).toBeVisible();
   await page.getByRole('navigation',{name:'Chức năng nhóm môn'}).locator('[data-campaign-tab="plan"]').click();const guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu'});await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Ở lại',exact:true}).click();expect(page.url()).toContain('tab=students');await expect(rowC.getByRole('textbox',{name:'Đề tài 24020003',exact:true})).toHaveValue('Đề tài C chưa có lý do');
   await page.getByRole('navigation',{name:'Chức năng nhóm môn'}).locator('[data-campaign-tab="plan"]').click();await guard.getByRole('button',{name:'Bỏ thay đổi',exact:true}).click();await expect(page).toHaveURL(/tab=plan/);await feature(page,'students');
