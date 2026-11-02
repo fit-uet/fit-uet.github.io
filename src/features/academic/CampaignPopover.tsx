@@ -12,8 +12,8 @@ export function useCampaignWide() {
   }, []);
   return wide;
 }
-export function CampaignPopover({ title, trigger, close, children, width = 384 }: {
-  title: string; trigger: RefObject<HTMLButtonElement | null>; close: () => void; children: ReactNode; width?: number;
+export function CampaignPopover({ title, trigger, close, children, width = 384, flip = false }: {
+  title: string; trigger: RefObject<HTMLButtonElement | null>; close: () => void; children: ReactNode; width?: number; flip?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null), label = useId();
   const wide = useCampaignWide();
@@ -24,12 +24,14 @@ export function CampaignPopover({ title, trigger, close, children, width = 384 }
       const anchor = trigger.current?.getBoundingClientRect();
       if (!anchor) return;
       const available = Math.min(width, window.innerWidth - 24);
-      setPosition(wide ? { position: 'fixed', width: available, left: Math.max(12, Math.min(anchor.right - available, window.innerWidth - available - 12)), top: anchor.bottom + 8, maxHeight: Math.max(160, window.innerHeight - anchor.bottom - 24) }
+      const below = window.innerHeight - anchor.bottom - 24, above = anchor.top - 24;
+      const upwards = flip && below < 280 && above > below;
+      setPosition(wide ? { position: 'fixed', width: available, left: Math.max(12, Math.min(anchor.right - available, window.innerWidth - available - 12)), ...(upwards ? {bottom:window.innerHeight - anchor.top + 8} : {top:anchor.bottom + 8}), maxHeight: Math.max(160, upwards ? above : below) }
         : { position: 'fixed', left: 8, right: 8, bottom: 8, maxHeight: '85dvh' });
     };
     place(); window.addEventListener('resize', place); window.addEventListener('scroll', place, true);
     return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
-  }, [wide, width, trigger]);
+  }, [wide, width, trigger, flip]);
   useEffect(() => {
     const previous = trigger.current;
     const overflow = document.body.style.overflow;

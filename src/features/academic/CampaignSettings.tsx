@@ -197,7 +197,7 @@ export function CampaignSettingsPanel({ token, c, run, busy }: { token: string; 
             <Button
               key={tab}
               size="sm"
-              variant="outline"
+              variant="secondary"
               data-settings-tab={tab}
               onClick={() => layout?.editQuery({ tab })}
             >

@@ -64,6 +64,52 @@ test('project overview opens a single student list with stage filters and no pro
  }finally{await context.close();}
 });
 
+test('Khoa searches lecturers locally and saves one assignment row while keeping other drafts',async({browser})=>{
+  const {page,context,classes,token,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132'),headers={Authorization:'Bearer '+token};
+  const records=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments?classId=${c.id}`,{headers})).json();
+  const before=records.items.find(e=>e.studentId==='24020002'),other=records.items.find(e=>e.studentId==='24020003');const calls:{method:string;url:string}[]=[];
+  page.on('request',r=>{if(r.url().includes('/api/'))calls.push({method:r.method(),url:r.url()});});
+  try{
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);const row=page.getByRole('row').filter({hasText:'24020002'}),otherRow=page.getByRole('row').filter({hasText:'24020003'});
+    await row.getByRole('button',{name:'Sửa phân công 24020002',exact:true}).click();await expect(row.getByRole('button',{name:'Lưu phân công 24020002',exact:true})).toBeDisabled();
+    const initial=calls.length;await row.getByRole('button',{name:'GVHD chính 24020002',exact:true}).click();let dialog=page.getByRole('dialog',{name:'Chọn GVHD chính · 24020002',exact:true});const input=dialog.getByRole('combobox',{name:'Tìm GVHD chính',exact:true});
+    await input.fill('delta');await expect(dialog.getByRole('option',{name:/CN\. Delta/})).toBeDisabled();await expect(dialog).toContainText('Chỉ đồng hướng dẫn');
+    await input.fill('alpha@vnu.edu.vn');await expect(dialog.getByRole('option')).toHaveCount(1);expect(calls).toHaveLength(initial);await input.press('ArrowDown');await input.press('Enter');await expect(dialog).toHaveCount(0);
+    await row.getByRole('button',{name:'Đồng hướng dẫn 24020002',exact:true}).click();dialog=page.getByRole('dialog',{name:'Chọn Đồng hướng dẫn · 24020002',exact:true});
+    await dialog.getByRole('combobox',{name:'Tìm Đồng hướng dẫn',exact:true}).fill('delta@');await dialog.getByRole('option',{name:/CN\. Delta/}).click();await expect(dialog.getByRole('button',{name:'Bỏ CN. Delta',exact:true})).toBeVisible();
+    await dialog.getByRole('combobox',{name:'Tìm Đồng hướng dẫn',exact:true}).fill('khoa');await expect(dialog.getByRole('option',{name:/TS\. Khoa/})).toHaveAttribute('aria-selected','true');
+    await dialog.getByRole('button',{name:'Bỏ CN. Delta',exact:true}).click();await expect(dialog.getByRole('button',{name:'Bỏ CN. Delta',exact:true})).toHaveCount(0);
+    await dialog.getByRole('combobox',{name:'Tìm Đồng hướng dẫn',exact:true}).fill('delta');await dialog.getByRole('option',{name:/CN\. Delta/}).click();await dialog.getByRole('button',{name:'Xong',exact:true}).click();
+    await row.getByRole('button',{name:'GVNX 24020002',exact:true}).click();dialog=page.getByRole('dialog',{name:'Chọn GVNX · 24020002',exact:true});await dialog.getByRole('combobox',{name:'Tìm GVNX',exact:true}).fill('gamma');await dialog.getByRole('option',{name:/ThS\. Gamma/}).click();
+    await otherRow.getByRole('button',{name:'Sửa phân công 24020003',exact:true}).click();await otherRow.getByRole('button',{name:'Đồng hướng dẫn 24020003',exact:true}).click();dialog=page.getByRole('dialog',{name:'Chọn Đồng hướng dẫn · 24020003',exact:true});await dialog.getByRole('combobox',{name:'Tìm Đồng hướng dẫn',exact:true}).fill('beta@');await dialog.getByRole('option',{name:/TS\. Beta/}).click();await dialog.getByRole('button',{name:'Xong',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Lưu thay đổi (2)',exact:true})).toBeVisible();expect(calls.some(r=>r.method==='PATCH')).toBe(false);
+    const request=page.waitForRequest(r=>r.method()==='PATCH'&&r.url().includes('/enrollments/bulk'));await row.getByRole('button',{name:'Lưu phân công 24020002',exact:true}).click();const submitted=(await request).postDataJSON().rows;expect(submitted).toHaveLength(1);expect(submitted[0].enrollmentId).toBe(before.id);
+    await expect(page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true})).toBeVisible();await expect(row.getByRole('button',{name:'Lưu phân công 24020002',exact:true})).toBeDisabled();await expect(otherRow.getByRole('button',{name:'Lưu phân công 24020003',exact:true})).toBeEnabled();
+    const after=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments?classId=${c.id}`,{headers})).json();const saved=after.items.find(e=>e.id===before.id);
+    expect(saved.assignments.map(a=>[a.role,a.lecturerId]).sort()).toEqual([['primary',1],['co',99],['co',4],['reviewer',3]].sort());expect(after.items.find(e=>e.id===other.id).assignments).toEqual(other.assignments);
+    await row.getByRole('button',{name:'Đóng phân công 24020002',exact:true}).click();await expect(row).toContainText('CN. Delta');await page.getByRole('button',{name:'Hủy thay đổi',exact:true}).click();
+    await page.reload();await expect(row).toContainText('CN. Delta');expect(errors).toEqual([]);
+  }finally{
+    // Keep the shared fixture's assignments intact for the following role cases.
+    const current=await(await context.request.get(`${previewOrigin}/api/enrollments/${before.id}`,{headers})).json();
+    const restored=await context.request.put(`${previewOrigin}/api/admin/enrollments/${before.id}/assignments`,{headers,data:{expectedRevision:current.revision,assignments:before.assignments.map(({role,lecturerId})=>({role,lecturerId}))}});expect(restored.status()).toBe(200);
+    await context.close();
+  }
+});
+
+test('lecturer picker supports Vietnamese input, keyboard, removal and a mobile sheet without saving automatically',async({browser})=>{
+  const {page,context,classes,errors}=await session(browser,'admin',true),c=classes.find(c=>c.courseCode==='INT3132');const writes:string[]=[];page.on('request',r=>{if(r.method()!=='GET'&&r.url().includes('/api/'))writes.push(r.url());});
+  try{
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);const row=page.getByRole('row').filter({hasText:'24020003'});await row.getByRole('button',{name:'Sửa phân công 24020003',exact:true}).click();await row.getByRole('button',{name:'GVHD chính 24020003',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'Chọn GVHD chính · 24020003',exact:true}),input=dialog.getByRole('combobox',{name:'Tìm GVHD chính',exact:true});await expect(dialog).toHaveAttribute('aria-modal','true');const bounds=(await dialog.boundingBox())!;expect(bounds.x).toBeGreaterThanOrEqual(0);expect(bounds.x+bounds.width).toBeLessThanOrEqual(390);
+    await input.dispatchEvent('compositionstart');await input.fill('Bêt');await input.press('Enter');await expect(dialog).toBeVisible();await expect(row.getByRole('button',{name:'Lưu phân công 24020003',exact:true})).toBeDisabled();
+    await input.fill('Béta');await input.dispatchEvent('compositionend',{data:'Béta'});await expect(dialog.getByRole('option',{name:/TS\. Beta/})).toHaveCount(1);await input.press('ArrowDown');await input.press('Enter');await expect(dialog).toHaveCount(0);await expect(row.getByRole('button',{name:'GVHD chính 24020003',exact:true})).toBeFocused();
+    await row.getByRole('button',{name:'GVHD chính 24020003',exact:true}).click();await dialog.getByRole('button',{name:'Bỏ lựa chọn',exact:true}).click();await expect(row.getByRole('button',{name:'GVHD chính 24020003',exact:true})).toHaveText('Chưa phân công');
+    await row.getByRole('button',{name:'GVHD chính 24020003',exact:true}).click();await input.fill('không có giảng viên này');await expect(dialog.getByRole('status')).toHaveText('Không tìm thấy giảng viên.');await input.press('Escape');await expect(dialog).toHaveCount(0);
+    await page.getByRole('button',{name:'Hủy thay đổi',exact:true}).click();await row.getByRole('button',{name:'Sửa phân công 24020003',exact:true}).click();await expect(row.getByRole('button',{name:'GVHD chính 24020003',exact:true})).toContainText('ThS. Gamma');expect(writes).toEqual([]);expect(errors).toEqual([]);
+  }finally{await context.close();}
+});
+
 test('legacy report screens render once and honor canonical course, lecturer and search filters', async ({ browser }) => {
   const { page, context, classes, errors } = await session(browser, 'admin');
   const c = classes.find(c => c.legacy && c.courseCode === 'INT4002');
