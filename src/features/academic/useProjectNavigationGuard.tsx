@@ -2,7 +2,7 @@ import {useContext,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {UNSAFE_NavigationContext,useLocation} from 'react-router-dom';
 import {Button} from '../../shared/ui';
 import {EnrollmentDialog} from './EnrollmentDialog';
-export function useProjectNavigationGuard(dirty:boolean,save:()=>Promise<boolean>,discard:()=>void,message='Bạn có thay đổi chưa lưu trong danh sách sinh viên.'){
+export function useProjectNavigationGuard(dirty:boolean,save:()=>Promise<boolean>,discard:()=>void,message='Bạn có thay đổi chưa lưu trong danh sách sinh viên.',busy=false){
   const route=useLocation(),lastUrl=useRef(location.href);
   useLayoutEffect(()=>{lastUrl.current=location.href;},[route]);
   const {navigator}=useContext(UNSAFE_NavigationContext),current=useRef({dirty,save,discard});current.current={dirty,save,discard};
@@ -20,6 +20,6 @@ export function useProjectNavigationGuard(dirty:boolean,save:()=>Promise<boolean
   },[navigator]);
   const guard=(work:()=>void)=>{if(dirty)setPending(()=>work);else work();};
   const proceed=(work:()=>void)=>{current.current.dirty=false;work();};
-  const dialog=pending?<EnrollmentDialog title="Thay đổi chưa lưu" close={()=>{if(!saving)setPending(null);}}><p className="text-sm mb-4">{message}</p><div className="flex flex-wrap gap-2"><Button disabled={saving} onClick={()=>setPending(null)}>Ở lại</Button><Button disabled={saving} onClick={()=>{discard();current.current.dirty=false;const work=pending;setPending(null);work();}}>Bỏ thay đổi</Button><Button variant="primary" disabled={saving} onClick={async()=>{setSaving(true);try{if(await save()){current.current.dirty=false;const work=pending;setPending(null);work();}else setPending(null);}finally{setSaving(false);}}}>Lưu và tiếp tục</Button></div></EnrollmentDialog>:null;
+  const dialog=pending?<EnrollmentDialog busy={saving||busy} title="Thay đổi chưa lưu" close={()=>{if(!saving&&!busy)setPending(null);}}><p className="text-sm mb-4">{message}</p><div className="flex flex-wrap gap-2"><Button disabled={saving||busy} onClick={()=>setPending(null)}>Ở lại</Button><Button disabled={saving||busy} onClick={()=>{discard();current.current.dirty=false;const work=pending;setPending(null);work();}}>Bỏ thay đổi</Button><Button variant="primary" disabled={saving||busy} onClick={async()=>{setSaving(true);try{if(await save()){current.current.dirty=false;const work=pending;setPending(null);work();}else setPending(null);}finally{setSaving(false);}}}>Lưu và tiếp tục</Button></div></EnrollmentDialog>:null;
   return {dialog,guard,proceed};
 }

@@ -87,10 +87,12 @@ export function EnrollmentPanel({
     setNotice('');
     try {
       await action();
-      await refresh();
       setNotice('Đã lưu thành công.');
+      try { await refresh(); } catch { setNotice('Đã lưu thành công. Chưa tải lại được dữ liệu; dùng Tải lại để cập nhật.'); }
+      return true;
     } catch (err: any) {
       setError(err.message);
+      return false;
     } finally {
       setBusy(false);
     }

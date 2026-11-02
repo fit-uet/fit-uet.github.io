@@ -1,3 +1,4 @@
+import {ContentEditorActions, useContentEditorActions} from '../../academic/ContentEditorActions';
 import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
@@ -12,34 +13,23 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
   const editor = useCampaignEditor();
   const [rules, setRules] = useState(DEFAULT_REGISTRATION_RULES);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savedRules,setSavedRules]=useState(rules);
 
   useEffect(() => {
-    if(editor){setRules(editor.campaign.settings.registrationRules);setLoading(false);return;}
+    if(editor){setRules(editor.campaign.settings.registrationRules);setSavedRules(editor.campaign.settings.registrationRules);setLoading(false);return;}
     fetch(`${API_BASE}/api/settings/registration-rules`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
-      .then((data) => setRules(data?.registration_rules_md || DEFAULT_REGISTRATION_RULES))
+      .then(data=>{const value=data?.registration_rules_md||DEFAULT_REGISTRATION_RULES;setRules(value);setSavedRules(value);})
+      .catch(()=>{})
       .finally(() => setLoading(false));
   }, [token,editor?.campaign.id]);
 
-  const saveRules = async () => {
-    setSaving(true);
-    try {
-      if(editor){await editor.save({registrationRules:rules});alert('Đã lưu nội dung nhóm môn.');return;}
-      const res = await fetch(`${API_BASE}/api/settings/registration-rules`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ registration_rules_md: rules }),
-      });
-      const data = await res.json();
-      if (!res.ok) return alert(data.error || 'Lưu quy định đăng ký thất bại.');
-      alert('Đã lưu Quy định đăng ký.');
-    } catch (e) {
-      alert('Không thể kết nối đến máy chủ.');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const readOnly=!!editor&&(editor.campaign.status==='archived'||!!editor.campaign.pendingMigration);
+  const actions=useContentEditorActions({dirty:!loading&&rules!==savedRules,readOnly,importing:false,
+    persist:async()=>{if(editor)return editor.save({registrationRules:rules});
+      const res=await fetch(`${API_BASE}/api/settings/registration-rules`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({registration_rules_md:rules})});
+      const data=await res.json();if(!res.ok)throw new Error(data.error||'Lưu quy định đăng ký thất bại.');},onSaved:()=>setSavedRules(rules),discard:()=>setRules(savedRules)});
+  const saveRules=actions.save,saving=actions.saving;
 
   if (loading) {
     return (
@@ -55,6 +45,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
 
   const headerActions = (<div className="flex items-center gap-2 self-start sm:self-auto">
           <button
+            disabled={actions.busy || readOnly}
             onClick={() => setRules(DEFAULT_REGISTRATION_RULES)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
@@ -63,7 +54,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
           </button>
           <button
             onClick={saveRules}
-            disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+            disabled={actions.disabled}
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
@@ -118,7 +109,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
               </span>
             </div>
 
-            <textarea disabled={editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+            <textarea disabled={actions.busy || readOnly}
               value={rules}
               onChange={(e) => setRules(e.target.value)}
               placeholder="Nhập nội dung quy định theo định dạng Markdown..."
@@ -153,6 +144,7 @@ export function RegistrationRulesSettingsAdmin({ token }: { token: string }) {
           </div>
         </div>
       </div>
+      <ContentEditorActions actions={actions}/>
     </div>
   );
 }

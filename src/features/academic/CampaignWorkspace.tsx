@@ -172,7 +172,7 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
     <CampaignChrome token={token} modules={modules} title={tab==='overview'?'Tổng quan Quản trị':currentModule.title} go={go} reload={reload} busy={busy} list={list}/>
     {error && <p role="alert" className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-sm">{error}</p>}{notice && <p role="status" className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-xl text-sm">{notice}</p>}
     {list && !p.pendingMigration && <CampaignListToolbar/>}
-    <Suspense fallback={<p role="status">Đang tải chức năng…</p>}>
+    <Suspense key={`${tab}:${actor.role}`} fallback={<p role="status">Đang tải chức năng…</p>}>
     {p.pendingMigration ? <CampaignMigration token={token} refresh={refresh} /> : <>
       {tab === 'overview' && admin && <CampaignDashboard data={data} modules={modules} navigate={go} token={token} reload={() => runOnly(async()=>{refreshRequestCache();await refresh();})} />}
       {showImport && tab === 'students' && admin && project && <ImportPanel token={token} semesterId={p.semesterId} onImported={refresh} />}

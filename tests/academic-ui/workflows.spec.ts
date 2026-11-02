@@ -110,6 +110,57 @@ test('lecturer picker supports Vietnamese input, keyboard, removal and a mobile 
   }finally{await context.close();}
 });
 
+test('review edits save beside the form, retain errors, block edits while saving and cancel one row only',async({browser})=>{
+  const {page,context,classes,token,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132'),headers={Authorization:'Bearer '+token};
+  const before=await(await context.request.get(`${previewOrigin}/api/campaigns/${c.campaignId}/enrollments?classId=${c.id}`,{headers})).json(),target=before.items.find(e=>e.studentId==='24020002');
+  let release:()=>void=()=>{},started:()=>void=()=>{},failed=false;const gate=new Promise<void>(resolve=>release=resolve),began=new Promise<void>(resolve=>started=resolve);
+  await context.route(/\/enrollments\/bulk$/,async route=>{if(!failed){failed=true;return route.fulfill({status:409,json:{error:{code:'REVISION_CONFLICT',message:'Kiểm tra lại nội dung trước khi lưu.'}}});}started();await gate;return route.continue();});
+  try{
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=students&classId=${c.id}`);const row=page.getByRole('row').filter({hasText:'24020002'}),other=page.getByRole('row').filter({hasText:'24020003'});
+    for(const r of [row,other])await r.locator('summary').filter({hasText:'Yêu cầu sửa bài'}).click();
+    const form=row.getByRole('group',{name:'Thao tác yêu cầu sửa 24020002',exact:true}),text=row.getByRole('textbox',{name:'Yêu cầu sửa 24020002',exact:true});
+    await row.getByRole('checkbox',{name:'Cần sửa',exact:true}).check();await text.fill('Bổ sung kết quả thực nghiệm và nguồn dữ liệu.');await other.getByRole('textbox',{name:'Yêu cầu sửa 24020003',exact:true}).fill('Giữ thay đổi của sinh viên khác.');
+    await form.getByRole('button',{name:'Lưu yêu cầu sửa 24020002',exact:true}).click();await expect(form.getByRole('alert')).toContainText('Kiểm tra lại nội dung');await expect(text).toHaveValue('Bổ sung kết quả thực nghiệm và nguồn dữ liệu.');
+    await form.getByRole('button',{name:'Lưu yêu cầu sửa 24020002',exact:true}).click();await began;await expect(text).toBeDisabled();await expect(row.getByRole('checkbox',{name:'Cần sửa',exact:true})).toBeDisabled();await expect(form.getByRole('button',{name:'Lưu yêu cầu sửa 24020002',exact:true})).toHaveText('Đang lưu…');
+    release();await expect(form.getByRole('status')).toHaveText('Đã lưu thay đổi.');await expect(page.getByRole('button',{name:'Lưu thay đổi (1)',exact:true})).toBeVisible();
+    await text.fill('Bản thay đổi sẽ được hủy.');await form.getByRole('button',{name:'Hủy thay đổi dòng 24020002',exact:true}).click();await expect(text).toHaveValue('Bổ sung kết quả thực nghiệm và nguồn dữ liệu.');await expect(other.getByRole('textbox',{name:'Yêu cầu sửa 24020003',exact:true})).toHaveValue('Giữ thay đổi của sinh viên khác.');
+    await page.setViewportSize({width:390,height:844});await expect(form.getByRole('button',{name:'Lưu yêu cầu sửa 24020002',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.getByRole('button',{name:'Hủy thay đổi',exact:true}).click();expect(errors).toEqual([]);
+  }finally{release();const fresh=await(await context.request.get(`${previewOrigin}/api/enrollments/${target.id}`,{headers})).json();expect((await context.request.put(`${previewOrigin}/api/enrollments/${target.id}/submission/review`,{headers,data:{expectedRevision:fresh.revision,needsRevision:target.needsRevision,comment:target.reviewComment}})).status()).toBe(200);await context.close();}
+});
+
+test('content editors expose footer save and cancel, retain failed text and guard navigation',async({browser})=>{
+  const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.courseCode==='INT3132');let fail=true;
+  await context.route(/\/api\/admin\/campaigns\/[^/]+\/settings$/,route=>fail?route.fulfill({status:409,json:{error:{code:'REVISION_CONFLICT',message:'Thiết lập đã thay đổi; nội dung đang soạn được giữ.'}}}):route.continue());
+  try{
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=plan-editor`);const footer=page.getByRole('region',{name:'Lưu nội dung',exact:true}),text=page.locator('textarea');
+    await text.fill('Kế hoạch nhập để kiểm tra UX lưu cuối trang.');await footer.getByRole('button',{name:'Lưu nội dung',exact:true}).click();await expect(footer.getByRole('alert')).toContainText('đang soạn được giữ');await expect(text).toHaveValue('Kế hoạch nhập để kiểm tra UX lưu cuối trang.');
+    await page.getByRole('navigation',{name:'Chức năng nhóm môn'}).locator('[data-campaign-tab="students"]').click();let guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu',exact:true});await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Ở lại',exact:true}).click();await expect(text).toHaveValue('Kế hoạch nhập để kiểm tra UX lưu cuối trang.');
+    fail=false;await footer.getByRole('button',{name:'Lưu nội dung',exact:true}).click();await expect(footer.getByRole('status')).toHaveText('Đã lưu nội dung.');await expect(footer.getByRole('button',{name:'Lưu nội dung',exact:true})).toBeDisabled();
+    for(const tab of ['guide-editor','faq-editor']){await feature(page,tab);await expect(text).toHaveAttribute('placeholder',tab==='guide-editor'?'Nhập nội dung hướng dẫn sử dụng bằng Markdown...':'Nhập nội dung FAQ theo định dạng Markdown...');const original=await text.inputValue();await text.fill('Nội dung chưa lưu '+tab);await footer.getByRole('button',{name:'Hủy thay đổi',exact:true}).click();await expect(text).toHaveValue(original);}
+    await page.setViewportSize({width:390,height:844});await text.fill('FAQ sửa rồi lưu khi chuyển màn.');await page.getByRole('button',{name:'Chọn học kỳ và nhóm môn'}).focus();await page.getByRole('navigation',{name:'Chức năng nhóm môn'}).locator('[data-campaign-tab="students"]').click();guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu',exact:true});await guard.getByRole('button',{name:'Lưu và tiếp tục',exact:true}).click();await expect(page).toHaveURL(/tab=students/);expect(errors).toEqual([]);
+  }finally{await context.close();}
+});
+
+test('internship rules have footer controls and protect unsaved text without writing when cancelled',async({browser})=>{
+  const {page,context,classes,errors}=await session(browser,'admin'),c=classes.find(c=>c.legacy);const writes:string[]=[];
+  page.on('request',r=>{if(r.method()!=='GET'&&r.url().includes('/api/'))writes.push(r.url());});
+  try{
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=rules-editor`);const text=page.getByPlaceholder('Nhập nội dung quy định theo định dạng Markdown...'),footer=page.getByRole('region',{name:'Lưu nội dung',exact:true});await expect(text).toBeVisible();const original=await text.inputValue();
+    await text.fill('Quy định sửa để kiểm tra hủy.');await footer.getByRole('button',{name:'Hủy thay đổi',exact:true}).click();await expect(text).toHaveValue(original);
+    await text.fill('Quy định chưa lưu khi chuyển trang.');await page.getByRole('navigation',{name:'Chức năng nhóm môn'}).locator('[data-campaign-tab="students"]').click();const guard=page.getByRole('dialog',{name:'Thay đổi chưa lưu',exact:true});await expect(guard).toBeVisible();await guard.getByRole('button',{name:'Ở lại',exact:true}).click();await expect(text).toHaveValue('Quy định chưa lưu khi chuyển trang.');
+    await footer.getByRole('button',{name:'Hủy thay đổi',exact:true}).click();expect(writes).toEqual([]);expect(errors).toEqual([]);
+  }finally{await context.close();}
+});
+
+test('student topic form stays open with typed text after a failed save',async({browser})=>{
+  const {page,context,classes,errors}=await session(browser,'student'),c=classes.find(c=>c.courseCode==='INT3132');
+  await context.route(/\/api\/enrollments\/[^/]+\/topic$/,route=>route.request().method()==='PUT'?route.fulfill({status:409,json:{error:{code:'REVISION_CONFLICT',message:'Đề tài đã được cập nhật ở phiên khác.'}}}):route.continue());
+  try{
+    await page.goto(`/#/campaigns/${c.campaignId}?tab=students`);await page.getByRole('button',{name:/INT3132 ·/}).click();await page.getByRole('button',{name:/Đề tài/}).click();const topic=page.getByRole('region',{name:'Đề tài',exact:true});if(await topic.getByRole('button',{name:'Đổi tên đề tài',exact:true}).count())await topic.getByRole('button',{name:'Đổi tên đề tài',exact:true}).click();
+    await topic.getByRole('textbox',{name:'Tên đề tài',exact:true}).fill('Tên đề tài phải được giữ khi lưu lỗi.');await topic.getByRole('button',{name:'Gửi GVHD duyệt',exact:true}).click();await expect(page.getByRole('alert')).toContainText('phiên khác');await expect(topic.getByRole('textbox',{name:'Tên đề tài',exact:true})).toHaveValue('Tên đề tài phải được giữ khi lưu lỗi.');expect(errors).toEqual([]);
+  }finally{await context.close();}
+});
+
 test('legacy report screens render once and honor canonical course, lecturer and search filters', async ({ browser }) => {
   const { page, context, classes, errors } = await session(browser, 'admin');
   const c = classes.find(c => c.legacy && c.courseCode === 'INT4002');

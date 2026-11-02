@@ -1,3 +1,4 @@
+import {ContentEditorActions, useContentEditorActions} from '../../academic/ContentEditorActions';
 import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
@@ -14,37 +15,24 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
   const editor = useCampaignEditor();
   const [planContent, setPlanContent] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savedContent, setSavedContent] = useState(planContent);
   const [importingDocx, setImportingDocx] = useState(false);
 
   useEffect(() => {
-    if(editor){setPlanContent(editor.campaign.settings.plan);setLoading(false);return;}
+    if(editor){setPlanContent(editor.campaign.settings.plan);setSavedContent(editor.campaign.settings.plan);setLoading(false);return;}
     fetch(`${API_BASE}/api/settings/plan`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
-      .then(data => setPlanContent(data?.plan || DEFAULT_PLAN))
-      .catch(() => setPlanContent(DEFAULT_PLAN))
+      .then(data => {const value=data?.plan || DEFAULT_PLAN;setPlanContent(value);setSavedContent(value);})
+      .catch(() => {setPlanContent(DEFAULT_PLAN);setSavedContent(DEFAULT_PLAN);})
       .finally(() => setLoading(false));
   }, [token,editor?.campaign.id]);
 
-  const handleSavePlan = async () => {
-    setSaving(true);
-    try {
-      if(editor){await editor.save({plan:planContent});alert('Đã lưu nội dung nhóm môn.');return;}
-      const res = await fetch(`${API_BASE}/api/settings/plan`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ plan: planContent }),
-      });
-      const data = await res.json();
-      if (!res.ok) return alert(data.error || 'Lưu kế hoạch thất bại.');
-      clearJsonCache('markdown:plan');
-      alert('Đã lưu Kế hoạch triển khai.');
-    } catch (e) {
-      alert('Không thể kết nối đến máy chủ.');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const readOnly=!!editor&&(editor.campaign.status==='archived'||!!editor.campaign.pendingMigration);
+  const actions=useContentEditorActions({dirty:!loading&&(planContent!==savedContent),readOnly,importing:importingDocx,
+    persist:async()=>{if(editor)return editor.save({plan:planContent});
+      const res=await fetch(`${API_BASE}/api/settings/plan`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({plan:planContent})});
+      const data=await res.json();if(!res.ok)throw new Error(data.error||'Lưu kế hoạch thất bại.');clearJsonCache('markdown:plan');},onSaved:()=>setSavedContent(planContent),discard:()=>setPlanContent(savedContent)});
+  const handleSavePlan=actions.save,saving=actions.saving;
 
   const handleImportDocx = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +56,7 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
 
   const headerActions = (<button
           onClick={handleSavePlan}
-          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+          disabled={actions.disabled}
           className="bg-[#034ea1] hover:bg-[#023a7a] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
         >
           {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Lưu kế hoạch
@@ -114,12 +102,13 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 className="hidden"
-                disabled={importingDocx || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+                disabled={actions.busy || readOnly}
                 onChange={handleImportDocx}
                 onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
               />
             </label>
             <button
+              disabled={actions.busy || readOnly}
               onClick={() => setPlanContent(editor?.campaign.group==='project'?'':DEFAULT_PLAN)}
               className="text-xs font-semibold text-slate-700 bg-white border border-black/[0.08] px-3.5 py-1.5 rounded-xl hover:bg-[#f8fafc] shadow-xs active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
             >
@@ -131,7 +120,7 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           <div className="p-5 border-b lg:border-b-0 lg:border-r border-slate-100">
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Nội dung Kế hoạch triển khai</label>
-            <textarea disabled={editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+            <textarea disabled={actions.busy || readOnly}
               className="w-full min-h-[560px] border border-slate-200 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-[#034ea1]/20 focus:border-[#034ea1] outline-none transition-all font-mono bg-[#f8fafc]/50 focus:bg-white shadow-inner resize-y leading-relaxed text-slate-800"
               value={planContent}
               onChange={(e) => setPlanContent(e.target.value)}
@@ -148,6 +137,7 @@ export function PlanSettingsAdmin({ token }: { token: string }) {
           </div>
         </div>
       </div>
+      <ContentEditorActions actions={actions}/>
     </div>
   );
 }

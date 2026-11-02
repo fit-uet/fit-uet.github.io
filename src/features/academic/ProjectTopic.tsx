@@ -16,7 +16,7 @@ export function ProjectTopic({
   owner: boolean;
   admin: boolean;
   busy: boolean;
-  post: (path: string, body: any, method?: string) => Promise<void>;
+  post: (path: string, body: any, method?: string) => Promise<boolean>;
   embedded?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
@@ -78,11 +78,11 @@ export function ProjectTopic({
           onSubmit={async event => {
             event.preventDefault();
             const data = new FormData(event.currentTarget);
-            await post(`/api/enrollments/${e.id}/topic`, {
+            const saved = await post(`/api/enrollments/${e.id}/topic`, {
               title: data.get('title'),
               ...(admin && !primary ? { reason: data.get('reason') } : {})
             });
-            setEditing(false);
+            if (saved) setEditing(false);
           }}
           className="space-y-3"
         >

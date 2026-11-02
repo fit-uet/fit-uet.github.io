@@ -1,3 +1,4 @@
+import {ContentEditorActions, useContentEditorActions} from '../../academic/ContentEditorActions';
 import { CampaignLegacyHeader } from '../../academic/CampaignLayoutContext';
 import { useCampaignEditor } from '../../academic/CampaignEditorContext';
 import { apiFetch as fetch } from '../../../shared/utils/requestCache';
@@ -25,11 +26,11 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
   const [faq, setFaq] = useState<any>({ faq_student_md: DEFAULT_STUDENT_FAQ, faq_lecturer_md: DEFAULT_LECTURER_FAQ });
   const [activeTab, setActiveTab] = useState<'student' | 'lecturer'>('student');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savedFaq, setSavedFaq] = useState(faq);
   const [importingDocx, setImportingDocx] = useState(false);
 
   useEffect(() => {
-    if(editor){setFaq({faq_student_md:editor.campaign.settings.studentFaq,faq_lecturer_md:editor.campaign.settings.lecturerFaq});setLoading(false);return;}
+    if(editor){const value={faq_student_md:editor.campaign.settings.studentFaq,faq_lecturer_md:editor.campaign.settings.lecturerFaq};setFaq(value);setSavedFaq(value);setLoading(false);return;}
     cachedJsonFetch<any>(`${API_BASE}/api/settings/faq`, {
       cacheKey: 'markdown:faq',
       ttlMs: CACHE_TTL.markdown,
@@ -37,34 +38,19 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
     })
       .then((data) => {
         if (data && !data.error) {
-          setFaq({
-            faq_student_md: data.faq_student_md || DEFAULT_STUDENT_FAQ,
-            faq_lecturer_md: data.faq_lecturer_md || DEFAULT_LECTURER_FAQ,
-          });
+          const value={faq_student_md:data.faq_student_md||DEFAULT_STUDENT_FAQ,faq_lecturer_md:data.faq_lecturer_md||DEFAULT_LECTURER_FAQ};setFaq(value);setSavedFaq(value);
         }
       })
+      .catch(()=>{})
       .finally(() => setLoading(false));
   }, [token,editor?.campaign.id]);
 
-  const saveFaq = async () => {
-    setSaving(true);
-    try {
-      if(editor){await editor.save({studentFaq:faq.faq_student_md,lecturerFaq:faq.faq_lecturer_md});alert('Đã lưu nội dung nhóm môn.');return;}
-      const res = await fetch(`${API_BASE}/api/settings/faq`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(faq),
-      });
-      const data = await res.json();
-      if (!res.ok) return alert(data.error || 'Lưu FAQ thất bại.');
-      clearJsonCache('markdown:faq');
-      alert('Đã lưu nội dung FAQ.');
-    } catch (e) {
-      alert('Không thể kết nối đến máy chủ.');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const readOnly=!!editor&&(editor.campaign.status==='archived'||!!editor.campaign.pendingMigration);
+  const actions=useContentEditorActions({dirty:!loading&&(JSON.stringify(faq)!==JSON.stringify(savedFaq)),readOnly,importing:importingDocx,
+    persist:async()=>{if(editor)return editor.save({studentFaq:faq.faq_student_md,lecturerFaq:faq.faq_lecturer_md});
+      const res=await fetch(`${API_BASE}/api/settings/faq`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(faq)});
+      const data=await res.json();if(!res.ok)throw new Error(data.error||'Lưu FAQ thất bại.');clearJsonCache('markdown:faq');},onSaved:()=>setSavedFaq(faq),discard:()=>setFaq(savedFaq)});
+  const saveFaq=actions.save,saving=actions.saving;
 
   const activeKey = activeTab === 'student' ? 'faq_student_md' : 'faq_lecturer_md';
   const activeDefault = editor?.campaign.group==='project' ? '' : activeTab === 'student' ? DEFAULT_STUDENT_FAQ : DEFAULT_LECTURER_FAQ;
@@ -103,7 +89,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
 
   const headerActions = (<button
           onClick={saveFaq}
-          disabled={saving || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+          disabled={actions.disabled}
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#034ea1] hover:bg-[#023a7a] active:scale-[0.98] transition-all shadow-[0_1px_3px_rgba(0,113,227,0.3)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
         >
           {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
@@ -169,7 +155,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 className="hidden"
-                disabled={importingDocx || editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+                disabled={actions.busy || readOnly}
                 onChange={handleImportDocx}
                 onClick={(e) => {
                   (e.target as HTMLInputElement).value = '';
@@ -178,6 +164,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
             </label>
 
             <button
+              disabled={actions.busy || readOnly}
               onClick={() => setFaq((prev: any) => ({ ...prev, [activeKey]: activeDefault }))}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#0f172a] bg-white border border-black/[0.08] hover:bg-[#f8fafc] shadow-[0_1px_2px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
             >
@@ -201,7 +188,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
               </span>
             </div>
 
-            <textarea disabled={editor?.campaign.status==='archived' || editor?.campaign.pendingMigration}
+            <textarea disabled={actions.busy || readOnly}
               value={currentContent}
               onChange={(e) => setFaq((prev: any) => ({ ...prev, [activeKey]: e.target.value }))}
               placeholder="Nhập nội dung FAQ theo định dạng Markdown..."
@@ -229,6 +216,7 @@ export function FAQSettingsAdmin({ token }: { token: string }) {
           </div>
         </div>
       </div>
+      <ContentEditorActions actions={actions}/>
     </div>
   );
 }

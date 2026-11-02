@@ -64,3 +64,5 @@ Khoa/Quản trị viên mở **Dự án → Danh sách sinh viên → Phân côn
 Công cụ `npm run academic:reviewers-reset` mặc định chỉ xem trước. `--apply` yêu cầu nguồn database tường minh, campaign Dự án, tài khoản quản trị, revision đã đối soát, lý do và backup mới. Công cụ chặn toàn bộ tác vụ nếu có hồ sơ đã chấm/khóa, nhóm không hoạt động hoặc revision đã đổi; một lệnh ghi nguyên tử chỉ gỡ vai trò reviewer và lưu lịch sử trước/sau. Giữ GVHD, đề tài, bài nộp, điểm, quota, tệp và dữ liệu Thực tập; không gửi email/thông báo. Chạy lại sau khi gỡ xong không tạo thay đổi mới.
 
 Chi tiết bảng gộp, bản nháp nhiều dòng, PDF riêng và xóa lần học: [PROJECT_STUDENT_LIST.md](PROJECT_STUDENT_LIST.md).
+
+Các cải tiến thao tác lưu, hủy, phản hồi lỗi và bảo vệ nội dung đang soạn được ghi tại [Rà soát UX chỉnh sửa và lưu dữ liệu](UX_SAVE_REVIEW.md).
