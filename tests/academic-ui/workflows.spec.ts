@@ -215,7 +215,7 @@ test('visual references and restored role pages fit desktop and mobile', async (
         const data = await (await context.request.get(`${previewOrigin}/__academic_preview/session?role=${role}`)).json();
         await page.evaluate(data => { localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user)); }, data);
         await page.goto(`/#/campaigns/${p}`);
-        await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
+        await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ', exact: true })).toBeVisible();
         if (role === 'student') {
           await page.getByRole('button', { name: /^INT3132 ·/ }).click();
           await expect(page.getByRole('button', { name: /Đề tài/ })).toBeVisible();
@@ -544,7 +544,7 @@ test('compact chrome preserves all role navigation without loading records when 
       await expect(page.getByRole('navigation',{name:'Chức năng nhóm môn'}).locator('[data-campaign-tab="plan"]')).toBeVisible();await expect(page.getByRole('button',{name:'Thêm chức năng'})).toHaveCount(0);
       const before=calls.length;await page.getByRole('button',{name:'Chọn học kỳ và nhóm môn'}).click();await expect(page.getByRole('dialog',{name:'Học kỳ và nhóm môn'}).getByLabel('Học kỳ',{exact:true})).toBeVisible();
       expect(calls.slice(before).filter(url=>url.includes('/api/campaigns/'))).toEqual([]);expect(calls.some(url=>/\/enrollments|\/submissions|chat-context/.test(url))).toBe(false);await page.keyboard.press('Escape');
-      await feature(page,'students');await expect(page.getByRole('heading',{name:role==='student'?'Hồ sơ và bài nộp':'Danh sách sinh viên',exact:true})).toBeVisible();
+      await feature(page,'students');await expect(page.getByRole('heading',{name:role==='student'?'Hồ sơ':'Danh sách sinh viên',exact:true})).toBeVisible();
       if(role!=='student')await expect(page.getByRole('columnheader',{name:'Sinh viên',exact:true})).toBeVisible();
       await page.screenshot({path:`${screenshots}/compact-${role}-desktop.png`,fullPage:true});
       await page.setViewportSize({width:390,height:844});const nav=page.getByRole('navigation',{name:'Chức năng nhóm môn'});

@@ -31,7 +31,7 @@ export function toLetterGrade(score: number | null | undefined): string {
 
 export function campaignModules(admin: boolean, student: boolean, internship: boolean) {
   if (student) return [
-    { id: 'students', title: 'Hồ sơ và bài nộp', description: 'Thông tin học phần, đề tài và báo cáo', icon: 'student' },
+    { id: 'students', title: 'Hồ sơ', description: 'Thông tin học phần, đề tài và báo cáo', icon: 'student' },
     ...(internship ? [{ id:'reports',title:'Báo cáo cuối kỳ',description:'Nộp và xem báo cáo thực tập',icon:'reports'}] : []),
     { id: 'plan', title: 'Kế hoạch và hướng dẫn', description: 'Mốc thời gian và quy định học phần', icon: 'plan' },
     { id: 'chat', title: 'Trao đổi', description: 'Trao đổi với giảng viên hướng dẫn', icon: 'chat' },

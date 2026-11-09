@@ -20,7 +20,7 @@ test('restored role screens on a prepared local copy of production data', async 
       await page.goto(`${origin.origin}/__local_staging/login${email ? `?email=${encodeURIComponent(email)}` : ''}`);
       await expect(page.getByRole('heading', { name: /Trang chủ|Học kỳ và nhóm môn/ })).toBeVisible();
       await page.goto(`${origin.origin}/#/campaigns/2026-2027-1:project`);
-      await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ và bài nộp', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: role === 'admin' ? 'Tổng quan Quản trị' : role === 'lecturer' ? 'Danh sách sinh viên' : 'Hồ sơ', exact: true })).toBeVisible();
       if (role === 'admin') {
         await expect(page.getByText('Số lần học', {exact:true})).toBeVisible();
         await page.getByRole('region', { name: 'Chức năng quản lý' }).getByRole('button', { name: 'Danh sách sinh viên',exact:true }).click();
