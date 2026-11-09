@@ -112,6 +112,60 @@ export function EnrollmentPanel({
   const reviewerLecturer = e.assignments.find(a => a.role === 'reviewer');
   const reviewerLecturerName = lecturers.find(l => l.id === reviewerLecturer?.lecturerId)?.name;
 
+  const [showAdvisorChangeModal, setShowAdvisorChangeModal] = useState(false);
+  const [selectedTargetLecturerId, setSelectedTargetLecturerId] = useState<number | ''>('');
+  const [changeReason, setChangeReason] = useState('');
+  const [changeFormError, setChangeFormError] = useState('');
+
+  const targetLecturerName = lecturers.find(l => l.id === e.advisorChangeRequest?.targetLecturerId)?.name;
+  const isChangePending = e.advisorChangeRequest?.status === 'pending';
+  const hasGradesEntered = Boolean(e.internshipGrade || Object.values(e.evaluations?.[current.id] || {}).some(Boolean));
+  const canRequestAdvisorChange = owner && !!primaryLecturer && !e.lockedAt && !e.submissionLockedAt && !hasGradesEntered && !['complete', 'locked'].includes(e.gradeStatus);
+  const currentLecturer = lecturers.find(l => l.email && user.email && l.email.trim().toLowerCase() === user.email.trim().toLowerCase());
+  const isCurrentAdvisor = Boolean(currentLecturer && primaryLecturer?.lecturerId === currentLecturer.id);
+  const canReviewAdvisorChange = (isCurrentAdvisor || admin) && isChangePending;
+
+  const handleCancelAdvisorChange = () => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy yêu cầu thay đổi Giảng viên hướng dẫn?')) return;
+    post(`/api/enrollments/${e.id}/advisor-change-request`, {}, 'DELETE');
+  };
+
+  const handleReviewAdvisorChange = (status: 'approved' | 'rejected') => {
+    let reviewComment = '';
+    if (status === 'rejected') {
+      const input = window.prompt('Nhập lý do từ chối (tùy chọn):');
+      if (input === null) return;
+      reviewComment = input;
+    }
+    post(`/api/enrollments/${e.id}/advisor-change-request/review`, {
+      status,
+      reviewComment,
+    }, 'POST');
+  };
+
+  const handleSubmitAdvisorChange = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedTargetLecturerId) {
+      setChangeFormError('Vui lòng chọn Giảng viên hướng dẫn mới đề xuất.');
+      return;
+    }
+    if (!changeReason.trim() || changeReason.trim().length < 5) {
+      setChangeFormError('Vui lòng nhập lý do thay đổi từ 5 ký tự trở lên.');
+      return;
+    }
+    setChangeFormError('');
+    post(`/api/enrollments/${e.id}/advisor-change-request`, {
+      targetLecturerId: Number(selectedTargetLecturerId),
+      reason: changeReason.trim(),
+    }, 'POST').then(ok => {
+      if (ok) {
+        setShowAdvisorChangeModal(false);
+        setChangeReason('');
+        setSelectedTargetLecturerId('');
+      }
+    });
+  };
+
   // Student 3-stage stepper navigation tabs (aligned with Project lifecycle)
   const stageTabs = [
     {
@@ -164,6 +218,94 @@ export function EnrollmentPanel({
     if (c.settings.gradingCloseAt && new Date(c.settings.gradingCloseAt).getTime() < now) return { label: 'Đã đóng', variant: 'neutral' as const };
     return { label: 'Đang mở', variant: 'success' as const };
   })();
+
+  const advisorChangeModal = showAdvisorChangeModal ? (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Yêu cầu thay đổi Giảng viên hướng dẫn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+    >
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Users size={18} className="text-[#034ea1]" />
+            <h3 className="font-bold text-base text-slate-900">Yêu cầu thay đổi Giảng viên hướng dẫn</h3>
+          </div>
+          <button
+            type="button"
+            aria-label="Đóng"
+            onClick={() => { setShowAdvisorChangeModal(false); setChangeFormError(''); }}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {changeFormError && (
+          <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+            {changeFormError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmitAdvisorChange} className="space-y-4 text-xs">
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-slate-500 block mb-0.5">Giảng viên hướng dẫn hiện tại:</span>
+            <strong className="text-slate-900 text-sm">{primaryLecturerName}</strong>
+          </div>
+
+          <FormField label="Giảng viên hướng dẫn mới đề xuất *" hint="Chọn giảng viên bạn mong muốn chuyển sang">
+            <select
+              required
+              aria-label="Giảng viên hướng dẫn mới đề xuất"
+              className={academicInput}
+              value={selectedTargetLecturerId}
+              onChange={ev => setSelectedTargetLecturerId(ev.target.value ? Number(ev.target.value) : '')}
+            >
+              <option value="">-- Chọn Giảng viên hướng dẫn mới --</option>
+              {lecturers
+                .filter(l => l.id !== primaryLecturer?.lecturerId && !/(^|\s)CN[.\s]/i.test(l.name) && l.id !== reviewerLecturer?.lecturerId)
+                .map(l => (
+                  <option key={l.id} value={l.id}>
+                    {l.name} ({l.work_unit || l.email})
+                  </option>
+                ))}
+            </select>
+          </FormField>
+
+          <FormField label="Lý do thay đổi *" hint="Nêu rõ lý do (chuyển hướng nghiên cứu, GV bận công tác...)">
+            <textarea
+              required
+              aria-label="Lý do thay đổi"
+              rows={4}
+              className={academicInput}
+              placeholder="Nhập lý do xin chuyển GVHD (tối thiểu 5 ký tự)..."
+              value={changeReason}
+              onChange={ev => setChangeReason(ev.target.value)}
+            />
+          </FormField>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => { setShowAdvisorChangeModal(false); setChangeFormError(''); }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={busy}
+            >
+              {busy ? 'Đang gửi...' : 'Gửi yêu cầu'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  ) : null;
 
   /* -------------------------------------------------------------
    * 1. STUDENT VIEW (Exact match to Internship Dashboard layout)
@@ -337,8 +479,17 @@ export function EnrollmentPanel({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Khai báo và duyệt đề tài</h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Giảng viên hướng dẫn: <strong className="text-slate-700">{primaryLecturerName || 'Chờ phân công'}</strong>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+                      <span>Giảng viên hướng dẫn: <strong className="text-slate-700">{primaryLecturerName || 'Chờ phân công'}</strong></span>
+                      {canRequestAdvisorChange && !isChangePending && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAdvisorChangeModal(true)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#034ea1] bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                        >
+                          Yêu cầu thay đổi
+                        </button>
+                      )}
                     </p>
                   </div>
                   <div>
@@ -347,6 +498,28 @@ export function EnrollmentPanel({
                     </Badge>
                   </div>
                 </div>
+
+                {isChangePending && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Clock size={15} className="text-amber-600 shrink-0" />
+                      <div>
+                        <span>Đang chờ duyệt đổi sang GVHD: <strong>{targetLecturerName}</strong></span>
+                        <p className="text-[11px] text-amber-700 mt-0.5">Lý do: {e.advisorChangeRequest?.reason}</p>
+                      </div>
+                    </div>
+                    {owner && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={handleCancelAdvisorChange}
+                        className="self-start sm:self-auto text-[11px] font-semibold text-rose-700 hover:text-rose-900 bg-white border border-rose-200 px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                      >
+                        Hủy yêu cầu
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Topic Component (contains region 'Đề tài') */}
                 <ProjectTopic enrollment={e} owner={owner} admin={admin} busy={busy} post={post} embedded />
@@ -567,7 +740,18 @@ export function EnrollmentPanel({
                   <div className="p-4 rounded-xl border border-slate-200 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Giảng viên hướng dẫn:</span>
-                      <strong className="text-slate-800">{primaryLecturerName || 'Chờ phân công'}</strong>
+                      <div className="flex items-center gap-2">
+                        <strong className="text-slate-800">{primaryLecturerName || 'Chờ phân công'}</strong>
+                        {canRequestAdvisorChange && !isChangePending && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAdvisorChangeModal(true)}
+                            className="text-[11px] font-semibold text-[#034ea1] bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                          >
+                            Yêu cầu thay đổi
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Giảng viên nhận xét:</span>
@@ -661,6 +845,7 @@ export function EnrollmentPanel({
             </main>
           </div>
         </div>
+        {advisorChangeModal}
       </div>
     );
   }
@@ -683,6 +868,17 @@ export function EnrollmentPanel({
             <span>Lớp: <strong className="text-slate-700">{e.className || '—'}</strong></span>
             <span className="text-slate-300">·</span>
             <span>Mã HP: <strong className="text-slate-700 font-mono">{c.code}</strong></span>
+            <span className="text-slate-300">·</span>
+            <span>GVHD: <strong className="text-slate-700">{primaryLecturerName || 'Chờ phân công'}</strong></span>
+            {canRequestAdvisorChange && !isChangePending && (
+              <button
+                type="button"
+                onClick={() => setShowAdvisorChangeModal(true)}
+                className="text-[11px] font-semibold text-[#034ea1] bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+              >
+                Yêu cầu thay đổi
+              </button>
+            )}
             {e.email && (
               <>
                 <span className="text-slate-300">·</span>
@@ -727,6 +923,70 @@ export function EnrollmentPanel({
         <div role="status" className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs text-emerald-800">
           <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
           <span>{notice}</span>
+        </div>
+      )}
+
+      {/* Review Advisor Change Request Banner for Old Advisor or Admin */}
+      {canReviewAdvisorChange && (
+        <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-2xl shadow-xs space-y-3 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-200 pb-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+              <h4 className="font-bold text-sm text-amber-950">Yêu cầu thay đổi Giảng viên hướng dẫn từ sinh viên</h4>
+            </div>
+            <span className="text-[11px] text-amber-800 font-medium">Gửi lúc: {formatGMT7(e.advisorChangeRequest?.createdAt)}</span>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2 text-slate-800">
+            <div>
+              <span className="text-slate-500">GVHD hiện tại:</span> <strong>{primaryLecturerName}</strong>
+            </div>
+            <div>
+              <span className="text-slate-500">Đề xuất chuyển sang:</span> <strong className="text-[#034ea1]">{targetLecturerName}</strong>
+            </div>
+          </div>
+          <div className="text-slate-800 bg-white/70 p-2.5 rounded-xl border border-amber-200/80">
+            <span className="text-slate-500 font-medium">Lý do từ sinh viên:</span>
+            <p className="mt-1 italic whitespace-pre-wrap">{e.advisorChangeRequest?.reason}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={busy}
+              onClick={() => handleReviewAdvisorChange('approved')}
+            >
+              Duyệt thay đổi GVHD
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => handleReviewAdvisorChange('rejected')}
+            >
+              Từ chối
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Pending status banner for student in general view */}
+      {isChangePending && owner && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Clock size={15} className="text-amber-600 shrink-0" />
+            <div>
+              <span>Đang chờ duyệt đổi sang GVHD: <strong>{targetLecturerName}</strong></span>
+              <p className="text-[11px] text-amber-700 mt-0.5">Lý do: {e.advisorChangeRequest?.reason}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleCancelAdvisorChange}
+            className="self-start sm:self-auto text-[11px] font-semibold text-rose-700 hover:text-rose-900 bg-white border border-rose-200 px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+          >
+            Hủy yêu cầu
+          </button>
         </div>
       )}
 
@@ -956,6 +1216,7 @@ export function EnrollmentPanel({
           )}
         </div>
       )}
+      {advisorChangeModal}
     </section>
   );
 }

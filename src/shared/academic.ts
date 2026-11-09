@@ -78,6 +78,20 @@ export interface InternshipPreference {
   id: string; companyId: number; companyName: string; note: string;
   status: 'pending' | 'approved' | 'rejected'; reviewComment: string;
 }
+export interface AdvisorChangeRequest {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  currentLecturerId: number;
+  targetLecturerId: number;
+  reason: string;
+  createdAt: string;
+  reviewedAt?: string | null;
+  reviewedById?: number | null;
+  reviewedByLecturerId?: number | null;
+  reviewedByName?: string | null;
+  reviewRole?: 'advisor' | 'admin';
+  reviewComment?: string;
+}
 export interface CourseEnrollment {
   id: string; classId: string; studentId: string; email: string; name: string;
   dob: string; className: string; note: string; status?: 'active' | 'withdrawn'; legacy: boolean;
@@ -90,6 +104,7 @@ export interface CourseEnrollment {
   preferences: InternshipPreference[];
   finalInternship: { preferenceId: string; companyName: string; type: 'company' | 'school'; confirmedAt: string; locked: boolean } | null;
   advisorRequest: { lecturerId: number; coLecturerId: number | null; note: string; status: 'pending' | 'approved' | 'rejected' } | null;
+  advisorChangeRequest?: AdvisorChangeRequest | null;
   revision: number;
 }
 export interface LecturerInfo { id: number; name: string; email: string; work_unit: string }

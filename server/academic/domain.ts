@@ -96,7 +96,7 @@ export function newEnrollment(c: AcademicClass, data: { studentId: string; name:
     ...(course(c).group === 'internship' ? {status: 'active' as const} : {}), legacy: false, topic: '', assignments: [], versions: [emptyVersion()], evaluations: {},
     ...(course(c).group === 'project' ? { topicReview: emptyTopicReview(), topicSubmissionUntil: null } : {}),
     internshipGrade: null, lockedAt: null, submissionLockedAt: null, reopenUntil: null,
-    reviewComment: '', needsRevision: false, preferences: [], finalInternship: null, advisorRequest: null, revision: 0,
+    reviewComment: '', needsRevision: false, preferences: [], finalInternship: null, advisorRequest: null, advisorChangeRequest: null, revision: 0,
   };
 }
 export const currentVersion = (e: CourseEnrollment) => e.versions[e.versions.length - 1];

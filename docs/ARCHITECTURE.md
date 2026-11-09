@@ -215,6 +215,70 @@ Preview theo Admin, mặc định hết hạn sau 30 phút, không ghi user/lớ
 
 PreviewId đã commit trả kết quả cũ. Nhập lại file tạo preview mới nhưng unique danh tính/enrollment/assignment ngăn nhân bản. Không xóa SV vắng file, không tự tiếp nhận lại SV TT đã rút, không ghi điểm/file hoặc đổi đề tài/người chấm khi đã có điểm. Trường hợp đó dùng mở lại riêng. SV chưa có GVHD vẫn được nhận.
 
+### 4.3. Quy trình Yêu cầu thay đổi GVHD từ sinh viên
+
+Nhằm hỗ trợ sinh viên chủ động xin chuyển giảng viên hướng dẫn khi có lý do chính đáng (chuyển hướng nghiên cứu, GV bận công tác, v.v.), hệ thống bổ sung luồng Yêu cầu thay đổi GVHD trực tiếp trên trang Hồ sơ (áp dụng cho cả hai nhóm môn **Dự án** và **Thực tập** khi sinh viên đã có GVHD chính):
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle: Đã có GVHD chính
+    Idle --> Pending: SV gửi Yêu cầu thay đổi (Bắt buộc Lý do + Chọn GVHD mới)
+    Pending --> Cancelled: SV tự hủy yêu cầu
+    Pending --> Rejected: GVHD cũ hoặc Admin từ chối (kèm lý do)
+    Pending --> Approved: GVHD cũ hoặc Admin duyệt
+    Approved --> [*]: Gán GVHD mới, reset đề tài về Pending (ở Dự án), gửi email & thông báo
+    Rejected --> Idle: Giữ nguyên GVHD cũ
+    Cancelled --> Idle: Giữ nguyên GVHD cũ
+```
+
+#### 4.3.1. Mô hình dữ liệu (`AdvisorChangeRequest`)
+Cấu trúc lưu trong `CourseEnrollment.advisorChangeRequest`:
+```ts
+export type AdvisorChangeRequest = {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  currentLecturerId: number;
+  targetLecturerId: number;
+  reason: string;
+  createdAt: string;
+  reviewedAt?: string | null;
+  reviewedById?: number | null;
+  reviewedByLecturerId?: number | null;
+  reviewedByName?: string | null;
+  reviewRole?: 'advisor' | 'admin';
+  reviewComment?: string;
+};
+```
+
+#### 4.3.2. Ràng buộc nghiệp vụ và phân quyền
+1. **Điều kiện gửi yêu cầu**:
+   - Sinh viên sở hữu lần học trong lớp học phần (Dự án hoặc Thực tập) đang hoạt động (`active`).
+   - Đã được phân công GVHD chính (`primary`).
+   - Hồ sơ chưa bị khóa (`lockedAt` / `submissionLockedAt` là null) và chưa có điểm đánh giá nào được nhập.
+   - Bắt buộc phải nhập Lý do thay đổi và chọn GVHD mới đề xuất (`targetLecturerId`) từ danh sách giảng viên hợp lệ (khác GVHD cũ, không trùng GVNX nếu có).
+   - Mỗi lần học chỉ được có tối đa 01 yêu cầu ở trạng thái `pending`.
+2. **Quyền duyệt**:
+   - **GVHD chính hiện tại (GVHD cũ)**: Có quyền duyệt (`approved`) hoặc từ chối (`rejected`) yêu cầu của sinh viên do mình đang hướng dẫn.
+   - **Quản trị viên (Khoa/Admin)**: Có toàn quyền duyệt hoặc từ chối bất kỳ yêu cầu nào trong phạm vi quản lý.
+3. **Hiệu lực sau khi duyệt (`approved`)**:
+   - Cập nhật phân công `assignments`: Giải phóng `primary` của GVHD cũ và gán `targetLecturerId` làm GVHD chính (`primary`) mới cho sinh viên.
+   - Với nhóm **Dự án**: Đề tài của sinh viên (nếu đã được GVHD cũ duyệt trước đó) tự động chuyển về trạng thái `pending` để GVHD mới xem xét và phê duyệt lại, đảm bảo tính liêm chính và trách nhiệm học thuật của GVHD mới.
+   - Kiểm tra xung đột: Đảm bảo GVHD mới không trùng với GVNX hiện có của sinh viên.
+4. **Thông báo và Email**:
+   - Khi yêu cầu được gửi: Gửi thông báo hệ thống và email cho GVHD cũ (để GVHD cũ biết sinh viên có nguyện vọng chuyển GVHD).
+   - Khi yêu cầu được duyệt/từ chối: Tạo `AcademicEvent`, đưa vào `academic_outbox` để phát thông báo website và gửi email tức thì (`sendNotificationEmail`) cho:
+     - **Sinh viên**: Biết kết quả duyệt, GVHD mới và hướng dẫn tiếp theo.
+     - **GVHD cũ**: Xác nhận đã hoàn tất bàn giao/giải phóng nhiệm vụ hướng dẫn.
+     - **GVHD mới**: Thông báo được phân công hướng dẫn sinh viên mới kèm thông tin đề tài/lớp học.
+
+#### 4.3.3. Hợp đồng API
+- `POST /api/enrollments/:enrollmentId/advisor-change-request`: Gửi yêu cầu thay đổi GVHD.
+  - Body: `{ reason: string, targetLecturerId: number, expectedRevision: number }`
+- `DELETE /api/enrollments/:enrollmentId/advisor-change-request`: Hủy yêu cầu đang chờ duyệt.
+  - Body: `{ expectedRevision: number }`
+- `POST /api/enrollments/:enrollmentId/advisor-change-request/review`: Duyệt hoặc từ chối yêu cầu.
+  - Body: `{ status: 'approved' | 'rejected', reviewComment?: string, expectedRevision: number }`
+
 ## 5. Tự phân công GVNX
 
 ### 5.1. Nguồn và tải

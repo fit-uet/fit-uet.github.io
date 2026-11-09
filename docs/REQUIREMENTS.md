@@ -84,6 +84,8 @@ Tất cả quyền đều yêu cầu đăng nhập và đúng phạm vi dữ li�
 | --- | --- | --- | --- | --- | --- |
 | Xem thông tin, đề tài, bài nộp | Có | Được phân công | Được phân công | Được phân công | Có |
 | Sửa tên đề tài, nộp/thay bộ bài | Trong hạn, chưa khóa; Dự án chỉ nộp sau duyệt | Dự án: sửa và tự duyệt đề tài | Không | Không | Mở lại/điều chỉnh có lý do; không tự duyệt nếu không là GVHD chính |
+| Gửi Yêu cầu thay đổi GVHD | Có (ở trang Hồ sơ, cạnh tên GVHD khi đã có GVHD, chưa khóa/chấm) | Không | Không | Không | Không |
+| Duyệt Yêu cầu thay đổi GVHD | Không | Có (GVHD cũ phê duyệt) | Không | Không | Có (Admin duyệt trực tiếp) |
 | Đổi GVHD/GVNX, import/xóa lần học Dự án | Không | Không | Không | Không | Có |
 | Xem điểm hai vai trò/tổng kết | Không | Có | Không | Có | Có |
 | Nhập/sửa điểm GVHD | Không | Có | Không | Không | Không nhập thay; quản lý khóa/mở |
@@ -143,6 +145,9 @@ Ký hiệu trạng thái: **HC** = có luồng hiện tại cần bảo toàn/ki
 | REQ-PRJ-01 / MR | SV thuộc DS, chưa có GVHD | Cho vào lớp, xem hướng dẫn và khai đề tài; chỉ nộp sau khi có GVHD duyệt; Khoa quản lý GVHD chính/đồng HD qua import hoặc thủ công | TC-17: thiếu GVHD không ngăn đăng nhập; chưa đủ điều kiện thì GVNX chờ phân công |
 | REQ-PRJ-02 / MR | SV trong hạn khai đề tài | SV gửi/sửa tên chuyển Pending; chỉ GVHD chính duyệt hoặc sửa rồi tự duyệt; cùng tên giữ duyệt, đổi tên cần duyệt lại; Khoa điều chỉnh có lý do. Chi tiết [Duyệt đề tài](TOPIC_APPROVAL.md) | TC-18: trạng thái/phân quyền/hạn theo lần học; Pending không nộp; đổi tên sau nộp cần bộ bài mới; khóa sau chấm |
 | REQ-PRJ-03 / MR | Khoa phân công giảng viên | Tối đa một GVHD chính và một GVNX/lần học, có đồng HD; CN chỉ đồng HD; GVNX không trùng bất kỳ người hướng dẫn nào | TC-19: cùng kiểm tra cho import, gán tay và tự phân công |
+| REQ-PRJ-04 / MR | SV đã có GVHD chính, chưa chấm/khóa điểm | Nút nhỏ "Yêu cầu thay đổi" đặt cạnh tên GVHD ở trang Hồ sơ (áp dụng cả Dự án và Thực tập); mở hộp thoại bắt buộc nhập Lý do thay đổi và chọn GVHD mới đề xuất từ danh sách giảng viên; gửi yêu cầu chuyển trạng thái Pending | TC-19A: chưa có GVHD thì không hiển thị nút; hồ sơ đã có điểm hoặc bị khóa không được gửi; bắt buộc cả lý do và GVHD mới hợp lệ; mỗi lần học tối đa 1 yêu cầu pending; SV được hủy yêu cầu khi còn pending |
+| REQ-PRJ-05 / MR | GVHD cũ hoặc Quản trị viên duyệt | GVHD chính hiện tại (GVHD cũ) hoặc Admin xem và duyệt yêu cầu; duyệt thành công giải phóng GVHD cũ và gán GVHD mới làm GVHD chính; ở nhóm Dự án, đề tài đã duyệt trước đó tự động chuyển về Chờ duyệt (Pending) để GVHD mới xem xét và phê duyệt lại | TC-19B: GV khác không được duyệt; Admin duyệt trực tiếp; đổi GVHD cập nhật phân công nguyên tử, lưu vết người duyệt và thời điểm duyệt |
+| REQ-PRJ-06 / MR | Hệ thống xử lý thông báo & email sau duyệt | Khi yêu cầu thay đổi GVHD được duyệt hoặc từ chối, hệ thống tạo thông báo website và gửi email tức thì cho sinh viên và các giảng viên liên quan (GVHD cũ, GVHD mới) | TC-19C: email gửi tới đúng địa chỉ sinh viên, GVHD cũ và GVHD mới; nội dung ghi rõ họ tên, lớp học phần, lý do thay đổi và người duyệt |
 
 ### 3.4. Tự phân công GVNX
 

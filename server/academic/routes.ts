@@ -20,6 +20,7 @@ import { internshipAction, autoInternshipAdvisors } from './internship';
 import { chatMessages, sendChat, chatThread, retractChat } from './chat';
 import { COURSE_CATALOG } from '../../src/shared/academic';
 import { announce, announcementPreview, applyAnnouncementPreview, answerQuestion, askQuestion, classQuestions } from './communications';
+import { cancelAdvisorChange, requestAdvisorChange, reviewAdvisorChange } from './advisorChange';
 import * as campaigns from './campaigns';
 import { campaignExport, campaignBulkLock, campaignAutoAdvisors } from './campaignExports';
 import { findChatRow, authorizeLegacyChatRow } from './legacyChat';
@@ -147,6 +148,9 @@ academicRoute('get', '/api/enrollments/:enrollmentId/assignments', async req => 
   const { e } = await readEnrollment(req.user,req.params.enrollmentId); return { assignments: e.assignments, revision: e.revision };
 });
 academicRoute('put', '/api/admin/enrollments/:enrollmentId/assignments', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'assignments'));
+academicRoute('post', '/api/enrollments/:enrollmentId/advisor-change-request', req => requestAdvisorChange(req.user, req.params.enrollmentId, req.body));
+academicRoute('delete', '/api/enrollments/:enrollmentId/advisor-change-request', req => cancelAdvisorChange(req.user, req.params.enrollmentId, req.body));
+academicRoute('post', '/api/enrollments/:enrollmentId/advisor-change-request/review', req => reviewAdvisorChange(req.user, req.params.enrollmentId, req.body));
 academicRoute('put', '/api/enrollments/:enrollmentId/submission/review', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'review'));
 academicRoute('post', '/api/admin/enrollments/:enrollmentId/submission/reopen', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'reopen'));
 academicRoute('put', '/api/admin/enrollments/:enrollmentId/grade-lock', req => service.enrollmentAction(req.user, req.params.enrollmentId, req.body, 'gradeLock'));
