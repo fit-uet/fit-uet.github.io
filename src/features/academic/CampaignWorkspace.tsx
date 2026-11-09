@@ -26,7 +26,6 @@ const RegistrationRulesSettingsAdmin = lazy(() => import('../admin/pages/Registr
 const PlanView=lazy(()=>import('../shared/pages/PlanView').then(module=>({default:module.PlanView})));
 const LecturerGuideView=lazy(()=>import('../shared/pages/LecturerGuideView').then(module=>({default:module.LecturerGuideView})));
 const CampaignMarkdown = lazy(() => import('./CampaignMarkdown').then(module => ({ default: module.CampaignMarkdown })));
-const CampaignFAQ = lazy(() => import('./CampaignFAQ').then(module => ({ default: module.CampaignFAQ })));
 
 const LegacyCampaignPanels = lazy(() => import('./LegacyCampaignPanels').then(module => ({ default: module.LegacyCampaignPanels })));
 const ClassAnnouncement = lazy(() => import('./ClassCommunications').then(module => ({ default: module.ClassAnnouncement })));
@@ -343,10 +342,11 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
       )}
       {tab === 'questions' && !legacyPanel && currentMeta && (
         <div className="max-w-5xl mx-auto space-y-6">
-          <CampaignFAQ
-            content={(student ? p.settings.studentFaq : p.settings.lecturerFaq) || 'Khoa chưa cập nhật câu hỏi thường gặp.'}
-            isStudent={student}
-          />
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xs">
+            <CampaignMarkdown
+              content={(student ? p.settings.studentFaq : p.settings.lecturerFaq) || 'Khoa chưa cập nhật câu hỏi thường gặp.'}
+            />
+          </div>
           <ClassQuestions token={token} user={actor} c={synthetic} />
         </div>
       )}
