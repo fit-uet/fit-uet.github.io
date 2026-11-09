@@ -17,6 +17,9 @@ type Draft={base:CampaignRecord;patch:ProjectPatch;error?:string;errorField?:str
 export function ProjectStudentList({token,page,refresh,importAction}:{token:string;page:CampaignRecordPage|null;refresh:()=>Promise<void>;importAction:()=>void}){
   const {meta,actor,query,editQuery}=useCampaignLayout()!,campaign=meta.campaign,admin=actor.role==='admin',writable=campaign.status==='active';
   const [drafts,setDrafts]=useState<Record<string,Draft>>({}),[editing,setEditing]=useState<Set<string>>(new Set()),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[messageError,setMessageError]=useState(false),[rowNotices,setRowNotices]=useState<Record<string,string>>({}),[savingRows,setSavingRows]=useState<string[]>([]),[selected,setSelected]=useState<string[]>([]),[pdf,setPdf]=useState(''),[deletion,setDeletion]=useState<any>(null),[reason,setReason]=useState(''),[job,setJob]=useState<any>(null),[adding,setAdding]=useState(false);
+  const [reviewingAdvisorChange, setReviewingAdvisorChange] = useState<CampaignRecord | null>(null);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
   const latest=useRef(drafts),saving=useRef(false);latest.current=drafts;const count=Object.keys(drafts).length;
   const mutate=(e:CampaignRecord,key:Exclude<keyof ProjectPatch,'enrollmentId'|'expectedRevision'>,value:any)=>{if(saving.current)return;setRowNotices(old=>{const next={...old};delete next[e.id];return next;});setDrafts(old=>({...old,[e.id]:{base:old[e.id]?.base||e,patch:{...(old[e.id]?.patch||{enrollmentId:e.id,expectedRevision:e.revision}),[key]:value}}}));};
   const discardRow=(id:string)=>{if(saving.current)return;setDrafts(old=>{const next={...old};delete next[id];latest.current=next;return next;});setRowNotices(old=>({...old,[id]:'Đã hủy thay đổi chưa lưu.'}));};
@@ -48,6 +51,40 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
   const names=(e:CampaignRecord,role:string)=>lecturerNames({...e,assignments:(drafts[e.id]?.patch.assignments||e.assignments) as any},meta.lecturers,role);
   const reportError=(error:any)=>{setMessageError(true);setMessage(error.message);};
 
+  const handleReviewAdvisorChange = async (status: 'approved' | 'rejected') => {
+    if (!reviewingAdvisorChange) return;
+    if (status === 'rejected' && !reviewComment.trim()) {
+      if (!window.confirm('Bạn chưa nhập lý do từ chối. Bạn có chắc chắn muốn từ chối yêu cầu này không?')) {
+        return;
+      }
+    }
+    setReviewBusy(true);
+    try {
+      await academicApi(
+        token,
+        `/api/enrollments/${reviewingAdvisorChange.id}/advisor-change-request/review`,
+        'POST',
+        { status, reviewComment: reviewComment.trim() }
+      );
+      const studentName = reviewingAdvisorChange.name;
+      const targetName = meta.lecturers.find(l => l.id === reviewingAdvisorChange.advisorChangeRequest?.targetLecturerId)?.name || 'mới';
+      setReviewingAdvisorChange(null);
+      setReviewComment('');
+      setMessageError(false);
+      setMessage(
+        status === 'approved'
+          ? `Đã duyệt đổi GVHD cho sinh viên ${studentName}. GVHD mới: ${targetName}.`
+          : `Đã từ chối yêu cầu đổi GVHD của sinh viên ${studentName}.`
+      );
+      await refresh();
+    } catch (err: any) {
+      setMessageError(true);
+      setMessage(err.message || 'Không thể xử lý yêu cầu thay đổi GVHD.');
+    } finally {
+      setReviewBusy(false);
+    }
+  };
+
   const rowActions=(e:CampaignRecord,part:'topic'|'assignments'|'review')=>{
     const draft=drafts[e.id],label=part==='topic'?'đề tài':part==='assignments'?'phân công':'yêu cầu sửa';
     return <div className="space-y-2" role="group" aria-label={`Thao tác ${label} ${e.studentId}`}>
@@ -76,13 +113,134 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
       <td className="min-w-44 p-3 align-top"><strong>{e.name}</strong><p className="mt-1 text-slate-500">{e.studentId}</p><a className="text-slate-500 break-all" href={'mailto:'+e.email}>{e.email}</a>{!admin&&<p className="mt-1 text-[#034ea1]">{e.myAssignment.map(r=>r==='primary'?'GVHD':r==='reviewer'?'GVNX':'Đồng HD').join(', ')}</p>}{draft&&<p className="mt-2 text-amber-700">Chưa lưu</p>}{draft?.error&&!['topic','assignments','review'].some(part=>isEditing(e.id,part))&&<p role="alert" className="mt-2 text-rose-700">{draft.error}</p>}</td>
       <td className="min-w-24 p-3 align-top">{e.courseCode}<p className="text-slate-500 mt-1">{e.classCode}</p></td>
       <td className="min-w-64 max-w-sm p-3 align-top space-y-2">{isEditing(e.id,'topic')&&e.topicPermissions?.canEdit?<fieldset disabled={busy}><textarea aria-invalid={draft?.errorField==='topic'} aria-label={`Đề tài ${e.studentId}`} className={academicInput} value={topic?.title??e.topic} maxLength={1500} onChange={ev=>mutate(e,'topic',{...topic,title:ev.target.value})}/>{admin&&!e.myAssignment.includes('primary')&&<input aria-label={`Lý do đề tài ${e.studentId}`} className={academicInput} placeholder="Lý do điều chỉnh" value={topic?.reason||''} onChange={ev=>mutate(e,'topic',{title:topic?.title??e.topic,...topic,reason:ev.target.value})}/>}</fieldset>:<p className="whitespace-pre-wrap break-words">{topic?.title??(e.topic||'Chưa khai đề tài')}</p>}<RecordBadge tone={e.topicReview?.status==='approved'?'success':'warning'}>{TOPIC_STATUS_NAMES[e.topicReview?.status||'unregistered']}</RecordBadge>{e.topicReview?.source==='legacy'&&<p>Công nhận dữ liệu cũ</p>}{e.topicPermissions?.canEdit&&(isEditing(e.id,'topic')?rowActions(e,'topic'):<button type="button" className="text-[#034ea1] underline disabled:opacity-50" disabled={busy} onClick={()=>start(e,'topic')}>{e.myAssignment.includes('primary')?'Sửa và duyệt':'Sửa đề tài'}</button>)}{e.topicPermissions?.canApprove&&<Button size="sm" disabled={busy} onClick={()=>mutate(e,'topic',{...topic,approve:true})}>{topic?.approve?'Chờ lưu duyệt':'Duyệt đề tài'}</Button>}{topic?.approve&&!isEditing(e.id,'topic')&&rowActions(e,'topic')}{e.topicPermissions?.requiresResubmission&&<p className="text-amber-700">Cần nộp lại theo đề tài mới</p>}{e.topicSubmissionUntil&&<p className="text-slate-500">Nộp bổ sung đến {new Date(e.topicSubmissionUntil).toLocaleString('vi-VN')}</p>}</td>
-      <td className="min-w-48 p-3 align-top space-y-2">{isEditing(e.id,'assignments')&&admin?assignmentFields(e):<><p>{names(e,'primary')}</p><p className="text-slate-500">Đồng HD: {(draft?.patch.assignments||e.assignments).some(a=>a.role==='co')?names(e,'co'):'—'}</p></>}{e.advisorChangeRequest?.status==='pending'&&<div><span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Xin đổi GVHD</span></div>}{admin&&writable&&!e.submissionLockedAt&&!e.lockedAt&&(isEditing(e.id,'assignments')?rowActions(e,'assignments'):<button type="button" className="text-[#034ea1] underline disabled:opacity-50" disabled={busy} aria-label={`Sửa phân công ${e.studentId}`} onClick={()=>start(e,'assignments')}>Sửa phân công</button>)}</td>
+      <td className="min-w-48 p-3 align-top space-y-2">{isEditing(e.id,'assignments')&&admin?assignmentFields(e):<><p>{names(e,'primary')}</p><p className="text-slate-500">Đồng HD: {(draft?.patch.assignments||e.assignments).some(a=>a.role==='co')?names(e,'co'):'—'}</p></>}{e.advisorChangeRequest?.status==='pending'&&(
+        <div className="pt-0.5">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={()=>{setReviewingAdvisorChange(e);setReviewComment('');}}
+            className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition-colors cursor-pointer shadow-2xs"
+            title="Nhấn để xem chi tiết và duyệt yêu cầu đổi GVHD"
+          >
+            <span>Xin đổi GVHD</span>
+            <span className="text-[10px] text-[#034ea1] underline ml-0.5 font-normal">Duyệt ngay &rarr;</span>
+          </button>
+        </div>
+      )}{admin&&writable&&!e.submissionLockedAt&&!e.lockedAt&&(isEditing(e.id,'assignments')?rowActions(e,'assignments'):<button type="button" className="text-[#034ea1] underline disabled:opacity-50" disabled={busy} aria-label={`Sửa phân công ${e.studentId}`} onClick={()=>start(e,'assignments')}>Sửa phân công</button>)}</td>
       <td className="min-w-32 p-3 align-top">{names(e,'reviewer')}</td>
       <td className="min-w-40 p-3 align-top space-y-2"><RecordBadge tone={e.needsRevision||e.topicPermissions?.requiresResubmission?'warning':v.state==='submitted'?'success':'neutral'}>{e.needsRevision||e.topicPermissions?.requiresResubmission?'Cần nộp lại':v.state==='submitted'?'Đã nộp':'Chưa nộp đủ'}</RecordBadge>{v.objectKey&&<button className="block text-[#034ea1] underline" onClick={()=>setPdf(e.id)}>Xem PDF</button>}<div className="flex gap-3">{v.slidesUrl&&<a href={v.slidesUrl} target="_blank" rel="noreferrer" className="text-[#034ea1] underline">Slide ↗</a>}{v.demoUrl&&<a href={v.demoUrl} target="_blank" rel="noreferrer" className="text-[#034ea1] underline">Video ↗</a>}</div>{writable&&!e.lockedAt&&(admin||e.myAssignment.some(r=>r!=='co'))&&<details open={isEditing(e.id,'review')}><summary className="cursor-pointer text-[#034ea1]" onClick={ev=>{ev.preventDefault();if(!busy)toggle(e.id,'review');}}>Yêu cầu sửa bài</summary><fieldset disabled={busy} className="mt-2 space-y-2"><label className="flex gap-1 my-2"><input type="checkbox" checked={draft?.patch.review?.needsRevision??e.needsRevision} onChange={ev=>mutate(e,'review',{needsRevision:ev.target.checked,comment:draft?.patch.review?.comment??e.reviewComment})}/>Cần sửa</label><textarea className={academicInput} aria-invalid={draft?.errorField==='review'} placeholder="Nội dung cần sửa và hướng dẫn cho sinh viên…" rows={3} aria-label={`Yêu cầu sửa ${e.studentId}`} value={draft?.patch.review?.comment??e.reviewComment} onChange={ev=>mutate(e,'review',{needsRevision:draft?.patch.review?.needsRevision??e.needsRevision,comment:ev.target.value})}/></fieldset>{rowActions(e,'review')}</details>}</td>
     </tr>;})}</tbody></table></div>{!page?<p role="status" className="p-8 text-center text-sm text-slate-500">Đang tải danh sách…</p>:!page.items.length?<p className="p-8 text-center text-slate-500">Không có sinh viên trong bộ lọc.</p>:null}<div className="border-t p-3 flex flex-wrap justify-between gap-2 text-xs text-slate-500"><span>{page?`${page.total} lần học · ${page.studentCount} sinh viên`:'Đang tải…'}</span><div className="flex items-center gap-2"><Button size="sm" disabled={!page||page.page<=1||busy} onClick={()=>editQuery({page:String(page!.page-1),enrollmentId:'',panel:''})}>Trước</Button><span>{page?.page||1}/{page?.totalPages||1}</span><Button size="sm" disabled={!page||page.page>=page.totalPages||busy} onClick={()=>editQuery({page:String(page!.page+1),enrollmentId:'',panel:''})}>Sau</Button></div></div></div>
     {adding&&<Suspense fallback={<p role="status">Đang mở form…</p>}><AddStudent token={token} close={()=>setAdding(false)} onAdded={async()=>{setAdding(false);await refresh();setMessageError(false);setMessage('Đã thêm sinh viên vào lớp.');}}/></Suspense>}
     {pdf&&<Suspense fallback={<p role="status">Đang mở báo cáo…</p>}><PdfDialog key={pdf} token={token} id={pdf} close={()=>{setPdf('');if(query.get('panel')==='reports')editQuery({enrollmentId:'',panel:''});}}/></Suspense>}
     {deletion&&<EnrollmentDialog busy={busy} title="Xóa khỏi danh sách" close={()=>{if(!busy)setDeletion(null);}}><form className="space-y-4" onSubmit={async event=>{event.preventDefault();setBusy(true);try{const result=await academicApi(token,`/api/campaigns/${campaign.id}/deletions/${deletion.id}/apply`,'POST',{reason});setJob(result);setDeletion(null);setSelected([]);await refresh();}catch(e){reportError(e);}finally{setBusy(false);}}}><p className="text-sm text-rose-700">Xóa hẳn lần học, đề tài, phân công, điểm, bài nộp và chat riêng. Giữ tài khoản, các lần học khác và chat nhóm.</p><div className="max-h-80 overflow-auto"><table className="text-xs w-full"><thead><tr>{['Sinh viên','Lớp','Phiên bản','Điểm','Tệp','Chat riêng'].map(x=><th key={x} className="p-2 text-left">{x}</th>)}</tr></thead><tbody>{deletion.rows.map(r=><tr key={r.enrollmentId}><td className="p-2">{r.studentId} · {r.name}</td><td>{r.classCode}</td><td>{r.versions}</td><td>{r.evaluations}</td><td>{r.files}</td><td>{r.privateMessages}</td></tr>)}</tbody></table></div><FormField label="Lý do xóa" required><textarea className={academicInput} value={reason} onChange={ev=>setReason(ev.target.value)} required/></FormField><div className="flex gap-2"><Button disabled={busy} onClick={()=>setDeletion(null)}>Hủy</Button><Button type="submit" variant="danger" disabled={busy}>Xác nhận xóa vĩnh viễn</Button></div></form></EnrollmentDialog>}
+    {reviewingAdvisorChange && (() => {
+      const e = reviewingAdvisorChange;
+      const req = e.advisorChangeRequest;
+      const currentLecturer = meta.lecturers.find(l => l.id === req?.currentLecturerId);
+      const targetLecturer = meta.lecturers.find(l => l.id === req?.targetLecturerId);
+      return (
+        <EnrollmentDialog
+          busy={reviewBusy}
+          title="Duyệt yêu cầu thay đổi Giảng viên hướng dẫn"
+          close={() => {
+            if (!reviewBusy) {
+              setReviewingAdvisorChange(null);
+              setReviewComment('');
+            }
+          }}
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm text-slate-900">{e.name}</span>
+                <span className="font-mono text-slate-500 font-semibold">{e.studentId}</span>
+              </div>
+              <div className="text-slate-600">
+                <span>Học phần: <strong>{e.courseCode}</strong></span>
+                <span className="mx-1.5 text-slate-300">·</span>
+                <span>Lớp: <strong>{e.classCode}</strong></span>
+                {e.email && (
+                  <>
+                    <span className="mx-1.5 text-slate-300">·</span>
+                    <span className="font-mono text-slate-500">{e.email}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl border border-slate-200 bg-white">
+                <span className="text-slate-500 block text-[11px] mb-1">Giảng viên hướng dẫn hiện tại:</span>
+                <strong className="text-slate-900 text-sm block">{currentLecturer?.name || 'Chưa phân công'}</strong>
+                <span className="text-slate-500 text-[11px] block">{currentLecturer?.work_unit || currentLecturer?.email}</span>
+              </div>
+              <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/50">
+                <span className="text-[#034ea1] block text-[11px] font-semibold mb-1">Giảng viên mới đề xuất chuyển sang:</span>
+                <strong className="text-slate-900 text-sm block">{targetLecturer?.name || 'Chưa rõ'}</strong>
+                <span className="text-slate-600 text-[11px] block">{targetLecturer?.work_unit || targetLecturer?.email}</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-amber-900">Lý do từ sinh viên:</span>
+                {req?.createdAt && (
+                  <span className="text-[11px] text-amber-700">
+                    Gửi lúc: {new Date(req.createdAt).toLocaleString('vi-VN')}
+                  </span>
+                )}
+              </div>
+              <p className="italic text-slate-800 whitespace-pre-wrap">{req?.reason || '(Không có lý do)'}</p>
+            </div>
+
+            <FormField
+              label="Ý kiến / Phản hồi của người duyệt (tùy chọn khi duyệt, nên có khi từ chối)"
+            >
+              <textarea
+                className={academicInput}
+                rows={3}
+                placeholder="Nhập ý kiến phản hồi gửi cho sinh viên và các giảng viên liên quan..."
+                value={reviewComment}
+                onChange={ev => setReviewComment(ev.target.value)}
+                disabled={reviewBusy}
+              />
+            </FormField>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={reviewBusy}
+                onClick={() => {
+                  setReviewingAdvisorChange(null);
+                  setReviewComment('');
+                }}
+              >
+                Đóng
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="danger"
+                  disabled={reviewBusy}
+                  onClick={() => handleReviewAdvisorChange('rejected')}
+                >
+                  {reviewBusy ? 'Đang xử lý...' : 'Từ chối yêu cầu'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  disabled={reviewBusy}
+                  onClick={() => handleReviewAdvisorChange('approved')}
+                >
+                  {reviewBusy ? 'Đang xử lý...' : '✓ Đồng ý đổi GVHD'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </EnrollmentDialog>
+      );
+    })()}
     {dialog}
   </section>;
 }
