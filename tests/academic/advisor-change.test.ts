@@ -258,3 +258,14 @@ test('HTTP API: student requests change and old advisor approves via REST endpoi
   }
 });
 
+test('project student receives full lecturer directory on management section to choose new advisor', async () => {
+  const { readCampaignDetail } = await import('../../server/academic/reads');
+  const detail = await readCampaignDetail(sv, c.campaignId, 'management');
+  // Student should see multiple lecturers in the directory, not just their assigned advisor (lecturer 1)
+  assert.ok(detail.lecturers.length >= 3, `Expected at least 3 lecturers, got ${detail.lecturers.length}`);
+  assert.ok(detail.lecturers.some(l => l.id === 1), 'Assigned advisor is in list');
+  assert.ok(detail.lecturers.some(l => l.id === 2), 'Prospective advisor Beta is in list');
+  assert.ok(detail.lecturers.some(l => l.id === 3), 'Prospective advisor Gamma is in list');
+});
+
+

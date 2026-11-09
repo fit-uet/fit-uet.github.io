@@ -47,7 +47,7 @@ export async function classDetail(classId: string, actor: AuthenticatedUser) {
   if (!mayRead(s, c, actor) && !canJoin(c, actor)) fail(403, 'CLASS_ACCESS_DENIED', 'Bạn không được truy cập lớp này.');
   const summary = classSummaries(s, actor).find(x => x.id === c.id)!;
   const enrollments = s.enrollments.filter(e => e.classId === c.id && mayRead(s, c, actor, e)).map(e => enrollmentView(s, c, e, actor));
-  return { class: summary, enrollments, lecturers: actor.role === 'admin' || course(c).group === 'internship' ? s.lecturers : s.lecturers.filter(l => enrollments.some(e => e.assignments.some(a => a.lecturerId === l.id))), semesters: s.semesters, courses: COURSE_CATALOG,
+  return { class: summary, enrollments, lecturers: actor.role === 'admin' || course(c).group === 'internship' || course(c).group === 'project' ? s.lecturers : s.lecturers.filter(l => enrollments.some(e => e.assignments.some(a => a.lecturerId === l.id))), semesters: s.semesters, courses: COURSE_CATALOG,
     reviewerCandidates: actor.role === 'admin' ? reviewerPool(s, c.semesterId) : [], quotas: actor.role === 'admin' ? s.quotas.filter(q => q.semesterId === c.semesterId) : [] };
 }
 export async function createSemester(actor: AuthenticatedUser, year: number, term: Term) {

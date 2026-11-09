@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
   Users, CheckCircle2, Clock, AlertCircle, AlertTriangle, FileText,
   BookOpen, GraduationCap, ExternalLink, Presentation,
-  Video, ChevronDown, Check, Send, Lock, Award, Info, RefreshCw, X, Upload, Download, Eye
+  Video, ChevronDown, Check, Send, Lock, Award, Info, RefreshCw, X, Upload, Download, Eye, Search
 } from 'lucide-react';
 import { Button, FormField } from '../../shared/ui';
 import { Badge } from '../../shared/ui/Badge';
@@ -42,6 +42,10 @@ const formatGMT7 = (dateStr?: string | null) => {
     return dateStr;
   }
 };
+
+const normalize = (value: string) =>
+  value.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase().trim();
+const undergraduate = (lecturer: LecturerInfo) => /(^|[\s.])CN[.\s]|^CN$/iu.test(lecturer.name);
 
 export function EnrollmentPanel({
   token,
@@ -116,6 +120,86 @@ export function EnrollmentPanel({
   const [selectedTargetLecturerId, setSelectedTargetLecturerId] = useState<number | ''>('');
   const [changeReason, setChangeReason] = useState('');
   const [changeFormError, setChangeFormError] = useState('');
+  const [advisorSearchQuery, setAdvisorSearchQuery] = useState('');
+  const [isAdvisorDropdownOpen, setIsAdvisorDropdownOpen] = useState(false);
+  const [highlightedAdvisorIndex, setHighlightedAdvisorIndex] = useState(0);
+  const [extraLecturers, setExtraLecturers] = useState<LecturerInfo[]>([]);
+  const advisorSearchContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isAdvisorDropdownOpen) return;
+    const handleOutsideClick = (ev: MouseEvent) => {
+      if (advisorSearchContainerRef.current && !advisorSearchContainerRef.current.contains(ev.target as Node)) {
+        setIsAdvisorDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isAdvisorDropdownOpen]);
+
+  useEffect(() => {
+    if (showAdvisorChangeModal && lecturers.length <= 1 && extraLecturers.length === 0 && c.campaignId) {
+      academicApi<any>(token, `/api/campaigns/${c.campaignId}?section=management`, 'GET')
+        .then(res => {
+          if (Array.isArray(res?.lecturers) && res.lecturers.length > 0) {
+            setExtraLecturers(res.lecturers);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [showAdvisorChangeModal, lecturers.length, extraLecturers.length, c.campaignId, token]);
+
+  const resetAdvisorChangeModal = () => {
+    setShowAdvisorChangeModal(false);
+    setSelectedTargetLecturerId('');
+    setChangeReason('');
+    setChangeFormError('');
+    setAdvisorSearchQuery('');
+    setIsAdvisorDropdownOpen(false);
+    setHighlightedAdvisorIndex(0);
+  };
+
+  const combinedLecturers = lecturers.length > 1 ? lecturers : (extraLecturers.length > 0 ? extraLecturers : lecturers);
+  const availableLecturers = combinedLecturers
+    .filter(l => l.id !== primaryLecturer?.lecturerId && !undergraduate(l) && l.id !== reviewerLecturer?.lecturerId)
+    .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+
+  const filteredLecturers = advisorSearchQuery.trim()
+    ? availableLecturers.filter(l =>
+        normalize(`${l.name} ${l.email} ${l.work_unit || ''}`).includes(normalize(advisorSearchQuery))
+      )
+    : availableLecturers;
+
+  const chosenTargetLecturer = availableLecturers.find(l => l.id === selectedTargetLecturerId);
+
+  const handleAdvisorSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isAdvisorDropdownOpen) {
+      if (event.key === 'ArrowDown' || event.key === 'Enter') {
+        event.preventDefault();
+        setIsAdvisorDropdownOpen(true);
+      }
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setHighlightedAdvisorIndex(prev => (filteredLecturers.length ? (prev + 1) % filteredLecturers.length : 0));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setHighlightedAdvisorIndex(prev => (filteredLecturers.length ? (prev - 1 + filteredLecturers.length) % filteredLecturers.length : 0));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const target = filteredLecturers[highlightedAdvisorIndex] || filteredLecturers[0];
+      if (target) {
+        setSelectedTargetLecturerId(target.id);
+        setIsAdvisorDropdownOpen(false);
+        setAdvisorSearchQuery('');
+        setChangeFormError('');
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setIsAdvisorDropdownOpen(false);
+    }
+  };
 
   const targetLecturerName = lecturers.find(l => l.id === e.advisorChangeRequest?.targetLecturerId)?.name;
   const isChangePending = e.advisorChangeRequest?.status === 'pending';
@@ -159,9 +243,7 @@ export function EnrollmentPanel({
       reason: changeReason.trim(),
     }, 'POST').then(ok => {
       if (ok) {
-        setShowAdvisorChangeModal(false);
-        setChangeReason('');
-        setSelectedTargetLecturerId('');
+        resetAdvisorChangeModal();
       }
     });
   };
@@ -235,7 +317,7 @@ export function EnrollmentPanel({
           <button
             type="button"
             aria-label="Đóng"
-            onClick={() => { setShowAdvisorChangeModal(false); setChangeFormError(''); }}
+            onClick={resetAdvisorChangeModal}
             className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -254,23 +336,140 @@ export function EnrollmentPanel({
             <strong className="text-slate-900 text-sm">{primaryLecturerName}</strong>
           </div>
 
-          <FormField label="Giảng viên hướng dẫn mới đề xuất *" hint="Chọn giảng viên bạn mong muốn chuyển sang">
-            <select
-              required
-              aria-label="Giảng viên hướng dẫn mới đề xuất"
-              className={academicInput}
-              value={selectedTargetLecturerId}
-              onChange={ev => setSelectedTargetLecturerId(ev.target.value ? Number(ev.target.value) : '')}
-            >
-              <option value="">-- Chọn Giảng viên hướng dẫn mới --</option>
-              {lecturers
-                .filter(l => l.id !== primaryLecturer?.lecturerId && !/(^|\s)CN[.\s]/i.test(l.name) && l.id !== reviewerLecturer?.lecturerId)
-                .map(l => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} ({l.work_unit || l.email})
-                  </option>
-                ))}
-            </select>
+          <FormField
+            label="Giảng viên hướng dẫn mới đề xuất *"
+            hint={chosenTargetLecturer ? "Nhấn 'Đổi người khác' nếu muốn chọn lại" : "Nhập để tìm kiếm hoặc chọn từ danh sách giảng viên"}
+          >
+            {chosenTargetLecturer ? (
+              <div className="flex items-center justify-between p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-blue-100 text-[#034ea1] flex items-center justify-center shrink-0 font-bold text-sm">
+                    {chosenTargetLecturer.name.split(' ').slice(-1)[0]?.charAt(0) || 'G'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-slate-900 text-sm flex items-center gap-1.5 truncate">
+                      <span>{chosenTargetLecturer.name}</span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-[#034ea1]">
+                        Đã chọn
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-600 truncate">
+                      {chosenTargetLecturer.work_unit || chosenTargetLecturer.email}
+                      {chosenTargetLecturer.work_unit && chosenTargetLecturer.email && ` · ${chosenTargetLecturer.email}`}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTargetLecturerId('');
+                    setAdvisorSearchQuery('');
+                    setIsAdvisorDropdownOpen(true);
+                  }}
+                  className="ml-2 text-xs font-semibold text-[#034ea1] hover:text-blue-700 hover:underline shrink-0 px-2.5 py-1 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                >
+                  Đổi người khác
+                </button>
+              </div>
+            ) : (
+              <div className="relative" ref={advisorSearchContainerRef}>
+                <div className="relative">
+                  <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    role="combobox"
+                    aria-label="Tìm và chọn Giảng viên hướng dẫn mới"
+                    aria-expanded={isAdvisorDropdownOpen}
+                    aria-autocomplete="list"
+                    className={`${academicInput} pl-9.5 pr-8`}
+                    placeholder="Gõ tên, email hoặc bộ môn giảng viên..."
+                    value={advisorSearchQuery}
+                    onFocus={() => {
+                      setIsAdvisorDropdownOpen(true);
+                      setHighlightedAdvisorIndex(0);
+                    }}
+                    onChange={ev => {
+                      setAdvisorSearchQuery(ev.target.value);
+                      setIsAdvisorDropdownOpen(true);
+                      setHighlightedAdvisorIndex(0);
+                    }}
+                    onKeyDown={handleAdvisorSearchKeyDown}
+                    autoComplete="off"
+                  />
+                  {advisorSearchQuery ? (
+                    <button
+                      type="button"
+                      aria-label="Xóa tìm kiếm"
+                      onClick={() => { setAdvisorSearchQuery(''); setIsAdvisorDropdownOpen(true); }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label="Mở danh sách giảng viên"
+                      tabIndex={-1}
+                      onClick={() => setIsAdvisorDropdownOpen(prev => !prev)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded cursor-pointer"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {isAdvisorDropdownOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Danh sách giảng viên hướng dẫn"
+                    className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white shadow-xl py-1 text-xs"
+                  >
+                    {filteredLecturers.length > 0 ? (
+                      filteredLecturers.map((lecturer, idx) => {
+                        const isHighlighted = idx === highlightedAdvisorIndex;
+                        return (
+                          <button
+                            key={lecturer.id}
+                            type="button"
+                            role="option"
+                            aria-selected={lecturer.id === selectedTargetLecturerId}
+                            onClick={() => {
+                              setSelectedTargetLecturerId(lecturer.id);
+                              setIsAdvisorDropdownOpen(false);
+                              setAdvisorSearchQuery('');
+                              setChangeFormError('');
+                            }}
+                            onMouseEnter={() => setHighlightedAdvisorIndex(idx)}
+                            className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 transition-colors cursor-pointer border-b border-slate-50 last:border-b-0 ${
+                              isHighlighted ? 'bg-blue-50 text-slate-900' : 'hover:bg-slate-50 text-slate-800'
+                            }`}
+                          >
+                            <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 font-medium text-xs mt-0.5">
+                              {lecturer.name.split(' ').slice(-1)[0]?.charAt(0) || 'G'}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-slate-900">{lecturer.name}</div>
+                              <div className="text-slate-500 text-[11px] truncate">
+                                {lecturer.work_unit || lecturer.email}
+                                {lecturer.work_unit && lecturer.email && ` · ${lecturer.email}`}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-slate-500">
+                        {availableLecturers.length === 0 ? (
+                          'Đang tải danh bạ giảng viên...'
+                        ) : (
+                          <>Không tìm thấy giảng viên nào với từ khóa "<strong>{advisorSearchQuery}</strong>".</>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </FormField>
 
           <FormField label="Lý do thay đổi *" hint="Nêu rõ lý do (chuyển hướng nghiên cứu, GV bận công tác...)">
@@ -290,7 +489,7 @@ export function EnrollmentPanel({
               type="button"
               variant="secondary"
               disabled={busy}
-              onClick={() => { setShowAdvisorChangeModal(false); setChangeFormError(''); }}
+              onClick={resetAdvisorChangeModal}
             >
               Hủy
             </Button>
@@ -484,7 +683,7 @@ export function EnrollmentPanel({
                       {canRequestAdvisorChange && !isChangePending && (
                         <button
                           type="button"
-                          onClick={() => setShowAdvisorChangeModal(true)}
+                          onClick={() => { resetAdvisorChangeModal(); setShowAdvisorChangeModal(true); }}
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#034ea1] bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
                         >
                           Yêu cầu thay đổi
@@ -745,7 +944,7 @@ export function EnrollmentPanel({
                         {canRequestAdvisorChange && !isChangePending && (
                           <button
                             type="button"
-                            onClick={() => setShowAdvisorChangeModal(true)}
+                            onClick={() => { resetAdvisorChangeModal(); setShowAdvisorChangeModal(true); }}
                             className="text-[11px] font-semibold text-[#034ea1] bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
                           >
                             Yêu cầu thay đổi
@@ -873,7 +1072,7 @@ export function EnrollmentPanel({
             {canRequestAdvisorChange && !isChangePending && (
               <button
                 type="button"
-                onClick={() => setShowAdvisorChangeModal(true)}
+                onClick={() => { resetAdvisorChangeModal(); setShowAdvisorChangeModal(true); }}
                 className="text-[11px] font-semibold text-[#034ea1] bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
               >
                 Yêu cầu thay đổi
