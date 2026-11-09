@@ -211,7 +211,7 @@ export function EnrollmentPanel({
 
   const handleCancelAdvisorChange = () => {
     if (!window.confirm('Bạn có chắc chắn muốn hủy yêu cầu thay đổi Giảng viên hướng dẫn?')) return;
-    post(`/api/enrollments/${e.id}/advisor-change-request`, {}, 'DELETE');
+    post(`/api/enrollments/${e.id}/advisor-change-request`, { expectedRevision: e.revision }, 'DELETE');
   };
 
   const handleReviewAdvisorChange = (status: 'approved' | 'rejected') => {
@@ -224,6 +224,7 @@ export function EnrollmentPanel({
     post(`/api/enrollments/${e.id}/advisor-change-request/review`, {
       status,
       reviewComment,
+      expectedRevision: e.revision,
     }, 'POST');
   };
 
@@ -241,6 +242,7 @@ export function EnrollmentPanel({
     post(`/api/enrollments/${e.id}/advisor-change-request`, {
       targetLecturerId: Number(selectedTargetLecturerId),
       reason: changeReason.trim(),
+      expectedRevision: e.revision,
     }, 'POST').then(ok => {
       if (ok) {
         resetAdvisorChangeModal();

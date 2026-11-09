@@ -6,7 +6,7 @@ import { gradeNames, campaignSearchPlaceholder } from './campaignPresentation';
 import { useCampaignLayout, type CampaignFilter } from './CampaignLayoutContext';
 import { CampaignPopover } from './CampaignPopover';
 
-export const campaignFilterKeys = ['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'advisor','assignmentStatus','submissionStatus','gradeStatus'];
+export const campaignFilterKeys = ['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'advisor','assignmentStatus','submissionStatus','gradeStatus','advisorChangeStatus'];
 export function CampaignListToolbar() {
   const layout = useCampaignLayout()!;
   const {meta, actor, tab, legacy, query, editQuery} = layout;
@@ -22,7 +22,8 @@ export function CampaignListToolbar() {
   if(meta.campaign.group==='project'){
     filters.push({key:'assignmentStatus',label:'Phân công',options:[{value:'missingPrimary',label:'Chưa có GVHD'},{value:'missingReviewer',label:'Chưa có GVNX'},{value:'complete',label:'Đủ GVHD/GVNX'}]},
       {key:'submissionStatus',label:'Bài nộp',options:[{value:'notSubmitted',label:'Chưa nộp đủ'},{value:'submitted',label:'Đã nộp'},{value:'needsRevision',label:'Cần nộp lại'}]},
-      {key:'gradeStatus',label:'Điểm',options:[...Object.entries(gradeNames),['advisorMissing','Thiếu điểm GVHD'],['reviewerMissing','Thiếu điểm GVNX']].map(([value,label])=>({value,label}))});
+      {key:'gradeStatus',label:'Điểm',options:[...Object.entries(gradeNames),['advisorMissing','Thiếu điểm GVHD'],['reviewerMissing','Thiếu điểm GVNX']].map(([value,label])=>({value,label}))},
+      {key:'advisorChangeStatus',label:'Yêu cầu đổi GVHD',options:[{value:'pending',label:'Chờ duyệt'},{value:'approved',label:'Đã duyệt'},{value:'rejected',label:'Đã từ chối'}]});
   }else if(!legacy){
     const statuses = tab==='grades' ? Object.entries(gradeNames)
       : tab==='reports' ? [['notSubmitted','Chưa nộp đủ bài'],['complete','Đã hoàn tất điểm']] : [['active','Đang học'],['withdrawn','Đã rút']];

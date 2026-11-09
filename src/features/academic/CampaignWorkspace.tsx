@@ -69,7 +69,7 @@ function CampaignWorkspace({ id, token, user }: { id: string; token: string; use
   useEffect(()=>{if(!projectManagement)return;const next=projectListQuery(query);if(next.toString()!==query.toString())setQuery(next,{replace:true});},[projectManagement,query.toString()]);
   useEffect(()=>{const reset=()=>{appliedQuery.current=query;writtenQuery.current=null;changeSearch(query.get('q')||'');composeSearch(false);};window.addEventListener('project-navigation-blocked',reset);return()=>window.removeEventListener('project-navigation-blocked',reset);},[query]);
   const [chat, setChat] = useState<any>(null), [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
-  const filters = Object.fromEntries(['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'assignmentStatus', 'submissionStatus', 'gradeStatus', 'q', 'page'].map(k => [k, query.get(k) || '']).filter(([, v]) => v));
+  const filters = Object.fromEntries(['courseCode', 'classId', 'lecturerId', 'status', 'topicStatus', 'assignmentStatus', 'submissionStatus', 'gradeStatus', 'advisorChangeStatus', 'q', 'page'].map(k => [k, query.get(k) || '']).filter(([, v]) => v));
   if(projectManagement&&query.get('enrollmentId')&&!query.get('page'))filters.focusEnrollmentId=query.get('enrollmentId')!;
   if (teachingView) filters.lecturerId = String(data?.lecturers.find(l => l.email.toLowerCase() === user.email.toLowerCase())?.id ?? -1);
   const section = tab === 'overview' ? 'overview' : ['plan','guide','questions'].includes(tab) ? 'content' : tab.endsWith('-editor') ? 'full' : tab==='settings' ? 'base' : ['students','assignments','reports','grades','settings','chat'].includes(tab) ? 'management' : 'base';

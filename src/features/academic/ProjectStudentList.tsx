@@ -1,4 +1,5 @@
-import {lazy,Suspense,useEffect,useRef,useState} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
+import {AlertCircle} from 'lucide-react';
 import {Button,FormField} from '../../shared/ui';
 import {TOPIC_STATUS_NAMES} from '../../shared/academic';
 import type {ProjectPatch} from '../../../server/academic/projectList';
@@ -20,6 +21,92 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
   const [reviewingAdvisorChange, setReviewingAdvisorChange] = useState<CampaignRecord | null>(null);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+
+  const [showQueueDialog, setShowQueueDialog] = useState(false);
+  const [queueItems, setQueueItems] = useState<CampaignRecord[]>([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueError, setQueueError] = useState('');
+  const [selectedQueueIds, setSelectedQueueIds] = useState<string[]>([]);
+  const [bulkReviewComment, setBulkReviewComment] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [queueSearch, setQueueSearch] = useState('');
+
+  const pendingCount = Number(meta.stats?.advisorChangePending ?? page?.items.filter(e => e.advisorChangeRequest?.status === 'pending').length ?? 0);
+
+  const loadQueue = async () => {
+    setQueueLoading(true);
+    setQueueError('');
+    try {
+      const res = await academicApi<CampaignRecordPage>(
+        token,
+        `/api/campaigns/${campaign.id}/enrollments?advisorChangeStatus=pending&__all=true`,
+        'GET'
+      );
+      const items = res.items || [];
+      setQueueItems(items);
+      setSelectedQueueIds(items.map(item => item.id));
+    } catch (err: any) {
+      setQueueError(err.message || 'Không thể tải danh sách yêu cầu chờ duyệt.');
+    } finally {
+      setQueueLoading(false);
+    }
+  };
+
+  const handleBulkReview = async (status: 'approved' | 'rejected', singleItem?: CampaignRecord) => {
+    const ids = singleItem ? [singleItem.id] : selectedQueueIds;
+    if (!ids.length) {
+      alert('Vui lòng chọn ít nhất một yêu cầu để thực hiện.');
+      return;
+    }
+    if (status === 'rejected' && !bulkReviewComment.trim()) {
+      if (!window.confirm('Bạn chưa nhập lý do từ chối. Bạn có chắc chắn muốn từ chối các yêu cầu đã chọn không?')) {
+        return;
+      }
+    }
+    setBulkBusy(true);
+    setQueueError('');
+    try {
+      await academicApi(
+        token,
+        `/api/campaigns/${campaign.id}/advisor-change-requests/bulk-review`,
+        'POST',
+        {
+          enrollmentIds: ids,
+          status,
+          reviewComment: bulkReviewComment.trim(),
+        }
+      );
+      setMessageError(false);
+      setMessage(
+        status === 'approved'
+          ? `Đã duyệt thành công ${ids.length} yêu cầu đổi GVHD.`
+          : `Đã từ chối ${ids.length} yêu cầu đổi GVHD.`
+      );
+      await Promise.all([loadQueue(), refresh()]);
+    } catch (err: any) {
+      setQueueError(err.message || 'Có lỗi xảy ra khi xử lý duyệt yêu cầu.');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const filteredQueueItems = useMemo(() => {
+    const q = queueSearch.trim().toLowerCase();
+    if (!q) return queueItems;
+    return queueItems.filter(item => {
+      const curLecturer = meta.lecturers.find(l => l.id === item.advisorChangeRequest?.currentLecturerId)?.name || '';
+      const tgtLecturer = meta.lecturers.find(l => l.id === item.advisorChangeRequest?.targetLecturerId)?.name || '';
+      return (
+        item.name.toLowerCase().includes(q) ||
+        item.studentId.toLowerCase().includes(q) ||
+        item.classCode.toLowerCase().includes(q) ||
+        curLecturer.toLowerCase().includes(q) ||
+        tgtLecturer.toLowerCase().includes(q) ||
+        (item.advisorChangeRequest?.reason || '').toLowerCase().includes(q)
+      );
+    });
+  }, [queueItems, queueSearch, meta.lecturers]);
   const latest=useRef(drafts),saving=useRef(false);latest.current=drafts;const count=Object.keys(drafts).length;
   const mutate=(e:CampaignRecord,key:Exclude<keyof ProjectPatch,'enrollmentId'|'expectedRevision'>,value:any)=>{if(saving.current)return;setRowNotices(old=>{const next={...old};delete next[e.id];return next;});setDrafts(old=>({...old,[e.id]:{base:old[e.id]?.base||e,patch:{...(old[e.id]?.patch||{enrollmentId:e.id,expectedRevision:e.revision}),[key]:value}}}));};
   const discardRow=(id:string)=>{if(saving.current)return;setDrafts(old=>{const next={...old};delete next[id];latest.current=next;return next;});setRowNotices(old=>({...old,[id]:'Đã hủy thay đổi chưa lưu.'}));};
@@ -59,17 +146,23 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
       }
     }
     setReviewBusy(true);
+    setReviewError('');
     try {
       await academicApi(
         token,
         `/api/enrollments/${reviewingAdvisorChange.id}/advisor-change-request/review`,
         'POST',
-        { status, reviewComment: reviewComment.trim() }
+        {
+          status,
+          reviewComment: reviewComment.trim(),
+          expectedRevision: reviewingAdvisorChange.revision,
+        }
       );
       const studentName = reviewingAdvisorChange.name;
       const targetName = meta.lecturers.find(l => l.id === reviewingAdvisorChange.advisorChangeRequest?.targetLecturerId)?.name || 'mới';
       setReviewingAdvisorChange(null);
       setReviewComment('');
+      setReviewError('');
       setMessageError(false);
       setMessage(
         status === 'approved'
@@ -78,6 +171,7 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
       );
       await refresh();
     } catch (err: any) {
+      setReviewError(err.message || 'Không thể xử lý yêu cầu thay đổi GVHD.');
       setMessageError(true);
       setMessage(err.message || 'Không thể xử lý yêu cầu thay đổi GVHD.');
     } finally {
@@ -103,6 +197,27 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
     <CampaignToolbarActions>
       <Button size="sm" variant="primary" disabled={!count||busy} onClick={save}>Lưu thay đổi ({count})</Button><Button size="sm" disabled={!count||busy} onClick={discard}>Hủy thay đổi</Button>
       {admin&&<><Button size="sm" variant="primary" disabled={busy||!!count||campaign.pendingMigration||!['draft','active'].includes(campaign.status)} onClick={()=>setAdding(true)}>Thêm sinh viên</Button><Button size="sm" disabled={busy||!writable||!!count} onClick={importAction}>Import danh sách</Button><Button size="sm" disabled={busy||!writable||!!count||!selected.length} onClick={removePreview}>Xóa khỏi danh sách ({selected.length})</Button></>}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          setShowQueueDialog(true);
+          loadQueue();
+        }}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+          pendingCount > 0
+            ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 shadow-2xs font-bold'
+            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+        }`}
+        title="Mở danh sách duyệt tập trung yêu cầu đổi GVHD"
+      >
+        <span>⚡ Duyệt đổi GVHD</span>
+        {pendingCount > 0 && (
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+            {pendingCount}
+          </span>
+        )}
+      </button>
       <label className="text-xs text-slate-600">Xuất XLSX <select aria-label="Xuất XLSX" className="rounded-lg border bg-white p-2 text-xs" value="" onChange={e=>{if(e.target.value)exportFile(e.target.value);}}><option value="">Chọn danh sách</option>{[['student-list','Danh sách tổng hợp'],['students','Sinh viên'],['assignments','Phân công'],['reports','Báo cáo']].map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
     </CampaignToolbarActions>
     {admin&&<Suspense fallback={null}><Reviewer token={token} c={meta.classes.find(c=>c.id===query.get('classId'))||{...meta.classes[0],...campaign,code:'đang chọn'}} lecturers={meta.lecturers} quotas={meta.quotas} refresh={refresh} disabled={!!count||busy}/></Suspense>}
@@ -118,7 +233,7 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
           <button
             type="button"
             disabled={busy}
-            onClick={()=>{setReviewingAdvisorChange(e);setReviewComment('');}}
+            onClick={()=>{setReviewingAdvisorChange(e);setReviewComment('');setReviewError('');}}
             className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition-colors cursor-pointer shadow-2xs"
             title="Nhấn để xem chi tiết và duyệt yêu cầu đổi GVHD"
           >
@@ -146,10 +261,18 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
             if (!reviewBusy) {
               setReviewingAdvisorChange(null);
               setReviewComment('');
+              setReviewError('');
             }
           }}
         >
           <div className="space-y-4 text-xs">
+            {reviewError && (
+              <div role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-center gap-2">
+                <AlertCircle size={16} className="text-rose-600 shrink-0" />
+                <span>{reviewError}</span>
+              </div>
+            )}
+
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-sm text-slate-900">{e.name}</span>
@@ -214,6 +337,7 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
                 onClick={() => {
                   setReviewingAdvisorChange(null);
                   setReviewComment('');
+                  setReviewError('');
                 }}
               >
                 Đóng
@@ -241,6 +365,218 @@ export function ProjectStudentList({token,page,refresh,importAction}:{token:stri
         </EnrollmentDialog>
       );
     })()}
+    {showQueueDialog && (
+      <EnrollmentDialog
+        busy={bulkBusy}
+        title="Duyệt tập trung yêu cầu thay đổi Giảng viên hướng dẫn"
+        close={() => {
+          if (!bulkBusy) {
+            setShowQueueDialog(false);
+            setBulkReviewComment('');
+            setQueueError('');
+          }
+        }}
+      >
+        <div className="space-y-4 text-xs">
+          {queueError && (
+            <div role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-center gap-2">
+              <AlertCircle size={16} className="text-rose-600 shrink-0" />
+              <span>{queueError}</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-800">
+                Tổng số đơn chờ duyệt: <strong className="text-amber-800">{queueItems.length}</strong>
+              </span>
+              {selectedQueueIds.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-[#034ea1] font-medium text-[11px]">
+                  Đã chọn: {selectedQueueIds.length}/{queueItems.length}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Tìm MSSV, tên SV, giảng viên..."
+                className="px-2.5 py-1 text-xs border border-slate-300 rounded-lg bg-white"
+                value={queueSearch}
+                onChange={e => setQueueSearch(e.target.value)}
+              />
+              <Button size="sm" variant="secondary" disabled={queueLoading || bulkBusy} onClick={loadQueue}>
+                {queueLoading ? 'Đang tải...' : 'Làm mới'}
+              </Button>
+            </div>
+          </div>
+
+          {queueLoading ? (
+            <p className="p-8 text-center text-slate-500">Đang tải danh sách yêu cầu chờ duyệt...</p>
+          ) : filteredQueueItems.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-500">
+              {queueItems.length === 0
+                ? 'Hiện tại không có yêu cầu thay đổi GVHD nào đang chờ duyệt trong học kỳ này.'
+                : 'Không có yêu cầu nào khớp với tìm kiếm.'}
+            </div>
+          ) : (
+            <div className="max-h-80 overflow-y-auto border border-slate-200 rounded-xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 sticky top-0 z-10 border-b border-slate-200">
+                  <tr>
+                    <th className="p-2.5 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredQueueItems.length > 0 && filteredQueueItems.every(i => selectedQueueIds.includes(i.id))}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            const newIds = new Set([...selectedQueueIds, ...filteredQueueItems.map(i => i.id)]);
+                            setSelectedQueueIds(Array.from(newIds));
+                          } else {
+                            const toRemove = new Set(filteredQueueItems.map(i => i.id));
+                            setSelectedQueueIds(selectedQueueIds.filter(id => !toRemove.has(id)));
+                          }
+                        }}
+                      />
+                    </th>
+                    <th className="p-2.5 font-semibold">Sinh viên</th>
+                    <th className="p-2.5 font-semibold">GVHD hiện tại &rarr; GVHD mới</th>
+                    <th className="p-2.5 font-semibold">Lý do & Ngày gửi</th>
+                    <th className="p-2.5 font-semibold text-right">Xử lý nhanh</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {filteredQueueItems.map(item => {
+                    const req = item.advisorChangeRequest;
+                    const curLecturer = meta.lecturers.find(l => l.id === req?.currentLecturerId);
+                    const tgtLecturer = meta.lecturers.find(l => l.id === req?.targetLecturerId);
+                    const isChecked = selectedQueueIds.includes(item.id);
+                    return (
+                      <tr key={item.id} className={isChecked ? 'bg-blue-50/40' : 'hover:bg-slate-50'}>
+                        <td className="p-2.5 text-center align-top">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={e => {
+                              setSelectedQueueIds(
+                                e.target.checked
+                                  ? [...selectedQueueIds, item.id]
+                                  : selectedQueueIds.filter(id => id !== item.id)
+                              );
+                            }}
+                          />
+                        </td>
+                        <td className="p-2.5 align-top min-w-36">
+                          <div className="font-semibold text-slate-900">{item.name}</div>
+                          <div className="text-slate-500 font-mono text-[11px]">{item.studentId}</div>
+                          <div className="text-slate-400 text-[11px]">{item.classCode}</div>
+                        </td>
+                        <td className="p-2.5 align-top min-w-48">
+                          <div className="text-slate-700">
+                            <span className="text-slate-400">Từ: </span>
+                            <span className="font-medium">{curLecturer?.name || 'Chưa phân công'}</span>
+                          </div>
+                          <div className="text-[#034ea1] font-semibold mt-0.5">
+                            <span className="text-slate-400 font-normal">Sang: </span>
+                            {tgtLecturer?.name || 'Chưa rõ'}
+                          </div>
+                          {tgtLecturer?.work_unit && (
+                            <div className="text-slate-400 text-[10px]">{tgtLecturer.work_unit}</div>
+                          )}
+                        </td>
+                        <td className="p-2.5 align-top max-w-xs">
+                          <div className="text-slate-800 italic line-clamp-3 bg-amber-50/60 p-1.5 rounded border border-amber-200/60 text-[11px]">
+                            {req?.reason || '(Không có lý do)'}
+                          </div>
+                          {req?.createdAt && (
+                            <div className="text-[10px] text-slate-400 mt-1">
+                              {new Date(req.createdAt).toLocaleString('vi-VN')}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2.5 align-top text-right space-x-1 whitespace-nowrap">
+                          <button
+                            type="button"
+                            disabled={bulkBusy}
+                            onClick={() => handleBulkReview('approved', item)}
+                            className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[11px] transition-colors"
+                            title="Duyệt đơn này"
+                          >
+                            ✓ Duyệt
+                          </button>
+                          <button
+                            type="button"
+                            disabled={bulkBusy}
+                            onClick={() => handleBulkReview('rejected', item)}
+                            className="px-2 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white font-medium text-[11px] transition-colors"
+                            title="Từ chối đơn này"
+                          >
+                            ✕ Từ chối
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {queueItems.length > 0 && (
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <FormField label="Ý kiến / Lý do phản hồi chung (áp dụng cho các đơn được chọn)">
+                <textarea
+                  className={academicInput}
+                  rows={2}
+                  placeholder="Ghi chú phản hồi gửi cho sinh viên và các giảng viên liên quan (tùy chọn khi duyệt, nên có khi từ chối)..."
+                  value={bulkReviewComment}
+                  onChange={e => setBulkReviewComment(e.target.value)}
+                  disabled={bulkBusy}
+                />
+              </FormField>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200">
+                <span className="text-xs text-slate-500">
+                  Thao tác hàng loạt trên <strong>{selectedQueueIds.length}</strong> đơn đã chọn
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={bulkBusy || selectedQueueIds.length === 0}
+                    onClick={() => handleBulkReview('rejected')}
+                  >
+                    {bulkBusy ? 'Đang xử lý...' : `✕ Từ chối (${selectedQueueIds.length})`}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    disabled={bulkBusy || selectedQueueIds.length === 0}
+                    onClick={() => handleBulkReview('approved')}
+                  >
+                    {bulkBusy ? 'Đang xử lý...' : `✓ Duyệt các đơn đã chọn (${selectedQueueIds.length})`}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-slate-100">
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={bulkBusy}
+              onClick={() => {
+                setShowQueueDialog(false);
+                setBulkReviewComment('');
+                setQueueError('');
+              }}
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
+      </EnrollmentDialog>
+    )}
     {dialog}
   </section>;
 }

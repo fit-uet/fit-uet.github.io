@@ -13,7 +13,7 @@ import { commit, snapshot, AcademicError } from '../../server/academic/store';
 import { newEnrollment, getEnrollment, getClass } from '../../server/academic/domain';
 import { createSemester, createClass, enrollmentAction } from '../../server/academic/service';
 import { updateCampaign } from '../../server/academic/campaigns';
-import { requestAdvisorChange, cancelAdvisorChange, reviewAdvisorChange } from '../../server/academic/advisorChange';
+import { requestAdvisorChange, cancelAdvisorChange, reviewAdvisorChange, bulkReviewAdvisorChanges } from '../../server/academic/advisorChange';
 import { academicRouter } from '../../server/academic/routes';
 import type { AcademicClass, CourseEnrollment } from '../../src/shared/academic';
 import type { AuthenticatedUser } from '../../server/types';
@@ -111,6 +111,25 @@ test('student can request advisor change and old advisor can approve', async () 
   // Verify assignments: old advisor removed, new advisor is primary
   assert.equal(approved.assignments.some(a => a.role === 'primary' && a.lecturerId === 1), false);
   assert.equal(approved.assignments.some(a => a.role === 'primary' && a.lecturerId === 2), true);
+});
+
+test('reviewAdvisorChange succeeds and does not throw 409 when expectedRevision is omitted', async () => {
+  await requestAdvisorChange(sv, e.id, {
+    targetLecturerId: 2,
+    reason: 'Đổi sang Thầy Beta kiểm tra expectedRevision optional',
+  });
+  const requested = await fresh();
+  assert.equal(requested.advisorChangeRequest?.status, 'pending');
+
+  // Review without expectedRevision
+  await reviewAdvisorChange(admin, e.id, {
+    status: 'approved',
+    reviewComment: 'Duyệt không cần expectedRevision',
+  });
+
+  const approved = await fresh();
+  assert.equal(approved.advisorChangeRequest?.status, 'approved');
+  assert.equal(approved.assignments.find(a => a.role === 'primary')?.lecturerId, 2);
 });
 
 test('approval resets approved topic to pending for new advisor to review', async () => {
@@ -267,5 +286,141 @@ test('project student receives full lecturer directory on management section to 
   assert.ok(detail.lecturers.some(l => l.id === 2), 'Prospective advisor Beta is in list');
   assert.ok(detail.lecturers.some(l => l.id === 3), 'Prospective advisor Gamma is in list');
 });
+
+test('bulk review can approve multiple advisor change requests atomically and reset approved topics', async () => {
+  // Create second student e2
+  let s = await snapshot();
+  const e2 = newEnrollment(c, { studentId: '24020003', name: 'Trần Thị B' });
+  e2.assignments = [{ id: 'primary-2', lecturerId: 1, role: 'primary', assignedAt: new Date().toISOString() }];
+  await commit(s, 1, 'admin.test.admit.e2', {
+    enrollments: [e2],
+    users: [{ studentId: e2.studentId, name: e2.name, email: e2.email, dob: '', className: '' }],
+  });
+  const sv2: AuthenticatedUser = {
+    id: Number((await db.execute({ sql: 'SELECT id FROM users WHERE email=?', args: [e2.email] })).rows[0].id),
+    email: e2.email,
+    role: 'student',
+    name: e2.name,
+  };
+
+  // e1 has an approved topic
+  await enrollmentAction(sv, e.id, { expectedRevision: (await fresh()).revision, title: 'Đề tài 1' }, 'topic');
+  await enrollmentAction(alpha, e.id, { expectedRevision: (await fresh()).revision }, 'topicApprove');
+  assert.equal((await fresh()).topicReview?.status, 'approved');
+
+  // Both students request advisor change
+  await requestAdvisorChange(sv, e.id, {
+    expectedRevision: (await fresh()).revision,
+    targetLecturerId: 2,
+    reason: 'Đổi sang Thầy Beta',
+  });
+  await requestAdvisorChange(sv2, e2.id, {
+    expectedRevision: getEnrollment(await snapshot(), e2.id).revision,
+    targetLecturerId: 3,
+    reason: 'Đổi sang Thầy Gamma',
+  });
+
+  const res = await bulkReviewAdvisorChanges(admin, c.campaignId, {
+    enrollmentIds: [e.id, e2.id],
+    status: 'approved',
+    reviewComment: 'Khoa phê duyệt tập trung',
+  });
+  assert.equal(res.success, true);
+  assert.equal(res.count, 2);
+
+  const updated1 = await fresh();
+  const updated2 = getEnrollment(await snapshot(), e2.id);
+
+  assert.equal(updated1.advisorChangeRequest?.status, 'approved');
+  assert.equal(updated1.assignments.find(a => a.role === 'primary')?.lecturerId, 2);
+  assert.equal(updated1.topicReview?.status, 'pending'); // Topic reset
+
+  assert.equal(updated2.advisorChangeRequest?.status, 'approved');
+  assert.equal(updated2.assignments.find(a => a.role === 'primary')?.lecturerId, 3);
+});
+
+test('bulk review can reject requests and unauthorized lecturer cannot bulk review', async () => {
+  await requestAdvisorChange(sv, e.id, {
+    expectedRevision: (await fresh()).revision,
+    targetLecturerId: 2,
+    reason: 'Đổi sang Thầy Beta',
+  });
+
+  // Unauthorized lecturer Gamma cannot bulk review
+  const resGamma = await bulkReviewAdvisorChanges(gamma, c.campaignId, {
+    enrollmentIds: [e.id],
+    status: 'approved',
+  });
+  // Gamma is not advisor so 0 modified
+  assert.equal(resGamma.count, 0);
+
+  // Admin bulk rejects
+  const resReject = await bulkReviewAdvisorChanges(admin, c.campaignId, {
+    enrollmentIds: [e.id],
+    status: 'rejected',
+    reviewComment: 'Từ chối đổi GVHD',
+  });
+  assert.equal(resReject.count, 1);
+
+  const freshE = await fresh();
+  assert.equal(freshE.advisorChangeRequest?.status, 'rejected');
+  assert.equal(freshE.assignments.find(a => a.role === 'primary')?.lecturerId, 1);
+});
+
+test('HTTP API: bulk review endpoint approves multiple requests and advisorChangeStatus filter works', async () => {
+  const app = express();
+  app.use(express.json(), academicRouter);
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const port = (server.address() as { port: number }).port;
+  const bulkUrl = `http://127.0.0.1:${port}/api/campaigns/${c.campaignId}/advisor-change-requests/bulk-review`;
+  const headers = (who: AuthenticatedUser) => ({
+    Authorization: `Bearer ${jwt.sign({ email: who.email }, JWT_SECRET)}`,
+    'Content-Type': 'application/json',
+  });
+
+  try {
+    // Request advisor change
+    await requestAdvisorChange(sv, e.id, {
+      expectedRevision: (await fresh()).revision,
+      targetLecturerId: 2,
+      reason: 'Đổi qua HTTP API test',
+    });
+
+    // Check advisorChangeStatus=pending filter in reads
+    const { readCampaignEnrollments, readCampaignDetail } = await import('../../server/academic/reads');
+    const pendingPage = await readCampaignEnrollments(admin, c.campaignId, { advisorChangeStatus: 'pending' }, true);
+    assert.ok(pendingPage.items.some(item => item.id === e.id), 'Pending enrollment found via filter');
+
+    const detail = await readCampaignDetail(admin, c.campaignId, 'management');
+    assert.equal(detail.stats.advisorChangePending, 1);
+
+    // Call bulk review API
+    const response = await fetch(bulkUrl, {
+      method: 'POST',
+      headers: headers(admin),
+      body: JSON.stringify({
+        enrollmentIds: [e.id],
+        status: 'approved',
+        reviewComment: 'Duyệt thành công qua bulk review API',
+      }),
+    });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.success, true);
+    assert.equal(body.count, 1);
+
+    const freshE = await fresh();
+    assert.equal(freshE.advisorChangeRequest?.status, 'approved');
+    assert.equal(freshE.assignments.find(a => a.role === 'primary')?.lecturerId, 2);
+
+    // Detail stats should now be 0 pending
+    const updatedDetail = await readCampaignDetail(admin, c.campaignId, 'management', false);
+    assert.equal(updatedDetail.stats.advisorChangePending, 0);
+  } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+  }
+});
+
 
 
